@@ -1,4 +1,4 @@
-# Monday Triage Dashboard
+# Dashboard
 
 ## Goal
 
@@ -133,7 +133,7 @@ Dashboard export 是 DueDateHQ current task view CSV，不是承诺每个第三�
 
 ## Competitor Parity Notes
 
-File In Time 支持 weekly task views、status updates、extension flags、startup reminders、calendar counts、filtering/sorting、Excel export 和广泛 batch changes。DueDateHQ 应以默认 Monday triage surface、更强 trust badges、evidence drawer access、dashboard 内 due today/this week/this month urgency、轻量 bulk status/firm-target/export operations，以及 current task view export 覆盖有价值工作流。外部 reminder channels、bulk official due-date edits 和重型 reporting 不进入 Beta。
+File In Time 支持 weekly task views、status updates、extension flags、startup reminders、calendar counts、filtering/sorting、Excel export 和广泛 batch changes。DueDateHQ 应以默认 dashboard triage surface、更强 trust badges、evidence drawer access、dashboard 内 due today/this week/this month urgency、轻量 bulk status/firm-target/export operations，以及 current task view export 覆盖有价值工作流。外部 reminder channels、bulk official due-date edits 和重型 reporting 不进入 Beta。
 
 ## Acceptance Criteria
 

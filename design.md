@@ -9,7 +9,7 @@ DueDateHQ should feel like a precise, calm control surface for tax deadline risk
 Physical scene:
 
 ```txt
-A solo CPA opens DueDateHQ on a 27-inch monitor at 7:40am on Monday during filing season, coffee nearby, with client calls starting in 20 minutes. The room is bright, the task is urgent, and the interface must reduce risk without demanding interpretation.
+A solo CPA opens DueDateHQ on a 27-inch monitor at 7:40am during filing season, coffee nearby, with client calls starting in 20 minutes. The room is bright, the task is urgent, and the interface must reduce risk without demanding interpretation.
 ```
 
 This points to a light-first product interface with restrained color, high information density, and very clear status language.

@@ -22,7 +22,7 @@ DueDateHQ 维护透明税务义务与覆盖库，在 24 小时检测窗口内监
 - 使用 Spec-Driven Development：每个大功能先写 `specs/<feature>.md`。
 - 覆盖两个 P0 用户故事：
   - 从 TaxDome、Drake、Karbon、QuickBooks CSV 导入客户。
-  - 让 CPA 通过清晰的截止日期看板完成 Monday triage。
+  - 让 CPA 通过清晰的截止日期看板完成 dashboard triage。
 - 增加客户和自定义截止日期的手动录入。
 - 增加官方来源监听和税务规则核验队列。
 - 增加功能完成进度页，让产品、工程和评审者看到完成状态。
@@ -95,7 +95,7 @@ Firm target dates 是规划信息，不是 official due dates。
 - `specs/tax-rule-verification.zh.md`
 - `specs/official-source-monitoring.zh.md`
 - `specs/coverage-matrix.zh.md`
-- `specs/monday-triage-dashboard.zh.md`
+- `specs/dashboard.zh.md`
 - `specs/feature-progress-page.zh.md`
 - `specs/gtm.zh.md`
 - `specs/cloudflare-deployment.zh.md`

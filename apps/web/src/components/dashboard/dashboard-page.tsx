@@ -201,7 +201,7 @@ export function DashboardPage() {
             <div className="min-w-0">
               <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
                 <CalendarDays className="size-3.5" />
-                Monday triage
+                Dashboard
               </div>
               <h1 className="mt-1 text-2xl font-semibold leading-tight tracking-normal">
                 Deadline dashboard

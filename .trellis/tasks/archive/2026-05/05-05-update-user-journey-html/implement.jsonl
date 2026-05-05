@@ -3,7 +3,7 @@
 {"file": "docs/product/due-date-hq-product-plan.md", "reason": "Product modules, user stories, monitor workflow, and acceptance criteria"}
 {"file": "docs/technical/due-date-hq-beta-technical-plan.md", "reason": "Technical product model and implementation constraints referenced by the journey"}
 {"file": "specs/csv-imports.md", "reason": "CSV import review, adapter, mapping, duplicate, and relationship confirmation behavior"}
-{"file": "specs/monday-triage-dashboard.md", "reason": "Monday triage dashboard surfaces, filters, statuses, and bulk actions"}
+{"file": "specs/dashboard.md", "reason": "dashboard surfaces, filters, statuses, and bulk actions"}
 {"file": "specs/official-source-monitoring.md", "reason": "Official notice monitoring, proposal diff, CPA approval, and audit behavior"}
 {"file": "specs/coverage-matrix.md", "reason": "Coverage status, coverage gaps, and coverage actions"}
 {"file": "specs/feature-progress-page.md", "reason": "Feature progress groups and status taxonomy"}

@@ -21,7 +21,7 @@ Filled DueDateHQ Trellis project conventions, updated package spec indexes with 
 ### Main Changes
 
 - Rewrote `docs/due-date-hq-user-journey.html` as a standalone Verified Operations Console journey map.
-- Added journey coverage for onboarding, CSV/manual setup, import review, coverage matrix, verified task generation, Monday triage, evidence drawer, official notice proposal review, and feature progress visibility.
+- Added journey coverage for onboarding, CSV/manual setup, import review, coverage matrix, verified task generation, dashboard triage, evidence drawer, official notice proposal review, and feature progress visibility.
 - Archived `.trellis/tasks/05-05-update-user-journey-html` after completion.
 
 ### Git Commits

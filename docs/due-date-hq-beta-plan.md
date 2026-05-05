@@ -21,7 +21,7 @@ Competitor framing: DueDateHQ Beta should reach parity or better with the useful
 - Use Spec-Driven Development: every major feature starts from `specs/<feature>.md`.
 - Cover the two P0 user stories:
   - Import clients from TaxDome, Drake, Karbon, or QuickBooks CSV.
-  - Let a CPA complete Monday triage in minutes from a clear deadline dashboard.
+  - Let a CPA complete dashboard triage in minutes from a clear deadline dashboard.
 - Add manual entry for clients and custom deadlines.
 - Add official source monitoring and a verification queue for tax rule maintenance.
 - Add a feature progress page so product, engineering, and reviewers can see what is complete.
@@ -85,7 +85,7 @@ Extension is a date state derived from date events, not a work-progress status. 
 - `specs/tax-rule-verification.md`
 - `specs/official-source-monitoring.md`
 - `specs/coverage-matrix.md`
-- `specs/monday-triage-dashboard.md`
+- `specs/dashboard.md`
 - `specs/feature-progress-page.md`
 - `specs/gtm.md`
 - `specs/cloudflare-deployment.md`

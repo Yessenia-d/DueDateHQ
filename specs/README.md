@@ -31,7 +31,7 @@ Each spec must include:
 - `tax-rule-verification.md`
 - `official-source-monitoring.md`
 - `coverage-matrix.md`
-- `monday-triage-dashboard.md`
+- `dashboard.md`
 - `feature-progress-page.md`
 - `gtm.md`
 - `cloudflare-deployment.md`
@@ -57,7 +57,7 @@ Feature specs must preserve DueDateHQ's trust model while reaching parity or bet
 - CSV import preview, header handling, field mapping, row review, duplicate handling, CPA-confirmed relationship suggestions, and profile/problem grouped commit summary.
 - Obligation/service setup that can generate tasks while distinguishing known obligations, Verified rules, Needs review, Source changed, Unsupported, and user-provided deadlines.
 - Task generation from Verified rules only for official system deadlines.
-- Monday triage with due today/this week/this month urgency, filters/sorting, task status including `Waiting on client`, firm target dates, date event history, extension status, and evidence/trust badges.
+- Dashboard triage with due today/this week/this month urgency, filters/sorting, task status including `Waiting on client`, firm target dates, date event history, extension status, and evidence/trust badges.
 - Recurrence/upcoming tasks from maintained Verified rules, with no manual rollover for official recurring deadlines.
 - Basic dashboard/task exports for workload sharing and review.
 - Light bulk task status updates, firm target date updates, and current-filter export, but no bulk official due-date edits.

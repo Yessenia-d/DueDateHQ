@@ -10,7 +10,7 @@ Find the first Beta users and validate that DueDateHQ solves a painful workflow 
 2. CPA joins waitlist.
 3. CPA completes onboarding call.
 4. CPA imports redacted CSV or manually enters clients.
-5. CPA completes Monday triage.
+5. CPA completes dashboard triage.
 6. CPA provides feedback and paid intent.
 
 ## Flow Diagram
@@ -22,7 +22,7 @@ flowchart TD
   C --> D[Onboarding call]
   D --> E[Beta account]
   E --> F[Import or manual entry]
-  F --> G[Monday triage]
+  F --> G[dashboard triage]
   G --> H[Feedback]
   H --> I[Paid conversion intent]
 ```

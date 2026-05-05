@@ -9,7 +9,7 @@ DueDateHQ 是面向 solo/independent CPA 的税务截止日期操作系统，服
 - 面向 supported federal/state sources 的透明义务覆盖库。
 - 可追溯的截止日期证据。
 - CSV 和手动客户 onboarding。
-- Monday triage 工作台。
+- dashboard triage 工作台。
 - 官方来源变化的核验工作流。
 
 产品承诺：
@@ -29,7 +29,7 @@ DueDateHQ 不应该只是零散借鉴 File In Time 的几个想法。对于 CPA 
 | CSV import | Delimited-file preview、header handling、drag/drop mapping、commit 前 review、duplicate resolution | 通过 TaxDome、Drake、Karbon、QuickBooks 来源专属 client/profile adapters 做得更好，在字段存在或可高置信推断时自动识别 client name/EIN/state/entity type，提供非阻塞 review suggestions、CPA-confirmed relationship suggestions，并处理 duplicates |
 | Obligation/service setup | Services 定义 work type、frequency、due dates 和 extension dates | 将 services 映射为 tax obligations 和 verified tax rules，同时区分 known、verified、needs-review、unsupported 和 user-provided items |
 | Task generation | 将 services 分配给 clients 来创建 due-date tasks | 只有 Verified rules 生成官方任务；unsupported 或 needs-review obligations 可见，但不能伪装成官方截止日期 |
-| Monday triage | Task view 可以过滤到 this week | 默认提供一等公民的 `逾期`、`本周到期`、`本月预警`、`长期计划` 分区，登录后 30 秒内看到所有本周工作，并以 5 分钟完成分诊为目标 |
+| Dashboard triage | Task view 可以过滤到 this week | 默认提供一等公民的 `逾期`、`本周到期`、`本月预警`、`长期计划` 分区，登录后 30 秒内看到所有本周工作，并以 5 分钟完成分诊为目标 |
 | Filters and sorting | Date、client、type、service、status、key person 和 saved views | 覆盖 horizon、client、jurisdiction/state、form/obligation type、entity type、tax type、task status、verification status 核心过滤；advanced saved views 可以后置 |
 | Task status | Status codes、dates、notes、extension flag | 用 `Not started`、`进行中` (`In progress`)、`Waiting on client`、`已完成` (`Done`) 覆盖简单工作进度状态，并附带从 date events 派生的 `Extended` badge，使延期与工作状态独立 |
 | Extensions and date changes | Service-supported extension dates 和 extension state | 跟踪 current due date、original due date、可选 firm target date，以及 official extensions、official relief/change、user-provided adjustments 和 firm target changes 的 date event history；extension form printing 不进入 Beta；dashboard 只显示 current due date，date history 在 evidence drawer 中 |
@@ -71,11 +71,11 @@ DueDateHQ 必须更好的地方：
 
 - Sarah Mitchell, CPA。
 - 80 个混合个人与小企业客户，多州经营。
-- 申报季每周一早上要花 30-45 分钟确认本周到底要做什么，之后才能开始真正税务工作。
+- 申报季每周开始时要花 30-45 分钟确认本周到底要做什么，之后才能开始真正税务工作。
 
 ## 核心用户故事
 
-### Story 1：Monday Triage
+### Story 1：Dashboard triage
 
 作为一名服务约 80 个混合个人与小企业多州客户的 solo/independent CPA，我希望打开产品 30 秒内看到本周需要行动的所有截止日期，这样我就能安排本周优先级，而不必交叉检查表格、日历和笔记。
 
@@ -290,7 +290,7 @@ P0 monitor scope：
 
 审核员可批准或拒绝候选。批准会发布新的 tax rule version，并恢复 `Verified` 状态。
 
-### Monday Triage Dashboard
+### Dashboard
 
 CPA 的主要工作台。
 
@@ -417,8 +417,8 @@ Beta：
 激活指标：
 
 ```txt
-User imports or manually enters at least 10 clients and completes one Monday triage session.
-用户导入或手动录入至少 10 个客户，并完成一次 Monday triage。
+User imports or manually enters at least 10 clients and completes one dashboard triage session.
+用户导入或手动录入至少 10 个客户，并完成一次 dashboard triage。
 ```
 
 ## 产品风险

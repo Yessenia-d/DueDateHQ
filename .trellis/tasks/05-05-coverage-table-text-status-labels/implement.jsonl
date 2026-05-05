@@ -1,0 +1,4 @@
+{"file": "DESIGN.md", "reason": "Frontend UI changes must follow the DueDateHQ design system, especially table density and text-first status badge guidance."}
+{"file": ".trellis/spec/web/frontend/index.md", "reason": "Coverage page lives in the web frontend package."}
+{"file": ".trellis/spec/ui/frontend/index.md", "reason": "Status badge and shared UI primitives may be affected."}
+{"file": ".trellis/spec/guides/index.md", "reason": "Shared thinking guides for scoped frontend changes and reuse checks."}

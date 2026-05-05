@@ -35,7 +35,7 @@ Create durable repo documents for:
 - `specs/tax-rule-verification.md`
 - `specs/official-source-monitoring.md`
 - `specs/coverage-matrix.md`
-- `specs/monday-triage-dashboard.md`
+- `specs/dashboard.md`
 - `specs/feature-progress-page.md`
 - `specs/gtm.md`
 - `specs/cloudflare-deployment.md`
@@ -134,6 +134,6 @@ Planning docs and specs must also reflect these Beta decisions:
 - Each spec includes goal, user flow, Mermaid flow diagram, pages/API, data model, acceptance criteria, and out-of-scope.
 - Verification status rules include `Verified`, `Needs review`, `Source changed`, `Unsupported`, and user-provided manual deadlines.
 - Official source monitoring design includes 24h detection, change candidates, verification queue, and manual approval before publishing verified rules.
-- Product and feature specs reflect the File In Time competitor research where relevant, especially CSV import review, Monday triage, task filters, exports, and beta exclusions.
+- Product and feature specs reflect the File In Time competitor research where relevant, especially CSV import review, dashboard triage, task filters, exports, and beta exclusions.
 - Product and feature specs explicitly show how DueDateHQ reaches parity or better for each core File In Time workflow area: client setup, import, obligation/service setup, task generation, triage, filtering, status/extension handling, recurrence/upcoming tasks, exports, reminders/urgency, and admin/settings boundaries.
 - Product, technical, and feature specs reflect the current conversation decisions on mixed-client Beta ICP, transparent supported coverage, filing/tax profiles, confirmed notice impacts, in-app-only Beta notifications, firm target dates, date event history, and light bulk operations.

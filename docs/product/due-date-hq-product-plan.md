@@ -9,7 +9,7 @@ It replaces scattered spreadsheets, calendars, manual state website checks, and 
 - A transparent obligation coverage library for supported federal and state sources.
 - Traceable deadline evidence.
 - CSV and manual client onboarding.
-- A Monday triage dashboard.
+- A dashboard.
 - A verification workflow for official source changes.
 
 Product promise:
@@ -28,7 +28,7 @@ DueDateHQ should not merely borrow isolated ideas from File In Time. For core CP
 | CSV import | Delimited-file preview, header handling, drag/drop mapping, review before commit, duplicate resolution | Better with source-specific client/profile adapters for TaxDome, Drake, Karbon, and QuickBooks, automatic recognition for client name/EIN/state/entity type when present or confidently inferred, non-blocking review suggestions, CPA-confirmed relationship suggestions, and duplicate handling |
 | Obligation/service setup | Services define work type, frequency, due dates, and extension dates | Map services to tax obligations and verified tax rules while separating known, verified, needs-review, unsupported, and user-provided items |
 | Task generation | Assign services to clients to create due-date tasks | Generate official tasks only from Verified rules; show unsupported or needs-review obligations without pretending they are official deadlines |
-| Monday triage | Task view can be filtered to this week | Better with first-class `Overdue`, `Due this week`, `This month`, and `Long range` sections by default, all this-week work visible within 30 seconds after login, and a 5-minute triage target |
+| Dashboard triage | Task view can be filtered to this week | Better with first-class `Overdue`, `Due this week`, `This month`, and `Long range` sections by default, all this-week work visible within 30 seconds after login, and a 5-minute triage target |
 | Filters and sorting | Date, client, type, service, status, key person, and saved views | Match core filters by horizon, client, jurisdiction/state, form/obligation type, entity type, tax type, task status, and verification status; advanced saved views can wait |
 | Task status | Status codes, dates, notes, extension flag | Match simple work-progress status with `Not started`, `In progress`, `Waiting on client`, and `Done`, plus an `Extended` badge derived from date events so extension and work status are independent |
 | Extensions and date changes | Service-supported extension dates and extension state | Track current due date, original due date, optional firm target date, and date event history for official extensions, official relief/change, user-provided adjustments, and firm target changes; dashboard shows only the current due date with date history in the evidence drawer; keep extension form printing out |
@@ -70,11 +70,11 @@ Primary persona:
 
 - Sarah Mitchell, CPA.
 - 80 mixed individual and small-business clients, multi-state.
-- Every Monday during filing season, she spends 30-45 minutes figuring out what must be done this week before actual tax work starts.
+- At the start of each filing-season week, she spends 30-45 minutes figuring out what must be done this week before actual tax work starts.
 
 ## Core User Stories
 
-### Story 1: Monday Triage
+### Story 1: Dashboard triage
 
 As a solo or independent CPA serving about 80 mixed individual and small-business clients across multiple states, I want to see all deadlines requiring action this week within 30 seconds of opening the product so that I can prioritize the week without cross-checking spreadsheets, calendars, and notes.
 
@@ -286,7 +286,7 @@ Queues:
 
 Reviewers can approve or reject candidates. Approval publishes a new tax rule version and restores `Verified` status.
 
-### Monday Triage Dashboard
+### Dashboard
 
 The main working surface for CPAs.
 
@@ -413,7 +413,7 @@ First milestone:
 Activation metric:
 
 ```txt
-User imports or manually enters at least 10 clients and completes one Monday triage session.
+User imports or manually enters at least 10 clients and completes one dashboard triage session.
 ```
 
 ## Product Risks

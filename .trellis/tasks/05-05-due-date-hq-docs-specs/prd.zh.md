@@ -35,7 +35,7 @@
 - `specs/tax-rule-verification.md` / `specs/tax-rule-verification.zh.md`
 - `specs/official-source-monitoring.md` / `specs/official-source-monitoring.zh.md`
 - `specs/coverage-matrix.md` / `specs/coverage-matrix.zh.md`
-- `specs/monday-triage-dashboard.md` / `specs/monday-triage-dashboard.zh.md`
+- `specs/dashboard.md` / `specs/dashboard.zh.md`
 - `specs/feature-progress-page.md` / `specs/feature-progress-page.zh.md`
 - `specs/gtm.md` / `specs/gtm.zh.md`
 - `specs/cloudflare-deployment.md` / `specs/cloudflare-deployment.zh.md`
@@ -136,6 +136,6 @@ DueDateHQ 必须在这些方面强于 File In Time：
 - 核验状态规则包含 `Verified`、`Needs review`、`Source changed`、`Unsupported` 和用户手动截止日期。
 - 官方来源监听设计包含 24h 检测、变更候选、核验队列，以及发布 verified rules 前必须人工批准。
 - 所有新增/更新的英文 Markdown 文档都有对应中文版本。
-- 产品方案和 feature specs 要在相关位置吸收 File In Time 竞品调研结论，尤其是 CSV 导入 review、Monday triage、任务过滤、导出能力和 Beta 不做范围。
+- 产品方案和 feature specs 要在相关位置吸收 File In Time 竞品调研结论，尤其是 CSV 导入 review、dashboard triage、任务过滤、导出能力和 Beta 不做范围。
 - 产品方案和 feature specs 要明确说明 DueDateHQ 如何在每个 File In Time 核心流程上做到 parity 或更好：client setup、import、obligation/service setup、task generation、triage、filtering、status/extension handling、recurrence/upcoming tasks、exports、reminders/urgency，以及 admin/settings boundaries。
 - 产品、技术和 feature specs 要体现当前对话决策：混合客户 Beta ICP、透明 supported coverage、filing/tax profiles、notice impacts 必须确认、Beta 仅产品内通知、firm target dates、date event history 和轻量 bulk operations。

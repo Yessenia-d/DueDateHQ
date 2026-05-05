@@ -20,7 +20,7 @@ Know what is due, why it is due, and whether the source is verified.
 
 Primary users are solo or independent CPAs serving roughly 30 to 100 clients across multiple states. Their client book can include individual 1040 clients, households, LLCs, S corps, partnerships, C corps, and other small-business filing profiles.
 
-They use the product under time pressure during filing season. A typical Monday session is about quickly answering:
+They use the product under time pressure during filing season. A typical filing-season morning session is about quickly answering:
 
 - What needs action this week?
 - Which deadlines are official and verified?
@@ -134,7 +134,7 @@ De-prioritize:
 - Login and registration.
 - CSV import preview/review.
 - Client relationship and filing profile setup.
-- Monday triage dashboard.
+- Dashboard.
 - Evidence drawer.
 - Coverage matrix.
 - Official notice inbox and notice detail.

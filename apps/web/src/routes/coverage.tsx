@@ -67,6 +67,14 @@ const statusToBadge: Record<VerificationStatusKey, Parameters<typeof StatusBadge
   no_rule: "no_rule",
 };
 
+const statusLabels: Record<VerificationStatusKey, string> = {
+  verified: "Verified",
+  needs_review: "Needs review",
+  source_changed: "Source changed",
+  unsupported: "Unsupported",
+  no_rule: "Coverage gap",
+};
+
 function getStatusKey(status: string | null): VerificationStatusKey {
   if (status === "verified") return "verified";
   if (status === "needs_review") return "needs_review";
@@ -297,7 +305,15 @@ function CoverageComponent() {
               </div>
 
               <div className="rounded-xl border border-border">
-                <Table className="min-w-[800px]">
+                <Table className="min-w-[960px] table-fixed">
+                  <colgroup>
+                    <col className="w-[36%]" />
+                    <col className="w-[13%]" />
+                    <col className="w-[15%]" />
+                    <col className="w-[14%]" />
+                    <col className="w-[10%]" />
+                    <col className="w-[12%]" />
+                  </colgroup>
                   <TableHeader>
                     <TableRow className="bg-muted/40">
                       <TableHead className="text-[11px] font-semibold uppercase text-muted-foreground">Obligation</TableHead>
@@ -313,10 +329,12 @@ function CoverageComponent() {
                       const sk = getStatusKey(obl.verificationStatus);
                       return (
                         <TableRow key={obl.obligationId} className="align-top">
-                          <TableCell>
-                            <div className="font-medium">{obl.obligationName}</div>
+                          <TableCell className="min-w-0 whitespace-normal">
+                            <div className="max-w-full break-words font-medium leading-5 [overflow-wrap:anywhere]">
+                              {obl.obligationName}
+                            </div>
                             {obl.ruleSummary && (
-                              <div className="mt-1 max-w-lg text-xs leading-5 text-muted-foreground">
+                              <div className="mt-1 max-w-full break-words text-xs leading-5 text-muted-foreground [overflow-wrap:anywhere]">
                                 {obl.ruleSummary}
                               </div>
                             )}
@@ -455,7 +473,8 @@ function VerificationBadge({ statusKey }: { statusKey: VerificationStatusKey }) 
 
   return (
     <StatusBadge status={statusToBadge[statusKey]}>
-      <Icon className="size-3" />
+      <Icon className="size-3 shrink-0" aria-hidden="true" />
+      {statusLabels[statusKey]}
     </StatusBadge>
   );
 }

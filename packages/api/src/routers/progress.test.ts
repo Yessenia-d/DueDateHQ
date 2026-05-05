@@ -16,7 +16,7 @@ const requiredFeatureNames = [
   "Official source monitoring",
   "Notice proposal review and audit workflow",
   "Coverage matrix",
-  "Monday triage dashboard",
+  "Dashboard",
   "Cloudflare beta deployment",
   "GTM readiness",
   "Docs and specs",

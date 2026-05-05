@@ -13,7 +13,7 @@ DueDateHQ uses the existing Better-T-Stack structure:
 
 The technical goal is to implement a real Beta product while preserving a strict distinction between verified official rules, user-provided deadlines, and unverified obligations.
 
-Technical parity target: implement the useful File In Time workflow baseline as a cloud product, not as a desktop clone. The system should support client setup, source-specific CSV import preview/mapping/review/duplicate handling, obligation-driven task generation, Monday triage, filters/sorting, task status, extension/date-change handling, verified recurrence/upcoming tasks, dashboard/task exports, in-product urgency surfaces, and light bulk operations. It should deliberately omit local database administration, backup/restore UI, Crystal Reports-style reporting, mail merge/labels, extension form printing, arbitrary field renaming, network-user maintenance, detailed rights matrices, client portal, document upload/checklist automation, e-signature, direct end-client notifications, and external email/SMS/Slack/calendar push unless later prioritized.
+Technical parity target: implement the useful File In Time workflow baseline as a cloud product, not as a desktop clone. The system should support client setup, source-specific CSV import preview/mapping/review/duplicate handling, obligation-driven task generation, dashboard triage, filters/sorting, task status, extension/date-change handling, verified recurrence/upcoming tasks, dashboard/task exports, in-product urgency surfaces, and light bulk operations. It should deliberately omit local database administration, backup/restore UI, Crystal Reports-style reporting, mail merge/labels, extension form printing, arbitrary field renaming, network-user maintenance, detailed rights matrices, client portal, document upload/checklist automation, e-signature, direct end-client notifications, and external email/SMS/Slack/calendar push unless later prioritized.
 
 ## System Boundaries
 
@@ -28,7 +28,7 @@ In scope:
 - Official notice monitoring and affected-profile proposal review.
 - Verification queue.
 - Coverage matrix.
-- Monday triage dashboard.
+- Dashboard.
 - Feature progress page.
 - Dashboard/task export for operational review.
 - Light bulk task status updates and firm target date updates.
@@ -573,7 +573,7 @@ P0 official source allowlist and scope:
 
 `/`
 
-- Monday triage dashboard with default horizon groups, urgency sections, deterministic smart priority sorting, fast filters/sorting, task status updates including `waiting_on_client`, firm target date controls, extension visibility, evidence access, light bulk operations, and export.
+- Dashboard with default horizon groups, urgency sections, deterministic smart priority sorting, fast filters/sorting, task status updates including `waiting_on_client`, firm target date controls, extension visibility, evidence access, light bulk operations, and export.
 
 `/coverage`
 

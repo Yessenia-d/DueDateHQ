@@ -49,7 +49,7 @@ function makeRow(overrides: Partial<DashboardTaskRow>): DashboardTaskRow {
   };
 }
 
-test("dashboard groups rows into Monday triage horizons", () => {
+test("dashboard groups rows into dashboard horizons", () => {
   const rows = [
     makeRow({ id: "overdue", horizon: "overdue", urgency: "overdue", daysRemaining: -2 }),
     makeRow({ id: "week", horizon: "due_this_week", urgency: "due_today", daysRemaining: 0 }),

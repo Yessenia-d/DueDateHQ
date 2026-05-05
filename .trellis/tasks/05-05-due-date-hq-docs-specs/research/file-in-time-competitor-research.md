@@ -87,7 +87,7 @@ The product is operationally mature for a legacy desktop workflow: configurable 
 | Bulk task creation | Assign one service to many clients or many services to one client | Multiple Assignment and client/service groups | CSV import can generate tasks in bulk; manual bulk assignment can wait | Later |
 | Year's worth generation | Non-annual services can create a year's worth of tasks | Quarterly and weekly examples | For verified recurring obligations, generate a visible horizon; avoid overwhelming beta users with long task floods | Adapt |
 | Configurable task grid | Custom columns, widths, frozen columns, renamed fields, saved task views | Task View Setup controls fields and saved views | Borrow saved/filterable views; avoid full custom field/column rename complexity in beta | Adapt |
-| Saved views | Save filters and selected columns; use last saved view on startup | Saved task view persists criteria and columns | DueDateHQ can default to Monday triage; saved views are useful later | Later |
+| Saved views | Save filters and selected columns; use last saved view on startup | Saved task view persists criteria and columns | DueDateHQ can default to dashboard triage; saved views are useful later | Later |
 | Filters and sorting | Date range, client, client type, year-end, group, status, key person, sort hierarchy | Task Selection Filter and Sort fields | Adopt fast filters by client, state, entity, tax type, status, verification status, and due horizon | Adopt |
 | Weekly triage | Display tasks due this week via date range filter | Practical workflow section shows Due Date + This Week | DueDateHQ should make this first-class instead of requiring manual filter setup | Adopt |
 | Calendar view | Monthly calendar shows counts per day and drills into task view | Calendar button and day counts | Useful, but current DueDateHQ beta can focus on triage list and evidence drawer | Later |
@@ -146,14 +146,14 @@ The product is operationally mature for a legacy desktop workflow: configurable 
 ### Related Specs
 
 - `.trellis/tasks/05-05-due-date-hq-docs-specs/prd.md`: documentation-only task and beta wording constraints.
-- `docs/product/due-date-hq-product-plan.md`: product positioning, Monday triage, CSV/manual onboarding, obligation library, verification status system, evidence drawer, coverage matrix, source monitoring.
+- `docs/product/due-date-hq-product-plan.md`: product positioning, dashboard triage, CSV/manual onboarding, obligation library, verification status system, evidence drawer, coverage matrix, source monitoring.
 - `docs/technical/due-date-hq-beta-technical-plan.md`: data model, API surface, frontend pages, source monitoring architecture, implementation guardrails.
 - `specs/csv-imports.md`: CSV source adapters, mapping preview, row review, commit summary.
 - `specs/manual-client-and-deadline-entry.md`: manual clients and user-provided deadlines.
 - `specs/tax-obligation-library.md`: known obligations vs verified schedulable rules.
 - `specs/tax-rule-verification.md`: verified/needs-review/source-changed/unsupported trust model.
 - `specs/official-source-monitoring.md`: 24h source change detection and human approval.
-- `specs/monday-triage-dashboard.md`: triage dashboard task grouping, evidence drawer, filtering, statuses.
+- `specs/dashboard.md`: triage dashboard task grouping, evidence drawer, filtering, statuses.
 
 ## Caveats / Not Found
 

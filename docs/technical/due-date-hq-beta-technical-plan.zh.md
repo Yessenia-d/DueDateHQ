@@ -13,7 +13,7 @@ DueDateHQ 使用当前 Better-T-Stack 结构：
 
 技术目标是实现真实 Beta 产品，同时严格区分已核验官方规则、用户手动录入截止日期和未核验义务。
 
-技术 parity 目标：把 File In Time 有价值的工作流 baseline 实现为云端产品，而不是桌面软件复刻。系统应支持 client setup、source-specific CSV import preview/mapping/review/duplicate handling、obligation-driven task generation、Monday triage、filters/sorting、task status、extension/date-change handling、verified recurrence/upcoming tasks、dashboard/task exports、产品内 urgency surfaces 和轻量 bulk operations。除非后续明确优先，否则应主动排除 local database administration、backup/restore UI、Crystal Reports-style reporting、mail merge/labels、extension form printing、arbitrary field renaming、network-user maintenance、detailed rights matrices、client portal、document upload/checklist automation、e-signature、direct end-client notifications 和外部 email/SMS/Slack/calendar push。
+技术 parity 目标：把 File In Time 有价值的工作流 baseline 实现为云端产品，而不是桌面软件复刻。系统应支持 client setup、source-specific CSV import preview/mapping/review/duplicate handling、obligation-driven task generation、dashboard triage、filters/sorting、task status、extension/date-change handling、verified recurrence/upcoming tasks、dashboard/task exports、产品内 urgency surfaces 和轻量 bulk operations。除非后续明确优先，否则应主动排除 local database administration、backup/restore UI、Crystal Reports-style reporting、mail merge/labels、extension form printing、arbitrary field renaming、network-user maintenance、detailed rights matrices、client portal、document upload/checklist automation、e-signature、direct end-client notifications 和外部 email/SMS/Slack/calendar push。
 
 ## 系统边界
 
@@ -28,7 +28,7 @@ DueDateHQ 使用当前 Better-T-Stack 结构：
 - Official notice monitoring 和 affected-profile proposal review。
 - 核验队列。
 - 覆盖矩阵。
-- Monday triage dashboard。
+- Dashboard。
 - 功能进度页。
 - 用于运营复核的 dashboard/task export。
 - 轻量 bulk task status updates 和 firm target date updates。
@@ -577,7 +577,7 @@ P0 官方来源 allowlist 和范围：
 
 `/`
 
-- Monday triage dashboard，包含默认时间分组、urgency sections、确定性 smart priority sorting、fast filters/sorting、包含 `waiting_on_client` 的 task status updates、firm target date controls、extension visibility、evidence access、轻量 bulk operations 和 export。
+- Dashboard，包含默认时间分组、urgency sections、确定性 smart priority sorting、fast filters/sorting、包含 `waiting_on_client` 的 task status updates、firm target date controls、extension visibility、evidence access、轻量 bulk operations 和 export。
 
 `/coverage`
 

@@ -221,7 +221,7 @@ async function updateFirmTargetDate({
     createdBy: session.user.id,
     auditLogId,
     createdAt: now,
-    notes: "Firm target date updated from the Monday triage dashboard.",
+    notes: "Firm target date updated from the dashboard.",
   });
 
   return updated;

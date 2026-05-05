@@ -13,7 +13,7 @@ Implement CPA-facing in-app notice alerts and affected-item review so CPAs can a
 - `05-05-core-deadline-domain-schema`
 - `05-05-tax-obligation-coverage-matrix`
 - `05-05-official-notice-monitor-agent`
-- `05-05-monday-triage-dashboard` for shared task/evidence UI patterns
+- `05-05-dashboard` for shared task/evidence UI patterns
 
 ## Owned Files
 

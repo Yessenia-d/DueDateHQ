@@ -1,7 +1,7 @@
 {"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python3 .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
 {"file": "specs/README.md", "reason": "Global DueDateHQ SDD invariants and Beta boundaries"}
 {"file": "specs/official-source-monitoring.md", "reason": "Notice proposal and CPA confirmation contract"}
-{"file": "specs/monday-triage-dashboard.md", "reason": "In-app alert/dashboard integration"}
+{"file": "specs/dashboard.md", "reason": "In-app alert/dashboard integration"}
 {"file": "specs/tax-rule-verification.md", "reason": "Evidence and source-changed semantics"}
 {"file": ".trellis/spec/api/backend/index.md", "reason": "Notice API backend guidelines"}
 {"file": ".trellis/spec/web/frontend/index.md", "reason": "Notice UI guidelines"}

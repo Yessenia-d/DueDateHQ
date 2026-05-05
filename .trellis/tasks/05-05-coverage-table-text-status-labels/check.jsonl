@@ -1,0 +1,4 @@
+{"file": "DESIGN.md", "reason": "Verify table and status badge design compliance."}
+{"file": ".trellis/spec/web/frontend/index.md", "reason": "Verify web frontend package conventions."}
+{"file": ".trellis/spec/ui/frontend/index.md", "reason": "Verify shared UI/status badge conventions."}
+{"file": ".trellis/spec/guides/index.md", "reason": "Verify scoped implementation and reuse decisions."}

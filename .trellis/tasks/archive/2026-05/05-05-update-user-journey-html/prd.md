@@ -28,7 +28,7 @@ DueDateHQ product design and planning documents.
 
 - [x] The HTML reflects the latest product/design docs.
 - [x] The journey includes onboarding, CSV/manual setup, rule trust/coverage,
-      Monday triage, notice proposal review, and feature progress visibility.
+      dashboard triage, notice proposal review, and feature progress visibility.
 - [x] The document can be opened as standalone HTML.
 - [x] `pnpm check-types` passes.
 

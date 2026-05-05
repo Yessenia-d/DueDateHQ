@@ -34,7 +34,7 @@ Recommended execution order:
 4. `05-05-tax-obligation-coverage-matrix`
 5. `05-05-manual-client-profile-deadline-entry`
 6. `05-05-csv-import-profile-review`
-7. `05-05-monday-triage-dashboard`
+7. `05-05-dashboard`
 8. `05-05-official-notice-monitor-agent`
 9. `05-05-notice-proposal-review-audit`
 10. `05-05-feature-progress-page`
@@ -44,7 +44,7 @@ Parallelization guidance:
 
 - `align-domain-glossary`, `auth-firm-workspace`, and `core-deadline-domain-schema` are the foundation path.
 - After the core schema is stable, `tax-obligation-coverage-matrix`, `manual-client-profile-deadline-entry`, and `csv-import-profile-review` can proceed in parallel if write scopes remain disjoint.
-- `monday-triage-dashboard` can start after core task/query contracts are stable.
+- `dashboard` can start after core task/query contracts are stable.
 - `official-notice-monitor-agent` can start after tax rule/source contracts are stable; it must not mutate workspace data.
 - `notice-proposal-review-audit` starts after monitor proposals and dashboard/evidence UI contracts exist.
 - `feature-progress-page` is mostly independent.

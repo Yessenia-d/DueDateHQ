@@ -58,7 +58,7 @@ Initial categories:
 - Tax rule verification.
 - Official source monitoring.
 - Coverage matrix.
-- Monday triage dashboard.
+- Dashboard.
 - Cloudflare deployment.
 - GTM.
 - Docs/specs.

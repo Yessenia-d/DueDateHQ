@@ -1,4 +1,4 @@
-# Monday Triage Dashboard
+# Dashboard
 
 ## Goal
 
@@ -133,7 +133,7 @@ Product-specific export profiles are out of scope unless a target product has a 
 
 ## Competitor Parity Notes
 
-File In Time supports weekly task views, status updates, extension flags, startup reminders, calendar counts, filtering/sorting, Excel export, and broad batch changes. DueDateHQ should match the useful workflow with a default Monday triage surface, richer trust badges, evidence drawer access, in-dashboard urgency for due today/this week/this month, light bulk status/firm-target/export operations, and export of the current task view. External reminder channels, bulk official due-date edits, and heavy reporting stay out of Beta.
+File In Time supports weekly task views, status updates, extension flags, startup reminders, calendar counts, filtering/sorting, Excel export, and broad batch changes. DueDateHQ should match the useful workflow with a default dashboard triage surface, richer trust badges, evidence drawer access, in-dashboard urgency for due today/this week/this month, light bulk status/firm-target/export operations, and export of the current task view. External reminder channels, bulk official due-date edits, and heavy reporting stay out of Beta.
 
 ## Acceptance Criteria
 

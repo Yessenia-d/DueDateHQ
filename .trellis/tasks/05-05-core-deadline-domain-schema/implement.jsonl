@@ -2,6 +2,6 @@
 {"file": "specs/README.md", "reason": "Global DueDateHQ SDD invariants and Beta boundaries"}
 {"file": "docs/technical/due-date-hq-beta-technical-plan.md", "reason": "Canonical data model for core deadline domain"}
 {"file": "specs/manual-client-and-deadline-entry.md", "reason": "Manual-entry schema consumers"}
-{"file": "specs/monday-triage-dashboard.md", "reason": "Dashboard task/date-event consumers"}
+{"file": "specs/dashboard.md", "reason": "Dashboard task/date-event consumers"}
 {"file": "specs/tax-rule-verification.md", "reason": "Verification/date-event evidence contract"}
 {"file": ".trellis/spec/db/backend/index.md", "reason": "Database schema guidelines"}

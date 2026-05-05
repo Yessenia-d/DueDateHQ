@@ -1,4 +1,4 @@
-# Implement Monday Triage Dashboard
+# Implement Dashboard
 
 ## Type
 

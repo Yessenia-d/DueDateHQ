@@ -10,7 +10,7 @@
 2. CPA 加入 waitlist。
 3. CPA 完成 onboarding call。
 4. CPA 导入去敏 CSV 或手动录入客户。
-5. CPA 完成 Monday triage。
+5. CPA 完成 dashboard triage。
 6. CPA 提供反馈和付费意向。
 
 ## Flow Diagram
@@ -22,7 +22,7 @@ flowchart TD
   C --> D[Onboarding call]
   D --> E[Beta account]
   E --> F[Import or manual entry]
-  F --> G[Monday triage]
+  F --> G[dashboard triage]
   G --> H[Feedback]
   H --> I[Paid conversion intent]
 ```

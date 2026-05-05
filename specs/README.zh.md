@@ -33,7 +33,7 @@
 - `tax-rule-verification.zh.md`
 - `official-source-monitoring.zh.md`
 - `coverage-matrix.zh.md`
-- `monday-triage-dashboard.zh.md`
+- `dashboard.zh.md`
 - `feature-progress-page.zh.md`
 - `gtm.zh.md`
 - `cloudflare-deployment.zh.md`
@@ -64,7 +64,7 @@ Feature specs 必须保留 DueDateHQ 的信任模型，同时在 File In Time �
 - CSV import：包含 preview、header handling、field mapping、row review、duplicate handling、CPA-confirmed relationship suggestions 和按 profile/problem 分组的 commit summary。
 - Obligation/service setup：可以生成任务，同时区分 known obligations、Verified rules、Needs review、Source changed、Unsupported 和 user-provided deadlines。
 - Task generation：只有 Verified rules 可以生成 official system deadlines。
-- Monday triage：包含 due today/this week/this month urgency、filters/sorting、包含 `Waiting on client` 的 task status、firm target dates、date event history、extension status 和 evidence/trust badges。
+- Dashboard triage：包含 due today/this week/this month urgency、filters/sorting、包含 `Waiting on client` 的 task status、firm target dates、date event history、extension status 和 evidence/trust badges。
 - Recurrence/upcoming tasks：来自维护过的 Verified rules，official recurring deadlines 不需要 manual rollover。
 - 基础 dashboard/task exports，用于 workload sharing 和 review。
 - 轻量 bulk task status updates、firm target date updates 和 current-filter export，但不支持 bulk official due-date edits。

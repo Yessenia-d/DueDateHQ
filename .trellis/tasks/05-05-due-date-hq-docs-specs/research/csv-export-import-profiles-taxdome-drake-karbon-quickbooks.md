@@ -10,7 +10,7 @@
 
 - `.trellis/tasks/05-05-due-date-hq-docs-specs/prd.md` - active task PRD says DueDateHQ must support TaxDome, Drake, Karbon, and QuickBooks exported CSVs for client import, with key mapping for client name, EIN, state, and entity type.
 - `specs/csv-imports.md` - source-specific import adapters are already scoped for TaxDome, Drake, Karbon, and QuickBooks.
-- `specs/monday-triage-dashboard.md` - dashboard/task export is scoped for operational workload review.
+- `specs/dashboard.md` - dashboard/task export is scoped for operational workload review.
 - `docs/technical/due-date-hq-beta-technical-plan.md` - technical plan defines CSV import adapters, dashboard/task exports, and the canonical client/profile/task data model.
 - `apps/**` and `packages/**` - no CSV import/export implementation found yet for `imports.preview`, `dashboard.export`, TaxDome, Drake, Karbon, or QuickBooks.
 
@@ -19,7 +19,7 @@
 - DueDateHQ import is currently defined as source-specific CSV parsing, not generic blind upload: `specs/csv-imports.md:5`, `specs/csv-imports.md:27`, `specs/csv-imports.md:64`.
 - Canonical import shape requires at least client/profile fields useful for tax scheduling: client name, EIN, SSN last four, entity type, states, county, fiscal year type, source system, and source row id: `specs/csv-imports.md:97`.
 - Adapter acceptance criteria explicitly call for TaxDome, Drake, Karbon, and QuickBooks client/customer source profiles in `specs/csv-imports.md`.
-- Dashboard/task exports are an operational review feature, not a promised third-party task-import integration: `specs/monday-triage-dashboard.md:17`, `specs/monday-triage-dashboard.md:50`, `specs/monday-triage-dashboard.md:123`.
+- Dashboard/task exports are an operational review feature, not a promised third-party task-import integration: `specs/dashboard.md:17`, `specs/dashboard.md:50`, `specs/dashboard.md:123`.
 - The technical model separates `Client relationship -> Filing/Tax profile -> Deadline task`, which should drive all CSV transformations: `docs/technical/due-date-hq-beta-technical-plan.md:67`.
 - Import batches already model `sourceSystem` as `taxdome | drake | karbon | quickbooks`: `docs/technical/due-date-hq-beta-technical-plan.md:106`.
 - Planned API `imports.preview` parses the four products with source-specific adapters and recognizes client name, EIN, state, and entity type where possible: `docs/technical/due-date-hq-beta-technical-plan.md:321`.
@@ -273,7 +273,7 @@ For DueDateHQ task/current-view CSV exports:
 ### Related Specs
 
 - `specs/csv-imports.md`
-- `specs/monday-triage-dashboard.md`
+- `specs/dashboard.md`
 - `specs/manual-client-and-deadline-entry.md`
 - `specs/tax-rule-verification.md`
 - `docs/technical/due-date-hq-beta-technical-plan.md`

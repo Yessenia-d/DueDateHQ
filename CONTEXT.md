@@ -131,7 +131,7 @@ The product surface that shows why an official deadline exists, including source
 
 A product surface showing obligation and rule coverage across jurisdictions, agencies, tax categories, entity types, verification statuses, monitor status, and coverage gaps. It must make supported coverage explicit without promising complete verified 50-state coverage.
 
-### Monday Triage Dashboard
+### Dashboard
 
 The default working surface for CPAs. It prioritizes `Overdue`, `Due this week`, `This month`, and `Long range` deadline sections, with filters by client, state, entity type, tax type, task status, and verification status.
 

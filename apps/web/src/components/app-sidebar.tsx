@@ -10,7 +10,7 @@ interface AppSidebarProps {
 }
 
 const workspaceLinks = [
-  { to: "/", label: "Monday triage", icon: CalendarDays },
+  { to: "/", label: "Dashboard", icon: CalendarDays },
   { to: "/coverage", label: "Coverage", icon: Shield },
   { to: "/clients/new", label: "Clients", icon: Users },
 ] as const;
