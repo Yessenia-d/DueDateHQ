@@ -660,7 +660,7 @@
         font-size: 13px;
       }
 
-      .proposal-row span {
+      .proposal-row > div span {
         color: var(--ink-muted);
         font-size: 12px;
       }
@@ -1215,5 +1215,293 @@
         </section>
       </main>
     </div>
+
+    <div class="toast" id="toast" aria-hidden="true"></div>
+
+    <script>
+      (() => {
+        const pageTitle = document.getElementById("page-title");
+        const pageContext = document.getElementById("page-context");
+        const statusMessage = document.getElementById("status-message");
+        const toast = document.getElementById("toast");
+        const navItems = Array.from(document.querySelectorAll("[data-nav]"));
+        const focusablePanels = Array.from(document.querySelectorAll(".panel[tabindex='-1']"));
+        const proposalRows = Array.from(document.querySelectorAll("[data-proposal-row]"));
+        const proposalStatusBadge = document.getElementById("proposal-status-badge");
+        const selectionNote = document.getElementById("selection-note");
+        const auditEventList = document.getElementById("audit-event-list");
+        const sourceCheckButton = document.getElementById("source-check-button");
+        const evidenceStatusBadge = document.getElementById("evidence-status-badge");
+        const lastCheckedLine = document.getElementById("last-checked-line");
+        const importStatusBadge = document.getElementById("import-status-badge");
+        const importReadyLine = document.getElementById("import-ready-line");
+        const importReviewLine = document.getElementById("import-review-line");
+        const coverageStatusBadge = document.getElementById("coverage-status-badge");
+        const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+        const contexts = {
+          triage: {
+            title: "Monday triage",
+            context: "Sarah Mitchell CPA, 80 mixed individual and business clients",
+            target: "triage-panel",
+            status: "Monday triage focused. This-week work is sorted by target date and trust risk."
+          },
+          imports: {
+            title: "Imports",
+            context: "TaxDome preview with non-blocking profile review",
+            target: "import-panel",
+            status: "Import status focused. TaxDome adapter preview is ready for CPA review."
+          },
+          coverage: {
+            title: "Coverage",
+            context: "Verified, source-changed, unsupported, and gap states stay visible",
+            target: "coverage-panel",
+            status: "Coverage queue focused. Gaps remain visible without implying official support."
+          },
+          notices: {
+            title: "Official notices",
+            context: "CPA confirmation required before workspace data changes",
+            target: "notice-proposal-panel",
+            status: "Notice proposals focused. Review the before/after diff before applying changes."
+          },
+          profileReview: {
+            title: "Needs profile review",
+            context: "Import issues grouped by filing profile, not generated task count",
+            target: "import-panel",
+            status: "Profile review queue focused. Uncertain imported fields are ready for review."
+          },
+          coverageGaps: {
+            title: "Coverage gaps",
+            context: "Request verification, add user-provided deadlines, or dismiss for now",
+            target: "coverage-panel",
+            status: "Coverage gaps focused. User-provided deadlines remain marked as not verified."
+          }
+        };
+
+        let toastTimer;
+
+        function setStatus(message) {
+          statusMessage.textContent = message;
+          toast.textContent = message;
+          toast.classList.add("is-visible");
+          window.clearTimeout(toastTimer);
+          toastTimer = window.setTimeout(() => {
+            toast.classList.remove("is-visible");
+          }, 2600);
+        }
+
+        function focusPanel(targetId) {
+          const panel = document.getElementById(targetId);
+          if (!panel) return;
+
+          focusablePanels.forEach((item) => item.classList.remove("is-focused"));
+          panel.classList.add("is-focused");
+          panel.scrollIntoView({
+            behavior: prefersReducedMotion ? "auto" : "smooth",
+            block: "start"
+          });
+          window.setTimeout(
+            () => panel.focus({ preventScroll: true }),
+            prefersReducedMotion ? 0 : 220
+          );
+        }
+
+        function setActiveNav(navKey) {
+          navItems.forEach((item) => {
+            if (item.dataset.nav === navKey) {
+              item.setAttribute("aria-current", "page");
+            } else {
+              item.removeAttribute("aria-current");
+            }
+          });
+        }
+
+        function openContext(navKey, options = {}) {
+          const next = contexts[navKey];
+          if (!next) return;
+
+          pageTitle.textContent = next.title;
+          pageContext.textContent = next.context;
+          setActiveNav(navKey);
+          focusPanel(options.target || next.target);
+          setStatus(options.status || next.status);
+        }
+
+        function currentTime() {
+          return new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+        }
+
+        function badgeClass(nextState) {
+          return `badge ${nextState}`;
+        }
+
+        function addAuditEvent(title, detail) {
+          const event = document.createElement("li");
+          event.className = "event";
+          event.innerHTML = `<strong>${title}</strong><span>${detail}</span>`;
+          auditEventList.prepend(event);
+        }
+
+        function setProposalDecision(decision) {
+          const copy = {
+            approved: {
+              rowClass: "approved",
+              badge: "Approved",
+              badgeState: "verified",
+              panelBadge: "Approved and audit logged",
+              note: "6 affected tasks approved. Workspace updates are recorded in the audit trail.",
+              status: "Selected notice proposals approved. The audit trail records the CPA decision."
+            },
+            rejected: {
+              rowClass: "rejected",
+              badge: "Rejected",
+              badgeState: "risk",
+              panelBadge: "Rejected by CPA",
+              note: "6 affected tasks rejected. No workspace deadline changes were applied.",
+              status: "Selected notice proposals rejected. No workspace data changed."
+            },
+            deferred: {
+              rowClass: "deferred",
+              badge: "Decide later",
+              badgeState: "neutral",
+              panelBadge: "Decision deferred",
+              note: "6 affected tasks deferred. The proposal remains available in Official notices.",
+              status: "Selected notice proposals deferred for later review."
+            }
+          }[decision];
+
+          proposalRows.forEach((row) => {
+            row.classList.remove("approved", "rejected", "deferred");
+            row.classList.add(copy.rowClass);
+            const badge = row.querySelector(".badge");
+            badge.className = badgeClass(copy.badgeState);
+            badge.textContent = copy.badge;
+          });
+
+          proposalStatusBadge.className = badgeClass(copy.badgeState);
+          proposalStatusBadge.textContent = copy.panelBadge;
+          selectionNote.textContent = copy.note;
+          addAuditEvent(
+            `Notice proposal ${copy.badge.toLowerCase()}`,
+            `${copy.note} Recorded ${currentTime()}.`
+          );
+          openContext("notices", { status: copy.status });
+        }
+
+        navItems.forEach((item) => {
+          item.addEventListener("click", () => openContext(item.dataset.nav));
+        });
+
+        document.getElementById("quick-import-button").addEventListener("click", () => {
+          importStatusBadge.className = "badge verified";
+          importStatusBadge.textContent = "Preview ready";
+          importReadyLine.textContent = "24 profiles ready to commit";
+          importReviewLine.textContent = "7 fields still routed to CPA review";
+          openContext("imports", {
+            status: "Quick import opened the TaxDome preview. Ready rows and review items are visible."
+          });
+        });
+
+        document.getElementById("review-proposals-button").addEventListener("click", () => {
+          openContext("notices");
+        });
+
+        document.getElementById("notice-review-button").addEventListener("click", () => {
+          openContext("notices");
+        });
+
+        document.getElementById("export-summary-button").addEventListener("click", () => {
+          setStatus(
+            "Export summary prepared for the current filtered view with due date, firm target, trust, and source columns."
+          );
+        });
+
+        document.getElementById("top-apply-button").addEventListener("click", () => {
+          setProposalDecision("approved");
+        });
+
+        document.getElementById("apply-selected-button").addEventListener("click", () => {
+          setProposalDecision("approved");
+        });
+
+        document.getElementById("reject-selected-button").addEventListener("click", () => {
+          setProposalDecision("rejected");
+        });
+
+        document.getElementById("decide-later-button").addEventListener("click", () => {
+          setProposalDecision("deferred");
+        });
+
+        document.getElementById("request-verification-button").addEventListener("click", () => {
+          coverageStatusBadge.className = "badge review";
+          coverageStatusBadge.textContent = "Verification requested";
+          setStatus("Coverage request queued for Texas sales/use. No official due date was created.");
+          addAuditEvent(
+            "Coverage verification requested",
+            `Texas sales/use request added from coverage queue at ${currentTime()}.`
+          );
+        });
+
+        sourceCheckButton.addEventListener("click", () => {
+          sourceCheckButton.disabled = true;
+          sourceCheckButton.textContent = "Checking...";
+          evidenceStatusBadge.className = "badge review";
+          evidenceStatusBadge.textContent = "Checking source";
+          setStatus("Source check started against the IRS evidence link.");
+
+          window.setTimeout(() => {
+            sourceCheckButton.disabled = false;
+            sourceCheckButton.textContent = "Source check";
+            evidenceStatusBadge.className = "badge verified";
+            evidenceStatusBadge.textContent = "Verified";
+            lastCheckedLine.textContent = `Today, ${currentTime()} by manual source check`;
+            setStatus("IRS source check complete. Rule federal-1040-v2026.2 remains verified.");
+            addAuditEvent(
+              "Manual source check complete",
+              `IRS source checked at ${currentTime()}; verified status unchanged.`
+            );
+          }, 900);
+        });
+
+        document.querySelectorAll("[data-row-action]").forEach((button) => {
+          button.addEventListener("click", () => {
+            const action = button.dataset.rowAction;
+            if (action === "evidence") {
+              focusPanel("evidence-panel");
+              setStatus("Evidence drawer focused for the selected deadline task.");
+            }
+            if (action === "done") {
+              const row = button.closest("tr");
+              const statusBadge = row.querySelector("td:nth-child(5) .badge");
+              statusBadge.className = "badge verified";
+              statusBadge.textContent = "Done";
+              setStatus("Task marked Done. Status change is ready for audit history.");
+            }
+            if (action === "source") {
+              focusPanel("evidence-panel");
+              sourceCheckButton.click();
+            }
+            if (action === "verification") {
+              openContext("coverageGaps", {
+                status: "Coverage gap action focused. Request verification or add a user-provided deadline."
+              });
+            }
+            if (action === "manual") {
+              setStatus("Manual deadline path opened for the coverage gap. It will be marked user-provided.");
+            }
+          });
+        });
+
+        document.querySelectorAll(".filter").forEach((filter) => {
+          filter.addEventListener("click", () => {
+            filter.classList.toggle("active");
+            const activeFilters = Array.from(document.querySelectorAll(".filter.active")).map((item) =>
+              item.textContent.trim()
+            );
+            setStatus(`Filters updated: ${activeFilters.join(", ") || "none"}.`);
+          });
+        });
+      })();
+    </script>
   </body>
 </html>
