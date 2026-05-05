@@ -5,6 +5,7 @@ import { auditLogs } from "@due-date-hq/db/schema/audit";
 import {
   clientRelationships,
   deadlineDateEvents,
+  deadlineTaskUpdateRecords,
   deadlineTasks,
   filingProfiles,
   type ClientRelationship,
@@ -207,8 +208,10 @@ test("clients.createRelationship creates a manual firm-owned relationship", asyn
 });
 
 test("clients.updateNotes updates firm-owned relationship notes and clears empty notes", async () => {
+  const writes: InsertWrite[] = [];
   const updateWrites: UpdateWrite[] = [];
   const caller = createCaller({
+    selectQueue: [[makeClient({ notes: "Special handling" })], [makeDeadline()]],
     updateQueue: [
       [
         makeClient({
@@ -218,6 +221,7 @@ test("clients.updateNotes updates firm-owned relationship notes and clears empty
       ],
     ],
     updateWrites,
+    writes,
   });
 
   const result = await caller.clients.updateNotes({
@@ -231,6 +235,12 @@ test("clients.updateNotes updates firm-owned relationship notes and clears empty
   assert.equal(updateWrites[0]?.table, clientRelationships);
   assert.equal(updateWrites[0]?.values.notes, null);
   assert.ok(updateWrites[0]?.values.updatedAt instanceof Date);
+
+  const updateRecordWrite = writes.find((write) => write.table === deadlineTaskUpdateRecords);
+  assert.equal(updateRecordWrite?.row.deadlineTaskId, "deadline-test");
+  assert.equal(updateRecordWrite?.row.fieldName, "notes");
+  assert.equal(updateRecordWrite?.row.previousValue, "Special handling");
+  assert.equal(updateRecordWrite?.row.newValue, null);
 });
 
 test("clients.list returns firm-owned relationships with profile and deadline counts", async () => {

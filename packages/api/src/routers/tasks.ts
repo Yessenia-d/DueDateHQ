@@ -3,11 +3,14 @@ import { auditLogs } from "@due-date-hq/db/schema/audit";
 import {
   clientRelationships,
   deadlineDateEvents,
+  deadlineTaskUpdateRecords,
   deadlineTaskStatuses,
   deadlineTasks,
   filingProfiles,
   type DeadlineDateEvent,
   type DeadlineTask,
+  type DeadlineTaskUpdateRecord,
+  type DeadlineTaskUpdateRecordFieldName,
 } from "@due-date-hq/db/schema/deadline-domain";
 import {
   taxRules,
@@ -71,7 +74,24 @@ export type TaskEvidenceResponse = {
     createdAt: string;
     notes: string | null;
   }>;
+  updateRecords: Array<{
+    id: string;
+    fieldName: DeadlineTaskUpdateRecord["fieldName"];
+    previousValue: string | null;
+    newValue: string | null;
+    action: string;
+    auditLogId: string | null;
+    actorUserId: string | null;
+    createdAt: string;
+  }>;
 };
+
+const trackedTaskUpdateFields = [
+  "status",
+  "currentDueDate",
+  "originalDueDate",
+  "firmTargetDate",
+] satisfies readonly Extract<DeadlineTaskUpdateRecordFieldName, keyof DeadlineTask>[];
 
 function toISOOrNull(date: Date | null | undefined): string | null {
   return date ? date.toISOString() : null;
@@ -133,6 +153,87 @@ async function recordTaskAudit({
   return auditLogId;
 }
 
+async function recordTaskUpdateRecords({
+  action,
+  auditLogId,
+  beforeTask,
+  ctx,
+  now,
+  session,
+  updatedTask,
+}: {
+  action: string;
+  auditLogId: string;
+  beforeTask: DeadlineTask;
+  ctx: Context;
+  now: Date;
+  session: FirmSession;
+  updatedTask: DeadlineTask;
+}) {
+  try {
+    for (const fieldName of trackedTaskUpdateFields) {
+      const previousValue = beforeTask[fieldName];
+      const newValue = updatedTask[fieldName];
+
+      if (previousValue === newValue) {
+        continue;
+      }
+
+      await ctx.db.insert(deadlineTaskUpdateRecords).values({
+        id: crypto.randomUUID(),
+        firmId: session.firm.id,
+        deadlineTaskId: beforeTask.id,
+        fieldName,
+        previousValue,
+        newValue,
+        action,
+        auditLogId,
+        actorUserId: session.user.id,
+        createdAt: now,
+      });
+    }
+  } catch (error) {
+    if (isMissingTaskUpdateRecordsTable(error)) {
+      return;
+    }
+
+    throw error;
+  }
+}
+
+function isMissingTaskUpdateRecordsTable(error: unknown): boolean {
+  return error instanceof Error && error.message.includes("deadline_task_update_records");
+}
+
+async function loadTaskUpdateRecords({
+  ctx,
+  session,
+  taskId,
+}: {
+  ctx: Context;
+  session: FirmSession;
+  taskId: string;
+}): Promise<DeadlineTaskUpdateRecord[]> {
+  try {
+    return await ctx.db
+      .select()
+      .from(deadlineTaskUpdateRecords)
+      .where(
+        and(
+          eq(deadlineTaskUpdateRecords.firmId, session.firm.id),
+          eq(deadlineTaskUpdateRecords.deadlineTaskId, taskId),
+        ),
+      )
+      .orderBy(asc(deadlineTaskUpdateRecords.createdAt));
+  } catch (error) {
+    if (isMissingTaskUpdateRecordsTable(error)) {
+      return [];
+    }
+
+    throw error;
+  }
+}
+
 async function updateTaskStatus({
   ctx,
   status,
@@ -143,6 +244,11 @@ async function updateTaskStatus({
   taskId: string;
 }) {
   const { session, task } = await loadFirmTask(ctx, taskId);
+
+  if (task.status === status) {
+    return task;
+  }
+
   const now = new Date();
 
   const [updated] = await ctx.db
@@ -158,7 +264,7 @@ async function updateTaskStatus({
     });
   }
 
-  await recordTaskAudit({
+  const auditLogId = await recordTaskAudit({
     action: "deadline_task.update_status",
     beforeState: { status: task.status },
     afterState: { status: updated.status },
@@ -166,6 +272,16 @@ async function updateTaskStatus({
     entityId: task.id,
     metadata: { officialDueDateMutated: false },
     session,
+  });
+
+  await recordTaskUpdateRecords({
+    action: "deadline_task.update_status",
+    auditLogId,
+    beforeTask: task,
+    ctx,
+    now,
+    session,
+    updatedTask: updated,
   });
 
   return updated;
@@ -181,6 +297,11 @@ async function updateFirmTargetDate({
   taskId: string;
 }) {
   const { session, task } = await loadFirmTask(ctx, taskId);
+
+  if (task.firmTargetDate === firmTargetDate) {
+    return task;
+  }
+
   const now = new Date();
 
   const [updated] = await ctx.db
@@ -222,6 +343,16 @@ async function updateFirmTargetDate({
     auditLogId,
     createdAt: now,
     notes: "Firm target date updated from the dashboard.",
+  });
+
+  await recordTaskUpdateRecords({
+    action: "deadline_task.update_firm_target_date",
+    auditLogId,
+    beforeTask: task,
+    ctx,
+    now,
+    session,
+    updatedTask: updated,
   });
 
   return updated;
@@ -299,6 +430,16 @@ async function markTaskExtended({
     auditLogId,
     createdAt: now,
     notes: "Official extension recorded from the dashboard.",
+  });
+
+  await recordTaskUpdateRecords({
+    action: "deadline_task.mark_extended",
+    auditLogId,
+    beforeTask: task,
+    ctx,
+    now,
+    session,
+    updatedTask: updated,
   });
 
   return updated;
@@ -455,6 +596,11 @@ export const tasksRouter = router({
           ),
         )
         .orderBy(asc(deadlineDateEvents.createdAt));
+      const updateRecords = await loadTaskUpdateRecords({
+        ctx,
+        session,
+        taskId: row.task.id,
+      });
 
       return {
         task: {
@@ -503,6 +649,16 @@ export const tasksRouter = router({
           sourceUrl: event.sourceUrl,
           createdAt: event.createdAt.toISOString(),
           notes: event.notes,
+        })),
+        updateRecords: updateRecords.map((record) => ({
+          id: record.id,
+          fieldName: record.fieldName,
+          previousValue: record.previousValue,
+          newValue: record.newValue,
+          action: record.action,
+          auditLogId: record.auditLogId,
+          actorUserId: record.actorUserId,
+          createdAt: record.createdAt.toISOString(),
         })),
       };
     }),

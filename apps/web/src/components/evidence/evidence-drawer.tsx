@@ -201,6 +201,38 @@ function EvidenceContent({ evidence }: { evidence: TaskEvidenceResponse }) {
           </ol>
         )}
       </section>
+
+      <section className="border-t border-border py-4">
+        <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
+          <History className="size-4" />
+          Task update history
+        </div>
+        {evidence.updateRecords.length === 0 ? (
+          <div className="rounded-lg border border-border bg-muted p-3 text-xs text-muted-foreground">
+            No task updates recorded.
+          </div>
+        ) : (
+          <ol className="space-y-3">
+            {evidence.updateRecords.map((record) => (
+              <li key={record.id} className="rounded-lg border border-border p-3 text-xs">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="font-semibold">{formatTaskUpdateField(record.fieldName)}</div>
+                  <div className="text-right font-mono text-muted-foreground">
+                    {formatDateTime(record.createdAt)}
+                  </div>
+                </div>
+                <div className="mt-2 grid gap-1 text-muted-foreground">
+                  <span>
+                    {formatTaskUpdateValue(record.fieldName, record.previousValue)} to{" "}
+                    {formatTaskUpdateValue(record.fieldName, record.newValue)}
+                  </span>
+                  <span>{formatTaskUpdateAction(record.action)}</span>
+                </div>
+              </li>
+            ))}
+          </ol>
+        )}
+      </section>
     </div>
   );
 }
@@ -268,4 +300,50 @@ function formatDateTime(value: string): string {
     hour: "numeric",
     minute: "2-digit",
   }).format(new Date(value));
+}
+
+function formatTaskUpdateField(fieldName: TaskEvidenceResponse["updateRecords"][number]["fieldName"]): string {
+  switch (fieldName) {
+    case "status":
+      return "Work status";
+    case "currentDueDate":
+      return "Current due date";
+    case "originalDueDate":
+      return "Original due date";
+    case "firmTargetDate":
+      return "Firm target date";
+    case "notes":
+      return "Notes";
+  }
+}
+
+function formatTaskUpdateValue(
+  fieldName: TaskEvidenceResponse["updateRecords"][number]["fieldName"],
+  value: string | null,
+): string {
+  if (!value) return "None";
+
+  switch (fieldName) {
+    case "currentDueDate":
+    case "originalDueDate":
+    case "firmTargetDate":
+      return formatDate(value);
+    case "status":
+      return value.replaceAll("_", " ");
+    case "notes":
+      return value;
+  }
+}
+
+function formatTaskUpdateAction(action: string): string {
+  switch (action) {
+    case "deadline_task.update_status":
+      return "Status updated";
+    case "deadline_task.update_firm_target_date":
+      return "Firm target date updated";
+    case "deadline_task.mark_extended":
+      return "Extension recorded";
+    default:
+      return action;
+  }
 }

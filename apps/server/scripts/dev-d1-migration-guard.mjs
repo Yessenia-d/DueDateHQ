@@ -71,6 +71,21 @@ export async function runLocalD1MigrationGuard({
     );
   }
 
+  const updateRecordColumns = await readTableColumns(
+    runCommand,
+    configArgs,
+    "deadline_task_update_records",
+  );
+
+  if (!updateRecordColumns.includes("field_name")) {
+    throw new Error(
+      [
+        "Local D1 schema guard failed: deadline_task_update_records.field_name is missing.",
+        `Fix command: ${formatMigrationCommand(configArgs)}`,
+      ].join("\n"),
+    );
+  }
+
   logger.info("[dev-db] Local D1 migrations are current.");
 }
 

@@ -87,6 +87,16 @@ export const deadlineDateEventTypes = [
 ] as const;
 export type DeadlineDateEventType = (typeof deadlineDateEventTypes)[number];
 
+export const deadlineTaskUpdateRecordFieldNames = [
+  "status",
+  "currentDueDate",
+  "originalDueDate",
+  "firmTargetDate",
+  "notes",
+] as const;
+export type DeadlineTaskUpdateRecordFieldName =
+  (typeof deadlineTaskUpdateRecordFieldNames)[number];
+
 export const clientRelationships = sqliteTable(
   "client_relationships",
   {
@@ -336,6 +346,53 @@ export const deadlineDateEvents = sqliteTable(
   ],
 );
 
+export const deadlineTaskUpdateRecords = sqliteTable(
+  "deadline_task_update_records",
+  {
+    id: text("id").primaryKey(),
+    firmId: text("firm_id")
+      .notNull()
+      .references(() => firms.id, { onDelete: "cascade" }),
+    deadlineTaskId: text("deadline_task_id")
+      .notNull()
+      .references(() => deadlineTasks.id, { onDelete: "cascade" }),
+    fieldName: text("field_name", { enum: deadlineTaskUpdateRecordFieldNames }).notNull(),
+    previousValue: text("previous_value", { mode: "json" }).$type<string | null>(),
+    newValue: text("new_value", { mode: "json" }).$type<string | null>(),
+    action: text("action").notNull(),
+    auditLogId: text("audit_log_id").references(() => auditLogs.id),
+    actorUserId: text("actor_user_id").references(() => user.id, { onDelete: "set null" }),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (table) => [
+    index("deadline_task_update_records_task_created_at_idx").on(
+      table.deadlineTaskId,
+      table.createdAt,
+    ),
+    index("deadline_task_update_records_firm_field_idx").on(table.firmId, table.fieldName),
+    index("deadline_task_update_records_audit_log_id_idx").on(table.auditLogId),
+    uniqueIndex("deadline_task_update_records_firm_id_id_unique").on(table.firmId, table.id),
+    foreignKey({
+      name: "deadline_task_update_records_firm_deadline_task_fk",
+      columns: [table.firmId, table.deadlineTaskId],
+      foreignColumns: [deadlineTasks.firmId, deadlineTasks.id],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "deadline_task_update_records_firm_audit_log_fk",
+      columns: [table.firmId, table.auditLogId],
+      foreignColumns: [auditLogs.firmId, auditLogs.id],
+    }),
+    check(
+      "deadline_task_update_records_field_name_check",
+      sql`${table.fieldName} in ('status', 'currentDueDate', 'originalDueDate', 'firmTargetDate', 'notes')`,
+    ),
+    check(
+      "deadline_task_update_records_changed_value_check",
+      sql`${table.previousValue} is not ${table.newValue}`,
+    ),
+  ],
+);
+
 export type ClientRelationship = typeof clientRelationships.$inferSelect;
 export type NewClientRelationship = typeof clientRelationships.$inferInsert;
 
@@ -347,3 +404,6 @@ export type NewDeadlineTask = typeof deadlineTasks.$inferInsert;
 
 export type DeadlineDateEvent = typeof deadlineDateEvents.$inferSelect;
 export type NewDeadlineDateEvent = typeof deadlineDateEvents.$inferInsert;
+
+export type DeadlineTaskUpdateRecord = typeof deadlineTaskUpdateRecords.$inferSelect;
+export type NewDeadlineTaskUpdateRecord = typeof deadlineTaskUpdateRecords.$inferInsert;

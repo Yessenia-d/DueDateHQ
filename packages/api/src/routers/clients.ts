@@ -2,6 +2,7 @@ import { and, asc, eq } from "drizzle-orm";
 import {
   clientRelationships,
   clientRelationshipTypes,
+  deadlineTaskUpdateRecords,
   deadlineTasks,
   filingProfiles,
   type ClientRelationship,
@@ -90,6 +91,10 @@ export type ClientDetailResponse = {
 function nullableText(value: string | null | undefined): string | null {
   const trimmed = value?.trim();
   return trimmed ? trimmed : null;
+}
+
+function isMissingTaskUpdateRecordsTable(error: unknown): boolean {
+  return error instanceof Error && error.message.includes("deadline_task_update_records");
 }
 
 function serializeDate(value: Date): string {
@@ -253,11 +258,37 @@ export const clientsRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const session = requireFirmSession(ctx);
+      const notes = nullableText(input.notes);
+      const [existingClient] = await ctx.db
+        .select()
+        .from(clientRelationships)
+        .where(
+          and(
+            eq(clientRelationships.firmId, session.firm.id),
+            eq(clientRelationships.id, input.clientRelationshipId),
+          ),
+        )
+        .limit(1);
+
+      if (!existingClient) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Client relationship was not found.",
+        });
+      }
+
+      if (existingClient.notes === notes) {
+        return {
+          client: serializeClientRelationship(existingClient),
+        };
+      }
+
+      const now = new Date();
       const [client] = await ctx.db
         .update(clientRelationships)
         .set({
-          notes: nullableText(input.notes),
-          updatedAt: new Date(),
+          notes,
+          updatedAt: now,
         })
         .where(
           and(
@@ -272,6 +303,38 @@ export const clientsRouter = router({
           code: "NOT_FOUND",
           message: "Client relationship was not found.",
         });
+      }
+
+      const affectedTasks = await ctx.db
+        .select()
+        .from(deadlineTasks)
+        .where(
+          and(
+            eq(deadlineTasks.firmId, session.firm.id),
+            eq(deadlineTasks.clientRelationshipId, input.clientRelationshipId),
+          ),
+        )
+        .orderBy(asc(deadlineTasks.currentDueDate), asc(deadlineTasks.title));
+
+      try {
+        for (const task of affectedTasks) {
+          await ctx.db.insert(deadlineTaskUpdateRecords).values({
+            id: crypto.randomUUID(),
+            firmId: session.firm.id,
+            deadlineTaskId: task.id,
+            fieldName: "notes",
+            previousValue: existingClient.notes,
+            newValue: client.notes,
+            action: "client_relationship.update_notes",
+            auditLogId: null,
+            actorUserId: session.user.id,
+            createdAt: now,
+          });
+        }
+      } catch (error) {
+        if (!isMissingTaskUpdateRecordsTable(error)) {
+          throw error;
+        }
       }
 
       return {

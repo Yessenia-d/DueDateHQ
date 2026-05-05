@@ -36,6 +36,13 @@
       "when": 1778005950000,
       "tag": "0004_entered_deadline_semantics",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1778018500000,
+      "tag": "0005_deadline_task_update_records",
+      "breakpoints": true
     }
   ]
 }

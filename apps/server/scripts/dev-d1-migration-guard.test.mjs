@@ -47,6 +47,10 @@ test("runLocalD1MigrationGuard applies local migrations before validating schema
           return wranglerJson([{ name: "0000_first.sql" }, { name: "0001_second.sql" }]);
         }
 
+        if (sql.includes("deadline_task_update_records")) {
+          return wranglerJson([{ name: "id" }, { name: "field_name" }]);
+        }
+
         return wranglerJson([{ name: "id" }, { name: "entered_deadline_reference_note" }]);
       },
       wranglerArgs: ["--config", "/tmp/wrangler.toml", "--port", "3000", "--local"],
@@ -55,6 +59,9 @@ test("runLocalD1MigrationGuard applies local migrations before validating schema
     assert.deepEqual(calls[0]?.slice(0, 5), ["d1", "migrations", "apply", "DB", "--local"]);
     assert.ok(calls.some((args) => args.includes("select name from d1_migrations order by id")));
     assert.ok(calls.some((args) => args.includes("pragma table_info(deadline_tasks)")));
+    assert.ok(
+      calls.some((args) => args.includes("pragma table_info(deadline_task_update_records)")),
+    );
   } finally {
     rmSync(dir, { force: true, recursive: true });
   }
@@ -80,11 +87,50 @@ test("runLocalD1MigrationGuard fails fast with missing schema columns and fix co
               return wranglerJson([{ name: "0000_first.sql" }]);
             }
 
+            if (sql.includes("deadline_task_update_records")) {
+              return wranglerJson([{ name: "id" }, { name: "field_name" }]);
+            }
+
             return wranglerJson([{ name: "id" }]);
           },
           wranglerArgs: ["--config", "/tmp/wrangler.toml", "--local"],
         }),
       /deadline_tasks\.entered_deadline_reference_note[\s\S]*wrangler d1 migrations apply DB --local --config \/tmp\/wrangler\.toml/,
+    );
+  } finally {
+    rmSync(dir, { force: true, recursive: true });
+  }
+});
+
+test("runLocalD1MigrationGuard fails fast when task update record table is missing", async () => {
+  const dir = makeTempMigrations(["0000_first.sql"]);
+
+  try {
+    await assert.rejects(
+      () =>
+        runLocalD1MigrationGuard({
+          logger: silentLogger,
+          migrationsDir: dir,
+          runCommand: (_command, args) => {
+            if (args.includes("apply")) {
+              return { status: 0, stdout: "No migrations to apply", stderr: "" };
+            }
+
+            const sql = args[args.indexOf("--command") + 1];
+
+            if (sql.includes("d1_migrations")) {
+              return wranglerJson([{ name: "0000_first.sql" }]);
+            }
+
+            if (sql.includes("deadline_task_update_records")) {
+              return wranglerJson([]);
+            }
+
+            return wranglerJson([{ name: "id" }, { name: "entered_deadline_reference_note" }]);
+          },
+          wranglerArgs: ["--config", "/tmp/wrangler.toml", "--local"],
+        }),
+      /deadline_task_update_records\.field_name[\s\S]*wrangler d1 migrations apply DB --local --config \/tmp\/wrangler\.toml/,
     );
   } finally {
     rmSync(dir, { force: true, recursive: true });

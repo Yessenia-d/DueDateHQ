@@ -8,6 +8,8 @@ import {
   clientRelationships,
   deadlineDateEvents,
   deadlineDateEventTypes,
+  deadlineTaskUpdateRecords,
+  deadlineTaskUpdateRecordFieldNames,
   filingProfileCoverageStates,
   deadlineTaskSourceTypes,
   deadlineTaskStatuses,
@@ -99,6 +101,48 @@ test("date event history supports official changes, entered-deadline adjustments
   assert.ok(eventCheckNames.has("deadline_date_events_official_source_check"));
 });
 
+test("task update records support status, due-date, and notes field history", () => {
+  assert.deepEqual(deadlineTaskUpdateRecordFieldNames, [
+    "status",
+    "currentDueDate",
+    "originalDueDate",
+    "firmTargetDate",
+    "notes",
+  ]);
+
+  const updateRecordColumns = new Set(
+    getTableConfig(deadlineTaskUpdateRecords).columns.map((column) => column.name),
+  );
+  const updateRecordIndexNames = new Set(
+    getTableConfig(deadlineTaskUpdateRecords).indexes.map((index) => index.config.name),
+  );
+  const updateRecordCheckNames = new Set(
+    getTableConfig(deadlineTaskUpdateRecords).checks.map((updateRecordCheck) => updateRecordCheck.name),
+  );
+
+  assert.equal(
+    [
+      "id",
+      "firm_id",
+      "deadline_task_id",
+      "field_name",
+      "previous_value",
+      "new_value",
+      "action",
+      "audit_log_id",
+      "actor_user_id",
+      "created_at",
+    ].every((name) => updateRecordColumns.has(name)),
+    true,
+  );
+  assert.ok(updateRecordIndexNames.has("deadline_task_update_records_task_created_at_idx"));
+  assert.ok(updateRecordIndexNames.has("deadline_task_update_records_firm_field_idx"));
+  assert.ok(updateRecordIndexNames.has("deadline_task_update_records_audit_log_id_idx"));
+  assert.ok(updateRecordIndexNames.has("deadline_task_update_records_firm_id_id_unique"));
+  assert.ok(updateRecordCheckNames.has("deadline_task_update_records_field_name_check"));
+  assert.ok(updateRecordCheckNames.has("deadline_task_update_records_changed_value_check"));
+});
+
 test("schema constraints require source evidence for user-visible changes", () => {
   const taskCheckNames = new Set(
     getTableConfig(deadlineTasks).checks.map((deadlineTaskCheck) => deadlineTaskCheck.name),
@@ -143,6 +187,9 @@ test("workspace foreign keys keep deadline rows inside the owning firm", () => {
   const eventForeignKeyNames = new Set(
     getTableConfig(deadlineDateEvents).foreignKeys.map((foreignKey) => foreignKey.getName()),
   );
+  const updateRecordForeignKeyNames = new Set(
+    getTableConfig(deadlineTaskUpdateRecords).foreignKeys.map((foreignKey) => foreignKey.getName()),
+  );
 
   assert.ok(auditLogUniqueIndexNames.has("audit_logs_firm_id_id_unique"));
   assert.ok(clientRelationshipUniqueIndexNames.has("client_relationships_firm_id_id_unique"));
@@ -153,4 +200,6 @@ test("workspace foreign keys keep deadline rows inside the owning firm", () => {
   assert.ok(taskForeignKeyNames.has("deadline_tasks_firm_client_profile_fk"));
   assert.ok(eventForeignKeyNames.has("deadline_date_events_firm_deadline_task_fk"));
   assert.ok(eventForeignKeyNames.has("deadline_date_events_firm_audit_log_fk"));
+  assert.ok(updateRecordForeignKeyNames.has("deadline_task_update_records_firm_deadline_task_fk"));
+  assert.ok(updateRecordForeignKeyNames.has("deadline_task_update_records_firm_audit_log_fk"));
 });
