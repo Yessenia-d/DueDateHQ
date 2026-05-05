@@ -39,6 +39,16 @@ app.use(
     createContext: (_opts, context) => {
       return createContext({ context });
     },
+    onError: ({ error, path, type }) => {
+      if (error.code === "INTERNAL_SERVER_ERROR") {
+        console.error("tRPC request failed", {
+          code: error.code,
+          message: error.message,
+          path,
+          type,
+        });
+      }
+    },
   }),
 );
 
@@ -139,7 +149,7 @@ function isAllowedLoopbackAlias(origin: string, configuredOrigins: string[]) {
 }
 
 function canSeedDemoData(request: Request) {
-  const token = env.DEMO_SEED_TOKEN.trim();
+  const token = env.DEMO_SEED_TOKEN?.trim() ?? "";
   const providedToken = request.headers.get("x-demo-seed-token")?.trim();
 
   if (token && providedToken === token) {
