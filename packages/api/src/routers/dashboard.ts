@@ -24,6 +24,7 @@ import {
 } from "../lib/deadline-labels";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
+const DATE_EVENT_TASK_ID_BATCH_SIZE = 50;
 
 export const dashboardHorizonValues = [
   "all",
@@ -85,6 +86,8 @@ export const dashboardSummaryFiltersSchema = z.object({
   taskStatus: z.enum(deadlineTaskStatuses).optional(),
   verificationStatus: z.enum(dashboardVerificationStatuses).optional(),
   sort: z.enum(dashboardSortValues).default("smart_priority"),
+  page: z.number().int().min(1).default(1),
+  pageSize: z.number().int().min(1).max(100).default(25),
   today: dateStringSchema.optional(),
 });
 
@@ -136,6 +139,11 @@ export type DashboardSection = {
   id: DashboardTaskHorizon;
   label: string;
   count: number;
+  pagination: {
+    page: number;
+    pageSize: number;
+    totalPages: number;
+  };
   tasks: DashboardTaskRow[];
 };
 
@@ -188,6 +196,8 @@ function normalizeDashboardInput(input: DashboardSummaryInput | undefined): Dash
     taskStatus: input?.taskStatus,
     verificationStatus: input?.verificationStatus,
     sort: input?.sort ?? "smart_priority",
+    page: input?.page ?? 1,
+    pageSize: input?.pageSize ?? 25,
     today: input?.today,
   };
 }
@@ -232,6 +242,34 @@ function createEventMap(events: DeadlineDateEvent[]): Map<string, DeadlineDateEv
   }
 
   return map;
+}
+
+async function loadDateEventsForTasks(
+  ctx: Context,
+  firmId: string,
+  taskIds: string[],
+): Promise<DeadlineDateEvent[]> {
+  const events: DeadlineDateEvent[] = [];
+
+  for (let index = 0; index < taskIds.length; index += DATE_EVENT_TASK_ID_BATCH_SIZE) {
+    const batchTaskIds = taskIds.slice(index, index + DATE_EVENT_TASK_ID_BATCH_SIZE);
+    const batchEvents = await ctx.db
+      .select()
+      .from(deadlineDateEvents)
+      .where(
+        and(
+          eq(deadlineDateEvents.firmId, firmId),
+          inArray(deadlineDateEvents.deadlineTaskId, batchTaskIds),
+        ),
+      )
+      .orderBy(asc(deadlineDateEvents.createdAt));
+
+    events.push(...batchEvents);
+  }
+
+  return events.sort(
+    (a, b) => a.createdAt.getTime() - b.createdAt.getTime(),
+  );
 }
 
 function getVerificationStatus(
@@ -463,7 +501,13 @@ export function filterAndSortDashboardRows(
   });
 }
 
-export function groupDashboardRows(rows: DashboardTaskRow[]): DashboardSection[] {
+export function groupDashboardRows(
+  rows: DashboardTaskRow[],
+  pagination: { page: number; pageSize: number } = {
+    page: 1,
+    pageSize: Math.max(rows.length, 1),
+  },
+): DashboardSection[] {
   const sectionConfig: Array<{ id: DashboardTaskHorizon; label: string }> = [
     { id: "overdue", label: "Overdue" },
     { id: "due_this_week", label: "Due this week" },
@@ -473,11 +517,19 @@ export function groupDashboardRows(rows: DashboardTaskRow[]): DashboardSection[]
 
   return sectionConfig.map((section) => {
     const tasks = rows.filter((row) => row.horizon === section.id);
+    const totalPages = Math.max(1, Math.ceil(tasks.length / pagination.pageSize));
+    const page = Math.min(pagination.page, totalPages);
+    const start = (page - 1) * pagination.pageSize;
 
     return {
       ...section,
       count: tasks.length,
-      tasks,
+      pagination: {
+        page,
+        pageSize: pagination.pageSize,
+        totalPages,
+      },
+      tasks: tasks.slice(start, start + pagination.pageSize),
     };
   });
 }
@@ -538,7 +590,10 @@ function buildSummary({
     generatedAt,
     today,
     filters,
-    sections: groupDashboardRows(filteredRows),
+    sections: groupDashboardRows(filteredRows, {
+      page: filters.page,
+      pageSize: filters.pageSize,
+    }),
     allTasks: filteredRows,
     summary: {
       total: filteredRows.length,
@@ -597,16 +652,7 @@ async function loadDashboardRows(
 
   const taskIds = joinedRows.map((row) => row.task.id);
   const events = taskIds.length
-    ? await ctx.db
-        .select()
-        .from(deadlineDateEvents)
-        .where(
-          and(
-            eq(deadlineDateEvents.firmId, session.firm.id),
-            inArray(deadlineDateEvents.deadlineTaskId, taskIds),
-          ),
-        )
-        .orderBy(asc(deadlineDateEvents.createdAt))
+    ? await loadDateEventsForTasks(ctx, session.firm.id, taskIds)
     : [];
   const eventMap = createEventMap(events);
 

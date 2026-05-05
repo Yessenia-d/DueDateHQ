@@ -74,6 +74,29 @@ test("dashboard groups rows into dashboard horizons", () => {
   );
 });
 
+test("dashboard sections keep total counts while returning the requested page", () => {
+  const rows = Array.from({ length: 7 }, (_, index) =>
+    makeRow({
+      id: `week-${index + 1}`,
+      horizon: "due_this_week",
+      currentDueDate: `2026-05-${String(index + 5).padStart(2, "0")}`,
+    }),
+  );
+
+  const sections = groupDashboardRows(rows, { page: 2, pageSize: 3 });
+  const dueThisWeek = sections.find((section) => section.id === "due_this_week");
+
+  assert.equal(dueThisWeek?.count, 7);
+  assert.deepEqual(
+    dueThisWeek?.pagination,
+    { page: 2, pageSize: 3, totalPages: 3 },
+  );
+  assert.deepEqual(
+    dueThisWeek?.tasks.map((task) => task.id),
+    ["week-4", "week-5", "week-6"],
+  );
+});
+
 test("dashboard filters by core CPA triage fields", () => {
   const rows = [
     makeRow({
@@ -133,6 +156,8 @@ test("dashboard filters by core CPA triage fields", () => {
     taskStatus: "waiting_on_client",
     taxCategory: "Franchise Tax",
     verificationStatus: "entered_deadline",
+    page: 1,
+    pageSize: 25,
   });
 
   assert.equal(filtered.length, 1);
@@ -149,6 +174,8 @@ test("dashboard smart priority sort is deterministic", () => {
   const sorted = filterAndSortDashboardRows(rows, {
     horizon: "all",
     sort: "smart_priority",
+    page: 1,
+    pageSize: 25,
   });
 
   assert.deepEqual(
