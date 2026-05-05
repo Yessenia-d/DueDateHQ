@@ -52,6 +52,8 @@ const priorityLabels = {
   p2: "P2",
 } as const;
 
+const repositorySpecBaseUrl = "https://github.com/Yessenia-d/DueDateHQ/blob/main/";
+
 type ProgressStatus = keyof typeof statusLabels;
 type FeaturePriority = keyof typeof priorityLabels;
 
@@ -177,9 +179,14 @@ function ProgressComponent() {
                         <TableCell>
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
                             <FileText className="size-3.5 shrink-0" />
-                            <code className="break-all bg-muted px-1.5 py-1 font-mono text-[11px] text-foreground">
+                            <a
+                              className="break-all rounded bg-muted px-1.5 py-1 font-mono text-[11px] text-foreground underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                              href={`${repositorySpecBaseUrl}${item.specPath}`}
+                              rel="noreferrer"
+                              target="_blank"
+                            >
                               {item.specPath}
-                            </code>
+                            </a>
                           </div>
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">

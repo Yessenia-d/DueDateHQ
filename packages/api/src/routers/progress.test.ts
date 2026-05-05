@@ -1,26 +1,35 @@
 import assert from "node:assert/strict";
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
 import test from "node:test";
+
+import {
+  featureProgressPriorities,
+  featureProgressStatuses,
+} from "@due-date-hq/db/schema/feature-progress";
 
 import type { Context } from "../context";
 import { appRouter } from "./index";
-import { featureProgressStatuses } from "./progress";
 
 const mockDb = {} as Context["db"];
 
-const requiredFeatureNames = [
-  "Auth and firm workspace",
-  "CSV import with profile review",
-  "Manual client profile and deadline entry",
-  "Tax obligation library",
-  "Tax rule verification",
-  "Official source monitoring",
-  "Notice proposal review and audit workflow",
-  "Coverage matrix",
-  "Dashboard",
-  "Cloudflare beta deployment",
-  "GTM readiness",
-  "Docs and specs",
-] as const;
+type FeatureProgressStatus = (typeof featureProgressStatuses)[number];
+
+const expectedFeatureStatuses = [
+  ["Auth and firm workspace", "done"],
+  ["CSV import with profile review", "in_progress"],
+  ["Manual client profile and deadline entry", "not_started"],
+  ["Tax obligation library", "done"],
+  ["Tax rule verification", "done"],
+  ["Official source monitoring", "in_progress"],
+  ["Notice proposal review and audit workflow", "not_started"],
+  ["Coverage matrix", "done"],
+  ["Dashboard", "in_progress"],
+  ["Cloudflare beta deployment", "not_started"],
+  ["GTM readiness", "blocked"],
+  ["Docs and specs", "in_progress"],
+  ["Feature progress page", "in_progress"],
+] as const satisfies readonly (readonly [string, FeatureProgressStatus])[];
 
 test("progress.list returns grouped Beta feature progress with derived readiness", async () => {
   const caller = appRouter.createCaller({
@@ -31,12 +40,18 @@ test("progress.list returns grouped Beta feature progress with derived readiness
   });
   const result = await caller.progress.list();
   const items = result.groups.flatMap((group) => group.items);
+  const statusByFeatureName = new Map(items.map((item) => [item.name, item.status]));
   const statusSet = new Set(featureProgressStatuses);
 
-  for (const featureName of requiredFeatureNames) {
-    assert.ok(
-      items.some((item) => item.name === featureName),
-      `Expected seeded progress item for ${featureName}`,
+  assert.deepEqual(result.statuses, featureProgressStatuses);
+  assert.deepEqual(result.priorities, featureProgressPriorities);
+  assert.equal(statusByFeatureName.size, items.length, "Feature progress names should be unique");
+
+  for (const [featureName, expectedStatus] of expectedFeatureStatuses) {
+    assert.equal(
+      statusByFeatureName.get(featureName),
+      expectedStatus,
+      `Expected seeded progress status for ${featureName}`,
     );
   }
 
@@ -47,6 +62,18 @@ test("progress.list returns grouped Beta feature progress with derived readiness
       assert.equal(item.category, group.category);
       assert.ok(statusSet.has(item.status), `${item.name} uses an allowed status`);
       assert.match(item.specPath, /^specs\/.+\.md$/);
+      assert.ok(
+        existsSync(resolve(process.cwd(), item.specPath)),
+        `${item.name} maps to an existing spec at ${item.specPath}`,
+      );
+    }
+
+    for (const status of featureProgressStatuses) {
+      assert.equal(
+        group.statusCounts[status],
+        group.items.filter((item) => item.status === status).length,
+        `${group.category} derives ${status} count from its items`,
+      );
     }
   }
 
@@ -57,6 +84,15 @@ test("progress.list returns grouped Beta feature progress with derived readiness
   assert.equal(result.overall.totalCount, items.length);
   assert.equal(result.overall.completedCount, completedCount);
   assert.equal(result.overall.percentComplete, Math.round((completedCount / items.length) * 100));
+
+  for (const status of featureProgressStatuses) {
+    assert.equal(
+      result.overall.statusCounts[status],
+      items.filter((item) => item.status === status).length,
+      `Overall ${status} count is derived from items`,
+    );
+  }
+
   assert.equal(result.p0Readiness.totalCount, p0Items.length);
   assert.equal(result.p0Readiness.completedCount, p0CompletedCount);
   assert.equal(
