@@ -1,9 +1,31 @@
-import type { DashboardSection, DashboardTaskRow } from "@due-date-hq/api/routers/dashboard";
+import type {
+  DashboardSection,
+  DashboardSort,
+  DashboardSummaryInput,
+  DashboardTaskRow,
+  DashboardVerificationStatus,
+} from "@due-date-hq/api/routers/dashboard";
 import { Button } from "@due-date-hq/ui/components/button";
 import { Input } from "@due-date-hq/ui/components/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@due-date-hq/ui/components/select";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { ClipboardList, FileUp, Search, Users } from "lucide-react";
+import {
+  Building2,
+  ClipboardList,
+  FileSearch,
+  FileUp,
+  Filter,
+  RotateCcw,
+  Search,
+  Users,
+} from "lucide-react";
 import * as React from "react";
 
 import { EvidenceDrawer } from "@/components/evidence/evidence-drawer";
@@ -33,6 +55,77 @@ const sectionLabels: Record<DashboardSection["id"], string> = {
   long_range: "Later",
 };
 
+const queueTabToneStyles = {
+  overdue: {
+    active: "border-ddhq-risk/45 bg-ddhq-risk-soft text-ddhq-risk",
+    count: "bg-background/70 text-ddhq-risk",
+    idle:
+      "border-transparent text-muted-foreground hover:border-ddhq-risk/20 hover:bg-ddhq-risk-soft/25 hover:text-ddhq-risk",
+  },
+  due_this_week: {
+    active: "border-ddhq-review/45 bg-ddhq-review-soft text-ddhq-review",
+    count: "bg-background/70 text-ddhq-review",
+    idle:
+      "border-transparent text-muted-foreground hover:border-ddhq-review/20 hover:bg-ddhq-review-soft/25 hover:text-ddhq-review",
+  },
+  this_month: {
+    active: "border-primary/35 bg-ddhq-accent-soft text-primary",
+    count: "bg-background/70 text-primary",
+    idle:
+      "border-transparent text-muted-foreground hover:border-primary/20 hover:bg-ddhq-accent-soft/25 hover:text-primary",
+  },
+  long_range: {
+    active: "border-ddhq-gap/35 bg-ddhq-gap-soft text-ddhq-gap",
+    count: "bg-background/70 text-ddhq-gap",
+    idle:
+      "border-transparent text-muted-foreground hover:border-ddhq-gap/20 hover:bg-ddhq-gap-soft/25 hover:text-ddhq-gap",
+  },
+} satisfies Record<
+  DashboardSection["id"],
+  {
+    active: string;
+    count: string;
+    idle: string;
+  }
+>;
+
+const sortLabels: Record<DashboardSort, string> = {
+  smart_priority: "Smart priority",
+  due_date: "Due date",
+  client: "Client",
+  priority: "Priority",
+};
+
+const verificationLabels: Record<DashboardVerificationStatus, string> = {
+  verified: "Verified",
+  needs_review: "Needs review",
+  source_changed: "Source changed",
+  unsupported: "Unsupported",
+  entered_deadline: "Entered deadline",
+};
+
+const taskStatusLabels: Record<DashboardTaskRow["status"], string> = {
+  not_started: "Not started",
+  in_progress: "In progress",
+  waiting_on_client: "Waiting on client",
+  done: "Done",
+};
+
+type TaxWorkFilters = Pick<
+  DashboardSummaryInput,
+  | "entityType"
+  | "filingProfileId"
+  | "jurisdiction"
+  | "sort"
+  | "taskStatus"
+  | "taxCategory"
+  | "verificationStatus"
+>;
+
+const emptyTaxWorkFilters: TaxWorkFilters = {
+  sort: "smart_priority",
+};
+
 function TaxWorkComponent() {
   const search = Route.useSearch();
   const clients = useQuery(trpc.clients.list.queryOptions());
@@ -47,6 +140,7 @@ function TaxWorkComponent() {
   const [activeHorizon, setActiveHorizon] =
     React.useState<DashboardSection["id"]>("due_this_week");
   const [clientSearchQuery, setClientSearchQuery] = React.useState("");
+  const [workFilters, setWorkFilters] = React.useState<TaxWorkFilters>(emptyTaxWorkFilters);
   const [selectedTaskIds, setSelectedTaskIds] = React.useState<Set<string>>(new Set());
   const [evidenceTaskId, setEvidenceTaskId] = React.useState<string | null>(null);
 
@@ -77,12 +171,16 @@ function TaxWorkComponent() {
       client.displayName.toLocaleLowerCase().includes(query),
     );
   }, [clients.data, clientSearchQuery]);
-  const filteredTasks = React.useMemo(() => {
+  const selectedClientTasks = React.useMemo(() => {
     if (!dashboard.data || !selectedClientId) return [];
     return dashboard.data.allTasks.filter(
       (task) => task.clientRelationship.id === selectedClientId,
     );
   }, [dashboard.data, selectedClientId]);
+  const filteredTasks = React.useMemo(
+    () => filterAndSortClientTasks(selectedClientTasks, workFilters),
+    [selectedClientTasks, workFilters],
+  );
   const sections = React.useMemo(() => buildSections(filteredTasks), [filteredTasks]);
   const activeSection = React.useMemo(
     () =>
@@ -90,14 +188,49 @@ function TaxWorkComponent() {
         id: activeHorizon,
         label: sectionLabels[activeHorizon],
         count: 0,
+        pagination: {
+          page: 1,
+          pageSize: 1,
+          totalPages: 1,
+        },
         tasks: [],
       },
     [activeHorizon, sections],
   );
   const clientQueueSummary = React.useMemo(
-    () => summarizeClientQueue(filteredTasks),
-    [filteredTasks],
+    () => summarizeClientQueue(selectedClientTasks),
+    [selectedClientTasks],
   );
+  const scopedQueueSummary = React.useMemo(() => summarizeClientQueue(filteredTasks), [filteredTasks]);
+  const profileSummaries = React.useMemo(
+    () => summarizeProfiles(selectedClientTasks),
+    [selectedClientTasks],
+  );
+  const activeFilterCount = countActiveFilters(workFilters);
+  const selectedProfile = profileSummaries.find(
+    (profile) => profile.id === workFilters.filingProfileId,
+  );
+
+  React.useEffect(() => {
+    setWorkFilters((current) =>
+      current.filingProfileId ? { ...current, filingProfileId: undefined } : current,
+    );
+  }, [selectedClientId]);
+
+  function updateWorkFilter<K extends keyof TaxWorkFilters>(
+    key: K,
+    value: TaxWorkFilters[K] | "",
+  ) {
+    setWorkFilters((current) => ({
+      ...current,
+      [key]: value || undefined,
+      sort: key === "sort" ? (value as DashboardSort) : (current.sort ?? "smart_priority"),
+    }));
+  }
+
+  function resetWorkFilters() {
+    setWorkFilters(emptyTaxWorkFilters);
+  }
 
   React.useEffect(() => {
     const visibleTaskIds = new Set(activeSection.tasks.map((task) => task.id));
@@ -159,7 +292,7 @@ function TaxWorkComponent() {
 
   return (
     <main className="min-h-0 overflow-auto bg-background text-foreground">
-      <div className="mx-auto flex max-w-[1440px] flex-col gap-4 px-5 py-5">
+      <div className="mx-auto flex max-w-[1440px] flex-col gap-5 px-5 py-5">
         <section className="grid gap-4 pb-1 lg:grid-cols-[1fr_auto] lg:items-end">
           <div className="min-w-0">
             <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
@@ -170,8 +303,8 @@ function TaxWorkComponent() {
               Client tax workbench
             </h1>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-              Work one client at a time: pick a relationship, import tax information, then
-              clear the selected client's deadline queue.
+              Work from relationship to filing profile to task. Import tax information, narrow
+              the scope, and clear one client's deadline queue without leaving context.
             </p>
           </div>
           {selectedClientId ? (
@@ -195,12 +328,12 @@ function TaxWorkComponent() {
             No clients yet. Add clients before importing tax information.
           </section>
         ) : (
-          <section className="grid min-h-[560px] gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
+          <section className="grid min-h-[560px] gap-4 lg:grid-cols-[300px_minmax(0,1fr)]">
             <aside className="overflow-hidden rounded-lg border border-border/80 bg-card">
               <div className="px-3 py-3">
                 <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
                   <Users className="size-3.5" />
-                  Client worklist
+                  Relationship list
                 </div>
                 <div className="mt-1 text-sm font-semibold text-foreground">
                   {clients.data.clients.length} relationships
@@ -220,7 +353,7 @@ function TaxWorkComponent() {
                   />
                 </div>
               </div>
-              <div className="max-h-[520px] overflow-auto p-2">
+              <div className="max-h-[560px] overflow-auto p-2">
                 {visibleClients.length === 0 ? (
                   <div className="rounded-md border border-dashed border-border bg-muted/20 px-3 py-3 text-xs leading-5 text-muted-foreground">
                     No clients match this search.
@@ -234,7 +367,7 @@ function TaxWorkComponent() {
                       key={client.id}
                       type="button"
                       aria-pressed={isSelected}
-                      className={`w-full rounded-md border px-2.5 py-2 text-left transition-colors ${
+                      className={`w-full rounded-md border px-2.5 py-2.5 text-left transition-colors ${
                         isSelected
                           ? "border-primary/35 bg-ddhq-accent-soft/65 text-foreground"
                           : "border-transparent text-foreground hover:border-border hover:bg-muted/40"
@@ -259,53 +392,203 @@ function TaxWorkComponent() {
                   Select a client to review tax work.
                 </div>
               ) : (
-                <div className="grid gap-3">
-                  <section className="rounded-lg border border-border/80 bg-card p-3">
-                    <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                      <div className="min-w-0">
-                        <div className="text-xs font-semibold text-muted-foreground">
-                          Active client
+                <div className="grid min-w-0 gap-4">
+                  <section className="min-w-0 overflow-hidden rounded-lg border border-border/80 bg-card">
+                    <div className="min-w-0 px-4 py-3">
+                      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+                            <Building2 className="size-3.5" />
+                            Client relationship
+                          </div>
+                          <div className="mt-1 flex flex-wrap items-center gap-2">
+                            <h2 className="text-lg font-semibold leading-tight">
+                              {selectedClient.displayName}
+                            </h2>
+                            <StatusBadge status="neutral">
+                              {selectedClient.filingProfileCount} profiles
+                            </StatusBadge>
+                            <StatusBadge status="neutral">
+                              {clientQueueSummary.total} tasks
+                            </StatusBadge>
+                          </div>
+                          <div className="mt-2 flex flex-wrap gap-1.5">
+                            <TrustBadge status="verified" value={clientQueueSummary.verified} />
+                            <TrustBadge status="review" value={clientQueueSummary.needsReview} />
+                            <TrustBadge
+                              status="entered_deadline"
+                              value={clientQueueSummary.enteredDeadline}
+                            />
+                          </div>
                         </div>
-                        <div className="mt-1 flex flex-wrap items-center gap-2">
-                          <h2 className="text-lg font-semibold leading-tight">
-                            {selectedClient.displayName}
-                          </h2>
-                          <StatusBadge status="neutral">
-                            {filteredTasks.length} visible tasks
-                          </StatusBadge>
+                        <a
+                          href={`/import?clientIds=${encodeURIComponent(selectedClient.id)}`}
+                          className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-border bg-background px-2.5 text-xs font-medium text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                          <FileUp className="size-3.5" />
+                          Import for this client
+                        </a>
+                      </div>
+
+                      <div className="mt-4">
+                        <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+                          <FileSearch className="size-3.5" />
+                          Filing profile scope
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            aria-pressed={!workFilters.filingProfileId}
+                            className={`rounded-md border px-2.5 py-2 text-left text-xs transition-colors ${
+                              !workFilters.filingProfileId
+                                ? "border-primary/35 bg-ddhq-accent-soft/65 text-foreground"
+                                : "border-border/70 bg-background text-muted-foreground hover:bg-muted/40 hover:text-foreground"
+                            }`}
+                            onClick={() => updateWorkFilter("filingProfileId", "")}
+                          >
+                            <span className="font-semibold">All profiles</span>
+                            <span className="ml-2 font-mono tabular-nums">
+                              {clientQueueSummary.total}
+                            </span>
+                          </button>
+                          {profileSummaries.map((profile) => (
+                            <ProfileScopeButton
+                              key={profile.id}
+                              profile={profile}
+                              isSelected={workFilters.filingProfileId === profile.id}
+                              onSelect={() => updateWorkFilter("filingProfileId", profile.id)}
+                            />
+                          ))}
                         </div>
                       </div>
-                      <a
-                        href={`/import?clientIds=${encodeURIComponent(selectedClient.id)}`}
-                        className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-border bg-background px-2.5 text-xs font-medium text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                      >
-                        <FileUp className="size-3.5" />
-                        Import for this client
-                      </a>
-                    </div>
-                    <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-4">
-                      <QueueMetric label="Overdue" tone="risk" value={clientQueueSummary.overdue} />
-                      <QueueMetric label="This week" tone="review" value={clientQueueSummary.dueThisWeek} />
-                      <QueueMetric label="Open" tone="neutral" value={clientQueueSummary.open} />
-                      <QueueMetric label="Done" tone="verified" value={clientQueueSummary.done} />
                     </div>
                   </section>
 
-                  <section className="rounded-lg border border-border/80 bg-card p-2">
-                    <div className="flex flex-wrap items-center gap-1">
-                      {sections.map((section) => (
-                        <QueueTab
-                          key={section.id}
-                          count={section.count}
-                          horizon={section.id}
-                          isSelected={activeHorizon === section.id}
-                          onSelect={() => setActiveHorizon(section.id)}
-                        />
-                      ))}
+                  <section className="min-w-0 rounded-lg border border-border/80 bg-card p-3">
+                    <div className="mb-3 flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+                      <div>
+                        <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+                          <Filter className="size-3.5" />
+                          Work scope filters
+                        </div>
+                        <div className="mt-1 text-xs text-muted-foreground">
+                          {scopeSummaryText({
+                            activeFilterCount,
+                            activeHorizon,
+                            activeHorizonCount: activeSection.count,
+                            profileName: selectedProfile?.displayName,
+                            summary: scopedQueueSummary,
+                          })}
+                        </div>
+                      </div>
+                      {activeFilterCount > 0 ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 rounded-lg"
+                          onClick={resetWorkFilters}
+                        >
+                          <RotateCcw className="size-3.5" />
+                          Reset filters
+                        </Button>
+                      ) : null}
+                    </div>
+
+                    <div className="max-w-5xl">
+                      <div className="mb-2 flex flex-wrap items-center gap-1 rounded-lg border border-border/80 bg-background p-1">
+                        {sections.map((section) => (
+                          <QueueTab
+                            key={section.id}
+                            count={section.count}
+                            horizon={section.id}
+                            isSelected={activeHorizon === section.id}
+                            onSelect={() => setActiveHorizon(section.id)}
+                          />
+                        ))}
+                      </div>
+
+                      <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                      <FilterSelect
+                        label="Profile"
+                        value={workFilters.filingProfileId ?? ""}
+                        onChange={(value) => updateWorkFilter("filingProfileId", value)}
+                        options={profileSummaries.map((profile) => ({
+                          value: profile.id,
+                          label: profile.displayName,
+                        }))}
+                        placeholder="All profiles"
+                      />
+                      <FilterSelect
+                        label="Jurisdiction"
+                        value={workFilters.jurisdiction ?? ""}
+                        onChange={(value) => updateWorkFilter("jurisdiction", value)}
+                        options={getClientOptions(selectedClientTasks, "jurisdiction")}
+                        placeholder="All jurisdictions"
+                      />
+                      <FilterSelect
+                        label="Entity type"
+                        value={workFilters.entityType ?? ""}
+                        onChange={(value) =>
+                          updateWorkFilter(
+                            "entityType",
+                            value as TaxWorkFilters["entityType"] | "",
+                          )
+                        }
+                        options={getClientOptions(selectedClientTasks, "entityType")}
+                        placeholder="All entities"
+                      />
+                      <FilterSelect
+                        label="Tax type"
+                        value={workFilters.taxCategory ?? ""}
+                        onChange={(value) => updateWorkFilter("taxCategory", value)}
+                        options={getClientOptions(selectedClientTasks, "taxCategory")}
+                        placeholder="All tax types"
+                      />
+                      <FilterSelect
+                        label="Status"
+                        value={workFilters.taskStatus ?? ""}
+                        onChange={(value) =>
+                          updateWorkFilter(
+                            "taskStatus",
+                            value as TaxWorkFilters["taskStatus"] | "",
+                          )
+                        }
+                        options={dashboard.data.filterOptions.taskStatuses.map((value) => ({
+                          value,
+                          label: taskStatusLabels[value],
+                        }))}
+                        placeholder="All statuses"
+                      />
+                      <FilterSelect
+                        label="Verification"
+                        value={workFilters.verificationStatus ?? ""}
+                        onChange={(value) =>
+                          updateWorkFilter(
+                            "verificationStatus",
+                            value as TaxWorkFilters["verificationStatus"] | "",
+                          )
+                        }
+                        options={dashboard.data.filterOptions.verificationStatuses.map((value) => ({
+                          value,
+                          label: verificationLabels[value],
+                        }))}
+                        placeholder="All verification"
+                      />
+                      <FilterSelect
+                        label="Sort"
+                        value={workFilters.sort ?? "smart_priority"}
+                        onChange={(value) => updateWorkFilter("sort", value as DashboardSort)}
+                        options={Object.entries(sortLabels).map(([value, label]) => ({
+                          value,
+                          label,
+                        }))}
+                      />
+                      </div>
                     </div>
                   </section>
 
-                  <section className="grid gap-1">
+                  <section className="grid min-w-0 gap-1">
                     <BulkTaskActions
                       selectedTaskIds={selectedTaskIds}
                       taskStatuses={dashboard.data.filterOptions.taskStatuses}
@@ -335,33 +618,17 @@ function summarizeClientQueue(tasks: DashboardTaskRow[]) {
   return {
     done: tasks.filter((task) => task.status === "done").length,
     dueThisWeek: tasks.filter((task) => task.horizon === "due_this_week").length,
+    enteredDeadline: tasks.filter((task) => task.verificationStatus === "entered_deadline").length,
+    needsReview: tasks.filter(
+      (task) =>
+        task.verificationStatus === "needs_review" ||
+        task.verificationStatus === "source_changed",
+    ).length,
     open: tasks.filter((task) => task.status !== "done").length,
     overdue: tasks.filter((task) => task.horizon === "overdue").length,
+    total: tasks.length,
+    verified: tasks.filter((task) => task.verificationStatus === "verified").length,
   };
-}
-
-function QueueMetric({
-  label,
-  tone,
-  value,
-}: {
-  label: string;
-  tone: "neutral" | "review" | "risk" | "verified";
-  value: number;
-}) {
-  const toneClass = {
-    neutral: "bg-muted/45 text-foreground",
-    review: "bg-ddhq-review-soft/75 text-ddhq-review",
-    risk: "bg-ddhq-risk-soft/75 text-ddhq-risk",
-    verified: "bg-ddhq-verified-soft/75 text-ddhq-verified",
-  }[tone];
-
-  return (
-    <div className={`rounded-md px-2.5 py-2 ${toneClass}`}>
-      <div className="text-[11px] font-semibold text-current/75">{label}</div>
-      <div className="mt-1 text-xl font-semibold leading-none">{value}</div>
-    </div>
-  );
 }
 
 function QueueTab({
@@ -375,10 +642,7 @@ function QueueTab({
   isSelected: boolean;
   onSelect: () => void;
 }) {
-  const isDueThisWeek = horizon === "due_this_week";
-  const selectedClass = isDueThisWeek
-    ? "border-ddhq-review/45 bg-ddhq-review-soft text-ddhq-review"
-    : "border-primary/35 bg-ddhq-accent-soft text-primary";
+  const tone = queueTabToneStyles[horizon];
 
   return (
     <button
@@ -386,15 +650,15 @@ function QueueTab({
       aria-pressed={isSelected}
       className={`inline-flex h-8 items-center gap-2 rounded-md border px-2.5 text-xs font-semibold transition-colors ${
         isSelected
-          ? selectedClass
-          : "border-transparent text-muted-foreground hover:border-border hover:bg-muted/40 hover:text-foreground"
+          ? tone.active
+          : tone.idle
       }`}
       onClick={onSelect}
     >
       {sectionLabels[horizon]}
       <span
         className={`rounded-full px-1.5 py-0.5 text-[11px] ${
-          isSelected ? "bg-background/70" : "bg-muted text-muted-foreground"
+          isSelected ? tone.count : "bg-muted text-muted-foreground"
         }`}
       >
         {count}
@@ -410,7 +674,251 @@ function buildSections(tasks: DashboardTaskRow[]): DashboardSection[] {
       id: sectionId,
       label: sectionLabels[sectionId],
       count: sectionTasks.length,
+      pagination: {
+        page: 1,
+        pageSize: Math.max(sectionTasks.length, 1),
+        totalPages: 1,
+      },
       tasks: sectionTasks,
     };
   });
+}
+
+function scopeSummaryText({
+  activeFilterCount,
+  activeHorizon,
+  activeHorizonCount,
+  profileName,
+  summary,
+}: {
+  activeFilterCount: number;
+  activeHorizon: DashboardSection["id"];
+  activeHorizonCount: number;
+  profileName?: string;
+  summary: ReturnType<typeof summarizeClientQueue>;
+}) {
+  const scope = profileName ?? "Selected client";
+  const filterCopy =
+    activeFilterCount > 0 ? `${activeFilterCount} filters active` : "full queue";
+
+  return `${scope}: ${sectionLabels[activeHorizon]} shows ${activeHorizonCount}; ${summary.open} open total (${filterCopy}).`;
+}
+
+function TrustBadge({
+  status,
+  value,
+}: {
+  status: "entered_deadline" | "review" | "verified";
+  value: number;
+}) {
+  const config = {
+    entered_deadline: { badgeStatus: "entered_deadline", label: "Entered" },
+    review: { badgeStatus: "review", label: "Review" },
+    verified: { badgeStatus: "verified", label: "Verified" },
+  } satisfies Record<
+    typeof status,
+    { badgeStatus: React.ComponentProps<typeof StatusBadge>["status"]; label: string }
+  >;
+
+  return (
+    <StatusBadge status={config[status].badgeStatus}>
+      {config[status].label} {value}
+    </StatusBadge>
+  );
+}
+
+type ProfileSummary = {
+  displayName: string;
+  entityType: string;
+  id: string;
+  open: number;
+  review: number;
+  states: string[];
+  total: number;
+};
+
+function summarizeProfiles(tasks: DashboardTaskRow[]): ProfileSummary[] {
+  const profiles = new Map<string, ProfileSummary>();
+
+  for (const task of tasks) {
+    const profile = profiles.get(task.filingProfile.id) ?? {
+      displayName: task.filingProfile.displayName,
+      entityType: task.filingProfile.entityType,
+      id: task.filingProfile.id,
+      open: 0,
+      review: 0,
+      states: task.filingProfile.states,
+      total: 0,
+    };
+
+    profile.total += 1;
+    if (task.status !== "done") profile.open += 1;
+    if (
+      task.verificationStatus === "needs_review" ||
+      task.verificationStatus === "source_changed"
+    ) {
+      profile.review += 1;
+    }
+    profiles.set(task.filingProfile.id, profile);
+  }
+
+  return [...profiles.values()].sort((a, b) => a.displayName.localeCompare(b.displayName));
+}
+
+function ProfileScopeButton({
+  isSelected,
+  onSelect,
+  profile,
+}: {
+  isSelected: boolean;
+  onSelect: () => void;
+  profile: ProfileSummary;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={isSelected}
+      className={`min-w-[13rem] rounded-md border px-2.5 py-2 text-left transition-colors ${
+        isSelected
+          ? "border-primary/35 bg-ddhq-accent-soft/65 text-foreground"
+          : "border-border/70 bg-background text-foreground hover:bg-muted/40"
+      }`}
+      onClick={onSelect}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="truncate text-xs font-semibold">{profile.displayName}</div>
+          <div className="mt-0.5 text-[11px] text-muted-foreground">
+            {profile.entityType}
+            {profile.states.length > 0 ? ` / ${profile.states.join(", ")}` : ""}
+          </div>
+        </div>
+        <div className="font-mono text-sm font-semibold tabular-nums">{profile.total}</div>
+      </div>
+      <div className="mt-1 flex gap-1.5 text-[11px] text-muted-foreground">
+        <span>{profile.open} open</span>
+        {profile.review > 0 ? <span>{profile.review} review</span> : null}
+      </div>
+    </button>
+  );
+}
+
+function FilterSelect({
+  label,
+  onChange,
+  options,
+  placeholder,
+  value,
+}: {
+  label: string;
+  onChange: (value: string) => void;
+  options: Array<{ value: string; label: string }>;
+  placeholder?: string;
+  value: string;
+}) {
+  return (
+    <label className="grid gap-1 text-xs font-medium text-muted-foreground">
+      {label}
+      <Select value={value} onValueChange={(nextValue) => onChange(nextValue ?? "")}>
+        <SelectTrigger className="h-8 w-full rounded-lg bg-background">
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
+        <SelectContent className="rounded-lg">
+          {placeholder ? <SelectItem value="">{placeholder}</SelectItem> : null}
+          {options.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </label>
+  );
+}
+
+function getClientOptions(
+  tasks: DashboardTaskRow[],
+  key: "entityType" | "jurisdiction" | "taxCategory",
+): Array<{ value: string; label: string }> {
+  const values = new Set<string>();
+
+  for (const task of tasks) {
+    if (key === "entityType") values.add(task.filingProfile.entityType);
+    if (key === "jurisdiction") values.add(task.jurisdiction);
+    if (key === "taxCategory") values.add(task.taxCategory);
+  }
+
+  return [...values].sort().map((value) => ({ value, label: value }));
+}
+
+function countActiveFilters(filters: TaxWorkFilters): number {
+  return [
+    filters.entityType,
+    filters.filingProfileId,
+    filters.jurisdiction,
+    filters.taskStatus,
+    filters.taxCategory,
+    filters.verificationStatus,
+  ].filter(Boolean).length;
+}
+
+function filterAndSortClientTasks(
+  tasks: DashboardTaskRow[],
+  filters: TaxWorkFilters,
+): DashboardTaskRow[] {
+  const filtered = tasks.filter((task) => {
+    if (filters.filingProfileId && task.filingProfile.id !== filters.filingProfileId) {
+      return false;
+    }
+    if (filters.jurisdiction && task.jurisdiction !== filters.jurisdiction) return false;
+    if (filters.entityType && task.filingProfile.entityType !== filters.entityType) return false;
+    if (filters.taxCategory && task.taxCategory !== filters.taxCategory) return false;
+    if (filters.taskStatus && task.status !== filters.taskStatus) return false;
+    if (
+      filters.verificationStatus &&
+      task.verificationStatus !== filters.verificationStatus
+    ) {
+      return false;
+    }
+
+    return true;
+  });
+
+  return [...filtered].sort((a, b) => compareTasks(a, b, filters.sort ?? "smart_priority"));
+}
+
+function compareTasks(a: DashboardTaskRow, b: DashboardTaskRow, sort: DashboardSort): number {
+  switch (sort) {
+    case "client":
+      return (
+        compareStrings(a.clientRelationship.displayName, b.clientRelationship.displayName) ||
+        compareStrings(a.filingProfile.displayName, b.filingProfile.displayName) ||
+        a.currentDueDate.localeCompare(b.currentDueDate)
+      );
+    case "due_date":
+      return (
+        a.currentDueDate.localeCompare(b.currentDueDate) ||
+        compareStrings(a.filingProfile.displayName, b.filingProfile.displayName)
+      );
+    case "priority":
+      return (
+        priorityRank(b.priority) - priorityRank(a.priority) ||
+        a.currentDueDate.localeCompare(b.currentDueDate)
+      );
+    case "smart_priority":
+      return (
+        b.smartPriorityScore - a.smartPriorityScore ||
+        a.currentDueDate.localeCompare(b.currentDueDate) ||
+        compareStrings(a.filingProfile.displayName, b.filingProfile.displayName)
+      );
+  }
+}
+
+function compareStrings(a: string, b: string): number {
+  return a.localeCompare(b, "en", { sensitivity: "base" });
+}
+
+function priorityRank(priority: DashboardTaskRow["priority"]): number {
+  const priorities: DashboardTaskRow["priority"][] = ["low", "normal", "high", "urgent"];
+  return priorities.indexOf(priority);
 }

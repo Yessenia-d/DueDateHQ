@@ -273,15 +273,16 @@ export function TaskTable({
   }, [section.tasks]);
 
   return (
-    <div className="min-h-0 flex-1 overflow-auto rounded-lg border border-border/80 bg-card">
+    <div className="min-h-0 min-w-0 flex-1">
       {section.tasks.length === 0 ? (
-        <div className="grid h-full min-h-60 place-items-center px-3 py-8 text-center text-sm text-muted-foreground">
+        <div className="grid min-h-60 place-items-center rounded-lg border border-border/80 bg-card px-3 py-8 text-center text-sm text-muted-foreground">
           No tasks in this horizon.
         </div>
       ) : (
-        <Table className="min-w-[1610px]">
-          <TableHeader>
-            <TableRow className="bg-muted/40">
+        <div className="max-h-full max-w-full overflow-auto rounded-lg border border-border/80 bg-card">
+          <Table className="min-w-[1610px]">
+            <TableHeader>
+              <TableRow className="bg-muted/40">
               <TableHead
                 className={cn(
                   "text-[11px] font-semibold uppercase text-muted-foreground",
@@ -605,7 +606,8 @@ export function TaskTable({
               );
             })}
           </TableBody>
-        </Table>
+          </Table>
+        </div>
       )}
       <Dialog
         open={Boolean(activeExtensionTask)}
