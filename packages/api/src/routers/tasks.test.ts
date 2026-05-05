@@ -107,7 +107,7 @@ function makeTask(overrides: Partial<DeadlineTask> = {}): DeadlineTask {
     priority: "normal",
     sourceType: "verified_rule",
     createdVia: "system_rule",
-    userProvidedSourceNote: null,
+    enteredDeadlineReferenceNote: null,
     createdAt: now,
     updatedAt: now,
     ...overrides,
@@ -159,6 +159,37 @@ test("tasks.updateFirmTargetDate records firm target date history separately", a
   assert.equal(eventWrite?.row.previousCurrentDueDate, null);
   assert.equal(eventWrite?.row.newCurrentDueDate, null);
   assert.equal(eventWrite?.row.newFirmTargetDate, "2026-05-01");
+});
+
+test("tasks.markExtended records official extension without a bulk due-date edit", async () => {
+  const writes: Write[] = [];
+  const updatedTask = makeTask({
+    currentDueDate: "2026-09-15",
+    originalDueDate: "2026-05-15",
+  });
+  const caller = createCaller({
+    selectQueue: [[makeTask({ currentDueDate: "2026-05-15", originalDueDate: null })]],
+    updateRows: [updatedTask],
+    writes,
+  });
+
+  const result = await caller.tasks.markExtended({
+    taskId: "task-test",
+    newCurrentDueDate: "2026-09-15",
+  });
+
+  assert.equal(result.currentDueDate, "2026-09-15");
+  assert.equal(result.originalDueDate, "2026-05-15");
+
+  const auditWrite = writes.find((write) => write.table === auditLogs);
+  const eventWrite = writes.find((write) => write.table === deadlineDateEvents);
+
+  assert.equal(auditWrite?.row.action, "deadline_task.mark_extended");
+  assert.equal((auditWrite?.row.metadata as Record<string, unknown>).officialDueDateMutated, true);
+  assert.equal(eventWrite?.row.eventType, "official_extension");
+  assert.equal(eventWrite?.row.previousCurrentDueDate, "2026-05-15");
+  assert.equal(eventWrite?.row.newCurrentDueDate, "2026-09-15");
+  assert.equal(eventWrite?.row.sourceName, "CPA-recorded extension");
 });
 
 test("tasks.bulkUpdateStatus updates each selected task", async () => {

@@ -1272,9 +1272,9 @@
           },
           coverageGaps: {
             title: "Coverage gaps",
-            context: "Request verification, add user-provided deadlines, or dismiss for now",
+            context: "Request verification, add entered deadlines, or dismiss for now",
             target: "coverage-panel",
-            status: "Coverage gaps focused. User-provided deadlines remain marked as not verified."
+            status: "Coverage gaps focused. Entered deadlines remain marked as not verified."
           }
         };
 
@@ -1483,11 +1483,11 @@
             }
             if (action === "verification") {
               openContext("coverageGaps", {
-                status: "Coverage gap action focused. Request verification or add a user-provided deadline."
+                status: "Coverage gap action focused. Request verification or add an entered deadline."
               });
             }
             if (action === "manual") {
-              setStatus("Manual deadline path opened for the coverage gap. It will be marked user-provided.");
+              setStatus("Manual deadline path opened for the coverage gap. It will be marked as an entered deadline.");
             }
           });
         });

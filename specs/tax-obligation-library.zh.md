@@ -10,7 +10,7 @@
 2. 用户选择州和税种分类。
 3. 用户看到已知义务及其核验状态。
 4. Verified rules 可以解释截止日期、extensions 和 recurrence。
-5. Unsupported、Needs review 或 coverage-gap 义务可以请求覆盖，或通过 user-provided deadline 处理。
+5. Unsupported、Needs review 或 coverage-gap 义务可以请求覆盖，或通过 entered deadline 处理。
 6. Upcoming official tasks 从维护过的 Verified rules 生成，而不是依赖 manual rollover。
 
 ## Flow Diagram
@@ -40,7 +40,7 @@ flowchart TD
 - `coverage.matrix`
 - `coverage.getRule`
 - `coverage.requestCoverage`
-- `coverage.addUserProvidedDeadlineFromGap`
+- `coverage.addEnteredDeadlineFromGap`
 - `coverage.dismissGapForNow`
 
 ## Data Model
@@ -93,8 +93,8 @@ File In Time 使用 services 定义 work type、frequency、due dates、extensio
 
 - `Verified` rules 可以生成 official tasks、extension dates 和 upcoming recurring tasks。
 - `Needs review`、`Source changed`、`Unsupported` obligations 保持可见，但不创建 official tasks。
-- `Coverage gap` entries 保持可见，并支持 request DueDateHQ verification、add user-provided deadline、ignore/dismiss for now。
-- User-provided custom deadlines 保持 user-provided，不能伪装成 verified service。
+- `Coverage gap` entries 保持可见，并支持 request DueDateHQ verification、add entered deadline、ignore/dismiss for now。
+- Entered deadlines 保持 entered deadline，不能伪装成 verified service。
 - Official recurring deadlines 应由维护过的 rules 生成。用户不应该为 official deadlines 执行 manual rollover。
 
 ## Acceptance Criteria

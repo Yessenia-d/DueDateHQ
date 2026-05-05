@@ -77,7 +77,7 @@ function NewClientComponent() {
             <h1 className="text-2xl font-semibold tracking-normal">New client relationship</h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
               Create the firm-owned relationship first, then add filing profiles and
-              user-provided deadline tasks.
+              entered deadline tasks.
             </p>
           </div>
           {search.coverageObligationId ? (

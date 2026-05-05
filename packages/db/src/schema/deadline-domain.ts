@@ -72,7 +72,7 @@ export type DeadlineTaskStatus = (typeof deadlineTaskStatuses)[number];
 export const deadlineTaskPriorities = ["low", "normal", "high", "urgent"] as const;
 export type DeadlineTaskPriority = (typeof deadlineTaskPriorities)[number];
 
-export const deadlineTaskSourceTypes = ["verified_rule", "user_provided"] as const;
+export const deadlineTaskSourceTypes = ["verified_rule", "entered_deadline"] as const;
 export type DeadlineTaskSourceType = (typeof deadlineTaskSourceTypes)[number];
 
 export const deadlineTaskCreatedViaValues = ["system_rule", "manual"] as const;
@@ -82,7 +82,7 @@ export const deadlineDateEventTypes = [
   "official_original_due_date",
   "official_extension",
   "official_relief_change",
-  "user_provided_adjustment",
+  "entered_deadline_adjustment",
   "firm_target_change",
 ] as const;
 export type DeadlineDateEventType = (typeof deadlineDateEventTypes)[number];
@@ -215,7 +215,7 @@ export const deadlineTasks = sqliteTable(
     priority: text("priority", { enum: deadlineTaskPriorities }).notNull().default("normal"),
     sourceType: text("source_type", { enum: deadlineTaskSourceTypes }).notNull(),
     createdVia: text("created_via", { enum: deadlineTaskCreatedViaValues }).notNull(),
-    userProvidedSourceNote: text("user_provided_source_note"),
+    enteredDeadlineReferenceNote: text("entered_deadline_reference_note"),
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
     updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
   },
@@ -247,7 +247,7 @@ export const deadlineTasks = sqliteTable(
     ),
     check(
       "deadline_tasks_source_type_check",
-      sql`${table.sourceType} in ('verified_rule', 'user_provided')`,
+      sql`${table.sourceType} in ('verified_rule', 'entered_deadline')`,
     ),
     check(
       "deadline_tasks_created_via_check",
@@ -255,15 +255,15 @@ export const deadlineTasks = sqliteTable(
     ),
     check(
       "deadline_tasks_source_created_via_check",
-      sql`(${table.sourceType} = 'verified_rule' and ${table.createdVia} = 'system_rule') or (${table.sourceType} = 'user_provided' and ${table.createdVia} = 'manual')`,
+      sql`(${table.sourceType} = 'verified_rule' and ${table.createdVia} = 'system_rule') or (${table.sourceType} = 'entered_deadline' and ${table.createdVia} = 'manual')`,
     ),
     check(
       "deadline_tasks_verified_rule_tax_rule_check",
       sql`${table.sourceType} != 'verified_rule' or ${table.taxRuleId} is not null`,
     ),
     check(
-      "deadline_tasks_user_source_note_check",
-      sql`${table.sourceType} != 'user_provided' or ${table.userProvidedSourceNote} is not null`,
+      "deadline_tasks_entered_deadline_reference_note_check",
+      sql`${table.sourceType} != 'entered_deadline' or ${table.enteredDeadlineReferenceNote} is not null`,
     ),
   ],
 );
@@ -307,7 +307,7 @@ export const deadlineDateEvents = sqliteTable(
     }),
     check(
       "deadline_date_events_type_check",
-      sql`${table.eventType} in ('official_original_due_date', 'official_extension', 'official_relief_change', 'user_provided_adjustment', 'firm_target_change')`,
+      sql`${table.eventType} in ('official_original_due_date', 'official_extension', 'official_relief_change', 'entered_deadline_adjustment', 'firm_target_change')`,
     ),
     check(
       "deadline_date_events_due_date_payload_check",

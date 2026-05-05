@@ -35,7 +35,7 @@ export type TaskEvidenceResponse = {
     status: DeadlineTask["status"];
     priority: DeadlineTask["priority"];
     sourceType: DeadlineTask["sourceType"];
-    userProvidedSourceNote: string | null;
+    enteredDeadlineReferenceNote: string | null;
   };
   clientRelationship: {
     id: string;
@@ -227,6 +227,83 @@ async function updateFirmTargetDate({
   return updated;
 }
 
+async function markTaskExtended({
+  ctx,
+  newCurrentDueDate,
+  sourceName,
+  sourceUrl,
+  taskId,
+}: {
+  ctx: Context;
+  newCurrentDueDate: string;
+  sourceName: string;
+  sourceUrl: string | null;
+  taskId: string;
+}) {
+  const { session, task } = await loadFirmTask(ctx, taskId);
+
+  if (newCurrentDueDate <= task.currentDueDate) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Extension due date must be after the current due date.",
+    });
+  }
+
+  const now = new Date();
+  const [updated] = await ctx.db
+    .update(deadlineTasks)
+    .set({
+      currentDueDate: newCurrentDueDate,
+      originalDueDate: task.originalDueDate ?? task.currentDueDate,
+      updatedAt: now,
+    })
+    .where(and(eq(deadlineTasks.firmId, session.firm.id), eq(deadlineTasks.id, taskId)))
+    .returning();
+
+  if (!updated) {
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Extension date could not be recorded.",
+    });
+  }
+
+  const auditLogId = await recordTaskAudit({
+    action: "deadline_task.mark_extended",
+    beforeState: {
+      currentDueDate: task.currentDueDate,
+      originalDueDate: task.originalDueDate,
+    },
+    afterState: {
+      currentDueDate: updated.currentDueDate,
+      originalDueDate: updated.originalDueDate,
+    },
+    ctx,
+    entityId: task.id,
+    metadata: { officialDueDateMutated: true },
+    session,
+  });
+
+  await ctx.db.insert(deadlineDateEvents).values({
+    id: crypto.randomUUID(),
+    firmId: session.firm.id,
+    deadlineTaskId: task.id,
+    eventType: "official_extension",
+    previousCurrentDueDate: task.currentDueDate,
+    newCurrentDueDate,
+    previousFirmTargetDate: null,
+    newFirmTargetDate: null,
+    sourceName,
+    sourceUrl,
+    sourceSnapshotId: null,
+    createdBy: session.user.id,
+    auditLogId,
+    createdAt: now,
+    notes: "Official extension recorded from the dashboard.",
+  });
+
+  return updated;
+}
+
 export const tasksRouter = router({
   updateStatus: publicProcedure
     .input(z.object({ taskId: taskIdSchema, status: z.enum(deadlineTaskStatuses) }))
@@ -291,6 +368,31 @@ export const tasksRouter = router({
       }
 
       return { updatedCount: updated.length, firmTargetDate: input.firmTargetDate };
+    }),
+
+  markExtended: publicProcedure
+    .input(
+      z.object({
+        taskId: taskIdSchema,
+        newCurrentDueDate: dateStringSchema,
+        sourceName: z.string().trim().min(1).default("CPA-recorded extension"),
+        sourceUrl: z.string().trim().url().nullable().default(null),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const task = await markTaskExtended({
+        ctx,
+        taskId: input.taskId,
+        newCurrentDueDate: input.newCurrentDueDate,
+        sourceName: input.sourceName,
+        sourceUrl: input.sourceUrl,
+      });
+
+      return {
+        taskId: task.id,
+        currentDueDate: task.currentDueDate,
+        originalDueDate: task.originalDueDate,
+      };
     }),
 
   getEvidence: publicProcedure
@@ -364,7 +466,7 @@ export const tasksRouter = router({
           status: row.task.status,
           priority: row.task.priority,
           sourceType: row.task.sourceType,
-          userProvidedSourceNote: row.task.userProvidedSourceNote,
+          enteredDeadlineReferenceNote: row.task.enteredDeadlineReferenceNote,
         },
         clientRelationship: {
           id: row.client.id,

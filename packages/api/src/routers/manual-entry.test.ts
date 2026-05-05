@@ -147,9 +147,9 @@ function makeDeadline(overrides: Partial<DeadlineTask> = {}): DeadlineTask {
     recurrenceKey: "annual",
     status: "not_started",
     priority: "normal",
-    sourceType: "user_provided",
+    sourceType: "entered_deadline",
     createdVia: "manual",
-    userProvidedSourceNote: "CPA provided from organizer notes.",
+    enteredDeadlineReferenceNote: "CPA provided from organizer notes.",
     createdAt: now,
     updatedAt: now,
     ...overrides,
@@ -175,6 +175,63 @@ test("clients.createRelationship creates a manual firm-owned relationship", asyn
   assert.equal(writes[0]?.row.sourceSystem, "manual");
 });
 
+test("clients.list returns firm-owned relationships with profile and deadline counts", async () => {
+  const caller = createCaller({
+    selectQueue: [
+      [
+        makeClient({
+          id: "client-alpha",
+          displayName: "Alpha Dental",
+          relationshipType: "business",
+        }),
+        makeClient({
+          id: "client-beta",
+          displayName: "Beta Family",
+          relationshipType: "household",
+        }),
+      ],
+      [
+        { clientRelationshipId: "client-alpha" },
+        { clientRelationshipId: "client-alpha" },
+        { clientRelationshipId: "client-beta" },
+      ],
+      [
+        { clientRelationshipId: "client-alpha" },
+        { clientRelationshipId: "client-beta" },
+        { clientRelationshipId: "client-beta" },
+      ],
+    ],
+  });
+
+  const result = await caller.clients.list();
+
+  assert.deepEqual(
+    result.clients.map((client) => ({
+      id: client.id,
+      displayName: client.displayName,
+      relationshipType: client.relationshipType,
+      filingProfileCount: client.filingProfileCount,
+      deadlineTaskCount: client.deadlineTaskCount,
+    })),
+    [
+      {
+        id: "client-alpha",
+        displayName: "Alpha Dental",
+        relationshipType: "business",
+        filingProfileCount: 2,
+        deadlineTaskCount: 1,
+      },
+      {
+        id: "client-beta",
+        displayName: "Beta Family",
+        relationshipType: "household",
+        filingProfileCount: 1,
+        deadlineTaskCount: 2,
+      },
+    ],
+  );
+});
+
 test("filingProfiles.createManual attaches a manual tax profile to the client", async () => {
   const writes: InsertWrite[] = [];
   const caller = createCaller({ selectQueue: [[makeClient()]], writes });
@@ -198,7 +255,7 @@ test("filingProfiles.createManual attaches a manual tax profile to the client", 
   assert.equal(writes[0]?.row.sourceSystem, "manual");
 });
 
-test("deadlineTasks.createManual keeps manual deadlines user-provided and not verified", async () => {
+test("deadlineTasks.createManual stores entered deadlines internally and marks them not verified", async () => {
   const writes: InsertWrite[] = [];
   const caller = createCaller({ selectQueue: [[makeClient()], [makeProfile()]], writes });
 
@@ -213,22 +270,24 @@ test("deadlineTasks.createManual keeps manual deadlines user-provided and not ve
     firmTargetDate: "2026-04-01",
     priority: "high",
     recurrence: "annual",
-    sourceNote: "CPA provided from organizer notes.",
+    referenceNote: "CPA provided from organizer notes.",
   });
 
-  assert.equal(result.deadline.sourceType, "user_provided");
+  assert.equal(result.deadline.sourceType, "entered_deadline");
   assert.equal(result.deadline.createdVia, "manual");
   assert.equal(result.deadline.taxRuleId, null);
   assert.equal(result.deadline.originalDueDate, null);
   assert.equal(result.deadline.firmTargetDate, "2026-04-01");
-  assert.equal(result.deadline.trustLabel, "User provided - Not verified by DueDateHQ");
-  assert.equal(result.deadline.recurrenceLabel, "Recurring user-provided deadline");
+  assert.equal(result.deadline.trustLabel, "Entered deadline - Not verified by DueDateHQ");
+  assert.equal(result.deadline.referenceLabel, "Reference");
+  assert.equal(result.deadline.referenceNote, "CPA provided from organizer notes.");
+  assert.equal(result.deadline.recurrenceLabel, "Recurring entered deadline");
 
   const deadlineWrite = writes.find((write) => write.table === deadlineTasks);
   const auditWrite = writes.find((write) => write.table === auditLogs);
   const dateEventWrite = writes.find((write) => write.table === deadlineDateEvents);
 
-  assert.equal(deadlineWrite?.row.sourceType, "user_provided");
+  assert.equal(deadlineWrite?.row.sourceType, "entered_deadline");
   assert.equal(deadlineWrite?.row.createdVia, "manual");
   assert.equal(deadlineWrite?.row.taxRuleId, null);
   assert.equal(auditWrite?.row.action, "deadline_task.create_manual");
@@ -236,7 +295,7 @@ test("deadlineTasks.createManual keeps manual deadlines user-provided and not ve
   assert.equal(dateEventWrite?.row.newFirmTargetDate, "2026-04-01");
 });
 
-test("clients.get returns manual profiles and user-provided deadline trust state", async () => {
+test("clients.get returns manual profiles and entered deadline trust state", async () => {
   const caller = createCaller({
     selectQueue: [[makeClient()], [makeProfile()], [makeDeadline()]],
   });
@@ -248,10 +307,12 @@ test("clients.get returns manual profiles and user-provided deadline trust state
   assert.equal(result.profiles[0]?.displayName, "Acme federal profile");
   assert.equal(result.profiles[0]?.coverageState, "needs_review");
   assert.equal(result.deadlines.length, 1);
-  assert.equal(result.deadlines[0]?.sourceType, "user_provided");
+  assert.equal(result.deadlines[0]?.sourceType, "entered_deadline");
   assert.equal(result.deadlines[0]?.taxRuleId, null);
-  assert.equal(result.deadlines[0]?.trustLabel, "User provided - Not verified by DueDateHQ");
-  assert.equal(result.deadlines[0]?.recurrenceLabel, "Recurring user-provided deadline");
+  assert.equal(result.deadlines[0]?.trustLabel, "Entered deadline - Not verified by DueDateHQ");
+  assert.equal(result.deadlines[0]?.referenceLabel, "Reference");
+  assert.equal(result.deadlines[0]?.referenceNote, "CPA provided from organizer notes.");
+  assert.equal(result.deadlines[0]?.recurrenceLabel, "Recurring entered deadline");
 });
 
 test("deadlineTasks.requestVerification records a request without mutating the manual task", async () => {
@@ -301,7 +362,7 @@ test("deadlineTasks.requestVerification rejects official system tasks", async ()
         deadlineTaskId: "deadline-test",
         message: "Please verify this task.",
       }),
-    /Only user-provided manual deadlines/,
+    /Only entered deadlines/,
   );
 
   assert.equal(writes.length, 0);

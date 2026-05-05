@@ -11,7 +11,7 @@ DueDateHQ 使用当前 Better-T-Stack 结构：
 - Deployment：Cloudflare + Alchemy。
 - Auth：Better Auth，Beta 阶段仅支持邮箱密码。
 
-技术目标是实现真实 Beta 产品，同时严格区分已核验官方规则、用户手动录入截止日期和未核验义务。
+技术目标是实现真实 Beta 产品，同时严格区分已核验官方规则、CPA firm manually enters the deadline和未核验义务。
 
 技术 parity 目标：把 File In Time 有价值的工作流 baseline 实现为云端产品，而不是桌面软件复刻。系统应支持 client setup、source-specific CSV import preview/mapping/review/duplicate handling、obligation-driven task generation、dashboard triage、filters/sorting、task status、extension/date-change handling、verified recurrence/upcoming tasks、dashboard/task exports、产品内 urgency surfaces 和轻量 bulk operations。除非后续明确优先，否则应主动排除 local database administration、backup/restore UI、Crystal Reports-style reporting、mail merge/labels、extension form printing、arbitrary field renaming、network-user maintenance、detailed rights matrices、client portal、document upload/checklist automation、e-signature、direct end-client notifications 和外部 email/SMS/Slack/calendar push。
 
@@ -175,8 +175,8 @@ Client relationship -> Filing/Tax profile -> Deadline task
 - `recurrenceKey`
 - `status`: `not_started | in_progress | waiting_on_client | done`
 - `priority`
-- `sourceType`: `verified_rule | user_provided`
-- `userProvidedSourceNote`
+- `sourceType`: `verified_rule | entered_deadline`
+- `enteredDeadlineReferenceNote`
 - `createdVia`: `system_rule | manual`
 - `createdAt`
 - `updatedAt`
@@ -185,7 +185,7 @@ Client relationship -> Filing/Tax profile -> Deadline task
 
 - `id`
 - `deadlineTaskId`
-- `eventType`: `official_extension | official_relief_change | user_provided_adjustment | firm_target_change`
+- `eventType`: `official_extension | official_relief_change | entered_deadline_adjustment | firm_target_change`
 - `previousCurrentDueDate`
 - `newCurrentDueDate`
 - `previousFirmTargetDate`
@@ -460,7 +460,7 @@ Coverage：
 - `coverage.matrix`
 - `coverage.getRule`
 - `coverage.requestCoverage`
-- `coverage.addUserProvidedDeadlineFromGap`
+- `coverage.addEnteredDeadlineFromGap`
 - `coverage.dismissGapForNow`
 
 Verification：
@@ -611,17 +611,17 @@ P0 官方来源 allowlist 和范围：
 
 手动 deadline：
 
-- 保存为 `deadline_tasks.sourceType = user_provided`。
+- 保存为 `deadline_tasks.sourceType = entered_deadline`。
 - 可以显示在 dashboard。
-- 必须显示 `User provided · Not verified by DueDateHQ`。
+- 必须显示 `Entered deadline · Not verified by DueDateHQ`。
 - 可以创建 `verification_request`。
 
 日期规则：
 
-- `deadline_tasks.currentDueDate` 是用于工作规划的当前官方或 user-provided task date。Dashboard 只显示此日期；不同时展示 original 和 current 两个日期。
+- `deadline_tasks.currentDueDate` 是用于工作规划的当前官方或 entered deadline task date。Dashboard 只显示此日期；不同时展示 original 和 current 两个日期。
 - `deadline_tasks.originalDueDate` 保存原始 official due date（如果存在）。
 - `deadline_tasks.firmTargetDate` 是可选 firm planning metadata，不得展示为 official due date。
-- `deadline_date_events` 支撑 Evidence drawer，记录 official extensions、official relief/change、user-provided adjustments 和 firm target changes。
+- `deadline_date_events` 支撑 Evidence drawer，记录 official extensions、official relief/change、entered-deadline adjustments 和 firm target changes。
 - 延期状态是派生值，不是 task status 字段。当 `deadline_date_events` 中存在 `official_extension` 类型事件时，任务被视为已延期。Dashboard 显示 "Extended" badge 附在工作进度状态旁边。
 - 逾期状态是派生值。当 `currentDueDate < today AND status != done` 时，任务为逾期。
 
@@ -675,7 +675,7 @@ P0 官方来源 allowlist 和范围：
 - 确认 bulk task status update 和 current-filter export 可用，且 bulk official due-date edits 不可用。
 - 确认核心 dashboard filters 在 Beta 规模 solo CPA workspace 内 `< 1 second` 响应，并且每周分诊流程可在 5 分钟内完成。
 - 确认 coverage matrix 显示 monitor status。
-- 确认 coverage gaps 提供 request verification、add user-provided deadline、ignore/dismiss actions。
+- 确认 coverage gaps 提供 request verification、add entered deadline、ignore/dismiss actions。
 - 确认 evidence drawer 显示 current due date、original due date、firm target date、date event history、last checked、last changed 和 rule versions。
 - 确认 verification queue approval 会发布新版本。
 - 确认 Official Notice Monitor 只分析 official notices，使用平台级 AI 配置，默认不发送 customer PII，本地匹配 profiles，并且只在产品内提醒 CPA。
@@ -689,7 +689,7 @@ P0 官方来源 allowlist 和范围：
 - 不把 Beta 描述为完整 50 州已核验覆盖。
 - 不混淆 firm target dates 和 official due dates。
 - 不在主 UI 暴露内部 tax-subject terminology。
-- 不把 user-provided deadlines 从 dashboard 隐藏，但必须明确标注。
+- 不把 entered deadlines 从 dashboard 隐藏，但必须明确标注。
 - 不把延期当作 task 工作进度状态。延期是从 date events 派生的日期状态。
 - 不在 dashboard task row 上同时展示 original 和 current 两个到期日。只显示 current due date；日期变更历史在 evidence drawer 中。
 - 用户文案必须明确说明 Beta 数据覆盖状态。

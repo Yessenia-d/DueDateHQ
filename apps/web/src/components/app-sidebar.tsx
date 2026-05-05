@@ -1,6 +1,6 @@
 import { Button } from "@due-date-hq/ui/components/button";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { CalendarDays, LogOut, Shield, Users } from "lucide-react";
+import { CalendarDays, LogOut, Shield, Upload, Users } from "lucide-react";
 
 interface AppSidebarProps {
   firmName?: string;
@@ -11,8 +11,9 @@ interface AppSidebarProps {
 
 const workspaceLinks = [
   { to: "/", label: "Dashboard", icon: CalendarDays },
+  { to: "/clients", label: "Clients", icon: Users },
+  { to: "/import", label: "Import", icon: Upload },
   { to: "/coverage", label: "Coverage", icon: Shield },
-  { to: "/clients/new", label: "Clients", icon: Users },
 ] as const;
 
 export function AppSidebar({ firmName, isLoggingOut, onLogout, userEmail }: AppSidebarProps) {

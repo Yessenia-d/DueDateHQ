@@ -54,7 +54,7 @@ const verificationLabels: Record<DashboardVerificationStatus, string> = {
   needs_review: "Needs review",
   source_changed: "Source changed",
   unsupported: "Unsupported",
-  user_provided: "User provided",
+  entered_deadline: "Entered deadline",
 };
 
 const statusLabels: Record<DeadlineTaskStatus, string> = {
@@ -222,7 +222,7 @@ export function DashboardPage() {
           <MetricBadge tone="neutral" label="This month" value={data.summary.dueThisMonth} />
           <MetricBadge tone="verified" label="Verified" value={data.summary.verified} />
           <MetricBadge tone="review" label="Source changed" value={data.summary.sourceChanged} />
-          <MetricBadge tone="neutral" label="User provided" value={data.summary.userProvided} />
+          <MetricBadge tone="neutral" label="Entered deadlines" value={data.summary.enteredDeadline} />
         </section>
 
         {/* Filters panel */}

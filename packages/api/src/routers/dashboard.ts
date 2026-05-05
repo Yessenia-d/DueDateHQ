@@ -17,6 +17,11 @@ import { z } from "zod";
 
 import { requireFirmSession, type Context } from "../context";
 import { publicProcedure, router } from "../index";
+import {
+  ENTERED_DEADLINE_LABEL,
+  ENTERED_DEADLINE_REFERENCE_LABEL,
+  ENTERED_DEADLINE_TRUST_LABEL,
+} from "../lib/deadline-labels";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -40,7 +45,7 @@ export const dashboardVerificationStatuses = [
   "needs_review",
   "source_changed",
   "unsupported",
-  "user_provided",
+  "entered_deadline",
 ] as const;
 
 export type DashboardHorizon = (typeof dashboardHorizonValues)[number];
@@ -118,6 +123,7 @@ export type DashboardTaskRow = {
   smartPriorityScore: number;
   sourceName: string | null;
   sourceUrl: string | null;
+  enteredDeadlineReferenceNote: string | null;
   lastVerifiedAt: string | null;
   sourceLastCheckedAt: string | null;
   sourceLastChangedAt: string | null;
@@ -146,7 +152,7 @@ export type DashboardSummaryResponse = {
     done: number;
     verified: number;
     sourceChanged: number;
-    userProvided: number;
+    enteredDeadline: number;
   };
   filterOptions: {
     clientRelationships: Array<{ id: string; label: string }>;
@@ -229,8 +235,8 @@ function getVerificationStatus(
   task: DeadlineTask,
   rule: TaxRule | null,
 ): DashboardVerificationStatus {
-  if (task.sourceType === "user_provided") {
-    return "user_provided";
+  if (task.sourceType === "entered_deadline") {
+    return "entered_deadline";
   }
 
   return rule?.verificationStatus ?? "needs_review";
@@ -246,8 +252,8 @@ function getVerificationLabel(status: DashboardVerificationStatus): string {
       return "Source changed";
     case "unsupported":
       return "Unsupported";
-    case "user_provided":
-      return "User provided, not verified by DueDateHQ";
+    case "entered_deadline":
+      return ENTERED_DEADLINE_TRUST_LABEL;
   }
 }
 
@@ -306,7 +312,7 @@ function getSmartPriorityScore(row: Omit<DashboardTaskRow, "smartPriorityScore">
   const verificationScore =
     row.verificationStatus === "source_changed"
       ? 35
-      : row.verificationStatus === "user_provided"
+      : row.verificationStatus === "entered_deadline"
         ? 15
         : 0;
   const targetScore = row.firmTargetDate && diffInDays(row.firmTargetDate, row.currentDueDate) < 0
@@ -367,13 +373,16 @@ function createDashboardTaskRow({
     verificationLabel: getVerificationLabel(verificationStatus),
     urgency: dateState.urgency,
     horizon: dateState.horizon,
-    sourceName: task.sourceType === "user_provided" ? "User provided" : (rule?.sourceName ?? null),
-    sourceUrl: task.sourceType === "user_provided" ? null : (rule?.sourceUrl ?? null),
-    lastVerifiedAt: task.sourceType === "user_provided" ? null : toISOOrNull(rule?.lastVerifiedAt),
+    sourceName:
+      task.sourceType === "entered_deadline" ? ENTERED_DEADLINE_REFERENCE_LABEL : (rule?.sourceName ?? null),
+    sourceUrl: task.sourceType === "entered_deadline" ? null : (rule?.sourceUrl ?? null),
+    enteredDeadlineReferenceNote:
+      task.sourceType === "entered_deadline" ? task.enteredDeadlineReferenceNote : null,
+    lastVerifiedAt: task.sourceType === "entered_deadline" ? null : toISOOrNull(rule?.lastVerifiedAt),
     sourceLastCheckedAt:
-      task.sourceType === "user_provided" ? null : toISOOrNull(rule?.sourceLastCheckedAt),
+      task.sourceType === "entered_deadline" ? null : toISOOrNull(rule?.sourceLastCheckedAt),
     sourceLastChangedAt:
-      task.sourceType === "user_provided" ? null : toISOOrNull(rule?.sourceLastChangedAt),
+      task.sourceType === "entered_deadline" ? null : toISOOrNull(rule?.sourceLastChangedAt),
   } satisfies Omit<DashboardTaskRow, "smartPriorityScore">;
 
   return {
@@ -536,7 +545,7 @@ function buildSummary({
       verified: filteredRows.filter((row) => row.verificationStatus === "verified").length,
       sourceChanged: filteredRows.filter((row) => row.verificationStatus === "source_changed")
         .length,
-      userProvided: filteredRows.filter((row) => row.sourceType === "user_provided").length,
+      enteredDeadline: filteredRows.filter((row) => row.sourceType === "entered_deadline").length,
     },
     filterOptions: getFilterOptions(rows),
   };
@@ -666,14 +675,16 @@ export function createDashboardCsv(rows: DashboardTaskRow[]): string {
         row.firmTargetDate,
         row.status,
         row.verificationLabel,
-        row.sourceType,
+        row.sourceType === "entered_deadline" ? ENTERED_DEADLINE_LABEL : row.sourceType,
         row.sourceName,
         row.sourceUrl,
         row.lastVerifiedAt,
         row.sourceLastChangedAt,
         row.priority,
         row.isExtended ? "Extended" : "",
-        row.verificationStatus === "user_provided" ? "User provided, not verified by DueDateHQ" : "",
+        row.verificationStatus === "entered_deadline"
+          ? [ENTERED_DEADLINE_TRUST_LABEL, row.enteredDeadlineReferenceNote].filter(Boolean).join(" - ")
+          : "",
       ].map(csvCell).join(","),
     ),
   ];

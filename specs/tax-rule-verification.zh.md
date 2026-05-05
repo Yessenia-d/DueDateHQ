@@ -64,11 +64,11 @@ Evidence fields：
 - Current version。
 - Previous version。
 - Verification notes。
-- Date event history：official extension、official relief/change、user-provided adjustment、firm target change。
+- Date event history：official extension、official relief/change、entered-deadline adjustment、firm target change。
 
-Manual deadlines 使用 `deadline_tasks.sourceType = user_provided`，不是 tax rule verification status。
+Manual deadlines 使用 `deadline_tasks.sourceType = entered_deadline`，不是 tax rule verification status。
 
-Unsupported、needs-review、source-changed、manual 和 user-provided items 必须对用户透明，但不能被呈现为 verified official deadlines。
+Unsupported、needs-review、source-changed、manual 和 entered deadline items 必须对用户透明，但不能被呈现为 verified official deadlines。
 
 延期处理与核验状态和任务工作进度状态分离。延期是从 `deadline_date_events` 中 `official_extension` 类型派生的日期状态。任务的工作进度状态（`not_started`、`in_progress`、`waiting_on_client`、`done`）与到期日是否被延期无关。
 
@@ -109,7 +109,7 @@ Firm target dates 不属于 official rule verification。它们可以出现在 E
 - `unsupported` obligations 只显示在 coverage。
 - Evidence drawer 可以解释状态和来源链路。
 - Evidence drawer 为 official tasks 展示 current due date、original due date、可选 firm target date、date event history、rule versioning 和 source last checked/changed timestamps。
-- Manual 或 user-provided deadlines 必须在 verification status taxonomy 之外明确标记。
+- Manual 或 entered deadlines 必须在 verification status taxonomy 之外明确标记。
 - Official extensions 和 relief/change updates 记录为 date events，而不是静默覆盖。
 
 ## Out of Scope

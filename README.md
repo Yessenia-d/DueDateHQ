@@ -65,6 +65,24 @@ pnpm run dev
 Open [http://localhost:5173](http://localhost:5173) in your browser to see the web application.
 The API is running at [http://localhost:3000](http://localhost:3000).
 
+## Demo CPA Accounts
+
+Seed repeatable demo data from a local server:
+
+```bash
+curl -X POST http://localhost:3000/api/demo/seed
+```
+
+The seed path creates three CPA login accounts with the shared password
+`DueDateHQ-demo-2026!`:
+
+- `demo-triage@duedatehq.test` — dashboard triage, verified deadlines, firm target dates, export.
+- `demo-coverage@duedatehq.test` — coverage gaps, unsupported profiles, verification requests, entered deadlines with references.
+- `demo-notices@duedatehq.test` — source-changed rules, official notice audit trail, date history.
+
+For non-loopback environments, set `DEMO_SEED_TOKEN` and send
+`X-Demo-Seed-Token` with the request.
+
 ## UI Customization
 
 React web apps in this stack share shadcn/ui primitives through `packages/ui`.

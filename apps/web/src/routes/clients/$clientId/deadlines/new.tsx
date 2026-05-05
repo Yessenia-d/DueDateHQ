@@ -63,7 +63,7 @@ function NewDeadlineComponent() {
   const [firmTargetDate, setFirmTargetDate] = React.useState("");
   const [priority, setPriority] = React.useState<DeadlinePriority>("normal");
   const [recurrence, setRecurrence] = React.useState<Recurrence>("none");
-  const [sourceNote, setSourceNote] = React.useState("");
+  const [referenceNote, setReferenceNote] = React.useState("");
   const [shouldRequestVerification, setShouldRequestVerification] = React.useState(false);
 
   const profiles = clientDetail.data?.profiles ?? [];
@@ -90,7 +90,7 @@ function NewDeadlineComponent() {
       firmTargetDate: firmTargetDate || undefined,
       priority,
       recurrence,
-      sourceNote,
+      referenceNote,
     });
 
     if (shouldRequestVerification) {
@@ -98,9 +98,9 @@ function NewDeadlineComponent() {
         deadlineTaskId: result.deadline.id,
         message: `Please verify ${result.deadline.title}.`,
       });
-      toast.success("Manual deadline saved and verification requested.");
+      toast.success("Entered deadline saved and verification requested.");
     } else {
-      toast.success("Manual deadline saved.");
+      toast.success("Entered deadline saved.");
     }
 
     void navigate({ to: "/clients/$clientId", params: { clientId } });
@@ -138,16 +138,16 @@ function NewDeadlineComponent() {
           <div>
             <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase text-muted-foreground">
               <CalendarPlus className="size-3.5" />
-              Manual deadline
+              Entered deadline
             </div>
             <h1 className="text-2xl font-semibold tracking-normal">{client.displayName}</h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-              User-provided deadlines are saved separately from official DueDateHQ verified tasks.
+              Entered deadlines are saved separately from official DueDateHQ verified tasks and include a reference.
             </p>
           </div>
-          <StatusBadge status="user_provided">
+          <StatusBadge status="entered_deadline">
             <ShieldAlert className="size-3" />
-            User provided - Not verified by DueDateHQ
+            Entered deadline - Not verified by DueDateHQ
           </StatusBadge>
         </section>
 
@@ -158,7 +158,7 @@ function NewDeadlineComponent() {
               No filing profiles
             </div>
             <div className="mt-2 text-xs leading-5 text-muted-foreground">
-              Add a filing profile before saving a manual deadline.
+              Add a filing profile before saving an entered deadline.
             </div>
             <Link
               to="/clients/$clientId"
@@ -291,12 +291,13 @@ function NewDeadlineComponent() {
             </section>
 
             <section className="grid gap-4 border-b border-border pb-5">
-              <Field label="Source note" htmlFor="source-note">
+              <Field label="Reference" htmlFor="source-note">
                 <Textarea
                   id="source-note"
                   className="min-h-24"
-                  value={sourceNote}
-                  onChange={(event) => setSourceNote(event.target.value)}
+                  placeholder="Prior-year workpaper, client notice, source data, or CPA judgment"
+                  value={referenceNote}
+                  onChange={(event) => setReferenceNote(event.target.value)}
                   required
                 />
               </Field>
@@ -310,7 +311,7 @@ function NewDeadlineComponent() {
                 <span>
                   <span className="block font-medium">Request DueDateHQ verification</span>
                   <span className="block text-muted-foreground">
-                    The saved deadline remains user-provided until a Verified rule exists.
+                    The saved deadline remains an entered deadline until a Verified rule exists.
                   </span>
                 </span>
               </label>
@@ -332,7 +333,7 @@ function NewDeadlineComponent() {
               </Link>
               <Button type="submit" disabled={isSubmitting || !selectedProfileId}>
                 <CalendarPlus className="size-3.5" />
-                Save deadline
+                Add entered deadline
               </Button>
             </div>
           </form>

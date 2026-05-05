@@ -2,7 +2,7 @@
 
 ## Goal
 
-Give solo or independent CPAs serving about 80 mixed individual and small-business clients a fast working surface for weekly deadline prioritization, with clear verification evidence, urgency surfaces, deterministic smart priority sorting, filters/sorting, extension/date-change handling, optional firm target dates, light bulk operations, and export for each official or user-provided deadline.
+Give solo or independent CPAs serving about 80 mixed individual and small-business clients a fast working surface for weekly deadline prioritization, with clear verification evidence, urgency surfaces, deterministic smart priority sorting, filters/sorting, extension/date-change handling, optional firm target dates, light bulk operations, and export for each official or entered deadline.
 
 ## User Flow
 
@@ -36,7 +36,7 @@ flowchart TD
   E --> H{Verification status}
   H -- Verified --> I[Show official source]
   H -- Source changed --> J[Show warning]
-  H -- User provided --> K[Show user source note]
+  H -- Entered deadline --> K[Show reference note]
   A --> M[Export current view]
 ```
 
@@ -102,7 +102,7 @@ Task row fields:
 Source types:
 
 - `verified_rule`
-- `user_provided`
+- `entered_deadline`
 
 ## CSV Export Contract
 
@@ -150,7 +150,7 @@ File In Time supports weekly task views, status updates, extension flags, startu
 - Smart priority sorting is available and can be deterministic rule-based priority in Beta.
 - Verified tasks can open evidence drawer.
 - Source changed tasks show warning.
-- User-provided tasks show not verified label.
+- Entered deadline tasks show not verified label.
 - Extension state is shown as a badge derived from date events, not as a task status. A task can be extended and simultaneously have any work-progress status.
 - Evidence drawer shows current due date, original due date, firm target date, and date event history including extensions, relief changes, and user adjustments.
 - Task work-progress status can be one-click marked `Done`, `Waiting on client`, or `In progress`.

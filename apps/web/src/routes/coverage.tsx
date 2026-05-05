@@ -32,7 +32,7 @@ import {
   ShieldAlert,
   ShieldCheck,
 } from "lucide-react";
-import { useId, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import { StatusBadge } from "@/components/status-badge";
@@ -91,14 +91,20 @@ const statusHeaderKeys = [
   "no_rule",
 ] as const;
 
-const statusHeaderTooltipLabel = statusHeaderKeys
-  .map((statusKey) => `${statusLabels[statusKey]}: ${statusDescriptions[statusKey]}`)
-  .join(" ");
+const statusHeaderIconStyles: Record<VerificationStatusKey, string> = {
+  verified: "bg-ddhq-verified-soft text-ddhq-verified",
+  needs_review: "bg-ddhq-review-soft text-ddhq-review",
+  source_changed: "border-ddhq-review/30 bg-ddhq-review-soft text-ddhq-review",
+  unsupported: "bg-ddhq-gap-soft text-ddhq-gap",
+  no_rule: "bg-ddhq-gap-soft text-ddhq-gap",
+};
 
 const coverageFilterSelectTriggerClassName = "h-8 w-auto !rounded-[6px]";
 const coverageFilterSelectContentClassName = "!rounded-[6px]";
 const coverageFilterSelectItemClassName =
   "data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground data-[selected]:bg-accent data-[selected]:text-accent-foreground";
+const coverageActionButtonClassName =
+  "w-full cursor-pointer rounded-[6px] !border-ddhq-border-strong !bg-background px-2 text-[11px] font-semibold shadow-[inset_0_-1px_0_rgba(0,0,0,0.04)] hover:!border-primary/60 hover:!bg-ddhq-accent-soft/60 hover:!text-foreground focus-visible:!border-primary focus-visible:!ring-primary/25";
 const evidenceLabelClassName =
   "text-[11px] font-semibold uppercase leading-4 text-muted-foreground";
 const evidenceValueClassName = "mt-1.5 text-sm leading-5 text-foreground";
@@ -125,8 +131,8 @@ function CoverageComponent() {
       onError: (error) => toast.error(error.message),
     }),
   );
-  const addUserDeadline = useMutation(
-    trpc.coverage.addUserProvidedDeadlineFromGap.mutationOptions({
+  const addEnteredDeadline = useMutation(
+    trpc.coverage.addEnteredDeadlineFromGap.mutationOptions({
       onSuccess: (result) => toast.success(result.message),
       onError: (error) => toast.error(error.message),
     }),
@@ -245,87 +251,85 @@ function CoverageComponent() {
           </div>
         </section>
 
-        {/* Coverage table by jurisdiction group */}
-        <section className="overflow-visible rounded-xl border border-border bg-card">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-muted/20 px-3 py-2">
-            <div className="text-xs font-medium uppercase text-muted-foreground">
-              Coverage table
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-                <span>Jurisdiction</span>
-                <Select value={jurisdictionFilter} onValueChange={(v) => setJurisdictionFilter(v ?? "all")}>
-                  <SelectTrigger
-                    aria-label="Filter by jurisdiction"
-                    className={coverageFilterSelectTriggerClassName}
+        {/* Filters */}
+        <section className="flex flex-wrap items-center gap-3">
+          <div className="grid gap-1 text-xs font-medium text-muted-foreground">
+            Jurisdiction
+            <Select value={jurisdictionFilter} onValueChange={(v) => setJurisdictionFilter(v ?? "all")}>
+              <SelectTrigger
+                aria-label="Filter by jurisdiction"
+                className={coverageFilterSelectTriggerClassName}
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent
+                alignItemWithTrigger={false}
+                className={coverageFilterSelectContentClassName}
+              >
+                <SelectItem className={coverageFilterSelectItemClassName} value="all">
+                  All jurisdictions
+                </SelectItem>
+                {jurisdictions.map((j) => (
+                  <SelectItem
+                    key={j}
+                    className={coverageFilterSelectItemClassName}
+                    value={j}
                   >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent
-                    alignItemWithTrigger={false}
-                    className={coverageFilterSelectContentClassName}
-                  >
-                    <SelectItem className={coverageFilterSelectItemClassName} value="all">
-                      All jurisdictions
-                    </SelectItem>
-                    {jurisdictions.map((j) => (
-                      <SelectItem
-                        key={j}
-                        className={coverageFilterSelectItemClassName}
-                        value={j}
-                      >
-                        {j === "federal" ? "Federal" : j}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-                <span>Status</span>
-                <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
-                  <SelectTrigger
-                    aria-label="Filter by verification status"
-                    className={coverageFilterSelectTriggerClassName}
-                  >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent
-                    alignItemWithTrigger={false}
-                    className={coverageFilterSelectContentClassName}
-                  >
-                    <SelectItem className={coverageFilterSelectItemClassName} value="all">
-                      All statuses
-                    </SelectItem>
-                    <SelectItem className={coverageFilterSelectItemClassName} value="verified">
-                      Verified
-                    </SelectItem>
-                    <SelectItem className={coverageFilterSelectItemClassName} value="needs_review">
-                      Needs review
-                    </SelectItem>
-                    <SelectItem className={coverageFilterSelectItemClassName} value="source_changed">
-                      Source changed
-                    </SelectItem>
-                    <SelectItem className={coverageFilterSelectItemClassName} value="unsupported">
-                      Unsupported
-                    </SelectItem>
-                    <SelectItem className={coverageFilterSelectItemClassName} value="no_rule">
-                      Coverage gap
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+                    {j === "federal" ? "Federal" : j}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
+
+          <div className="grid gap-1 text-xs font-medium text-muted-foreground">
+            Status
+            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
+              <SelectTrigger
+                aria-label="Filter by verification status"
+                className={coverageFilterSelectTriggerClassName}
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent
+                alignItemWithTrigger={false}
+                className={coverageFilterSelectContentClassName}
+              >
+                <SelectItem className={coverageFilterSelectItemClassName} value="all">
+                  All statuses
+                </SelectItem>
+                <SelectItem className={coverageFilterSelectItemClassName} value="verified">
+                  Verified
+                </SelectItem>
+                <SelectItem className={coverageFilterSelectItemClassName} value="needs_review">
+                  Needs review
+                </SelectItem>
+                <SelectItem className={coverageFilterSelectItemClassName} value="source_changed">
+                  Source changed
+                </SelectItem>
+                <SelectItem className={coverageFilterSelectItemClassName} value="unsupported">
+                  Unsupported
+                </SelectItem>
+                <SelectItem className={coverageFilterSelectItemClassName} value="no_rule">
+                  Coverage gap
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </section>
+
+        {/* Coverage table by jurisdiction group */}
+        <section className="flex flex-col gap-5">
+
           {filteredGroups.length === 0 && (
-            <div className="p-6 text-center text-sm text-muted-foreground">
+            <div className="rounded-xl border border-border bg-muted/20 p-6 text-center text-sm text-muted-foreground">
               No obligations match the current filters.
             </div>
           )}
 
           {filteredGroups.map((group) => (
-            <div key={group.jurisdiction} className="border-b border-border last:border-b-0">
-              <div className="flex flex-col gap-2 border-b border-border/70 px-3 py-3 md:flex-row md:items-end md:justify-between">
+            <div key={group.jurisdiction} className="border-b border-border pb-5 last:border-b-0">
+              <div className="mb-3 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
                 <div>
                   <h2 className="text-base font-medium">
                     {group.jurisdictionLevel === "federal"
@@ -366,15 +370,15 @@ function CoverageComponent() {
                 </div>
               </div>
 
-              <div className="overflow-visible">
+              <div className="rounded-xl border border-border">
                 <Table className="min-w-[960px] table-fixed">
                   <colgroup>
-                    <col className="w-[36%]" />
+                    <col className="w-[34%]" />
                     <col className="w-[13%]" />
                     <col className="w-[15%]" />
                     <col className="w-[14%]" />
                     <col className="w-[10%]" />
-                    <col className="w-[12%]" />
+                    <col className="w-[14%]" />
                   </colgroup>
                   <TableHeader>
                     <TableRow className="bg-muted/40">
@@ -385,12 +389,14 @@ function CoverageComponent() {
                         <StatusColumnHeader />
                       </TableHead>
                       <TableHead className="w-28 text-[11px] font-semibold uppercase text-muted-foreground">Last verified</TableHead>
-                      <TableHead className="w-24 text-[11px] font-semibold uppercase text-muted-foreground">Actions</TableHead>
+                      <TableHead className="w-28 text-right text-[11px] font-semibold uppercase text-muted-foreground">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {group.obligations.map((obl) => {
                       const sk = getStatusKey(obl.verificationStatus);
+                      const hasActions = Boolean(obl.ruleId) || sk !== "verified";
+
                       return (
                         <TableRow key={obl.obligationId} className="align-top">
                           <TableCell className="min-w-0 whitespace-normal">
@@ -424,64 +430,75 @@ function CoverageComponent() {
                           <TableCell className="font-mono text-xs text-muted-foreground">
                             {obl.lastVerifiedAt ? formatDate(obl.lastVerifiedAt) : "-"}
                           </TableCell>
-                          <TableCell>
-                            <div className="flex flex-wrap gap-1">
-                              {obl.ruleId && (
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  size="xs"
-                                  onClick={() => setSelectedRuleId(obl.ruleId)}
-                                >
-                                  Evidence
-                                </Button>
-                              )}
-                              {sk !== "verified" && (
-                                <>
+                          <TableCell className="align-top">
+                            {hasActions ? (
+                              <div
+                                role="group"
+                                aria-label={`Coverage actions for ${obl.obligationName}`}
+                                className="ml-auto grid w-28 grid-cols-1 gap-1"
+                              >
+                                {obl.ruleId && (
                                   <Button
                                     type="button"
                                     variant="outline"
                                     size="xs"
-                                    disabled={requestCoverage.isPending}
-                                    onClick={() =>
-                                      requestCoverage.mutate({
-                                        obligationId: obl.obligationId,
-                                      })
-                                    }
+                                    className={coverageActionButtonClassName}
+                                    onClick={() => setSelectedRuleId(obl.ruleId)}
                                   >
-                                    Request
+                                    Evidence
                                   </Button>
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="xs"
-                                    disabled={addUserDeadline.isPending}
-                                    onClick={() =>
-                                      addUserDeadline.mutate({
-                                        obligationId: obl.obligationId,
-                                      })
-                                    }
-                                  >
-                                    User deadline
-                                  </Button>
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="xs"
-                                    disabled={dismissGap.isPending}
-                                    onClick={() =>
-                                      dismissGap.mutate({
-                                        obligationId: obl.obligationId,
-                                      })
-                                    }
-                                  >
-                                    Dismiss
-                                  </Button>
-                                </>
-                              )}
-                            </div>
-                            {sk === "verified" && !obl.ruleId && (
-                              <span className="text-xs text-muted-foreground">No action</span>
+                                )}
+                                {sk !== "verified" && (
+                                  <>
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="xs"
+                                      className={coverageActionButtonClassName}
+                                      disabled={requestCoverage.isPending}
+                                      onClick={() =>
+                                        requestCoverage.mutate({
+                                          obligationId: obl.obligationId,
+                                        })
+                                      }
+                                    >
+                                      Request
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="xs"
+                                      className={coverageActionButtonClassName}
+                                      disabled={addEnteredDeadline.isPending}
+                                      onClick={() =>
+                                        addEnteredDeadline.mutate({
+                                          obligationId: obl.obligationId,
+                                        })
+                                      }
+                                    >
+                                      Entered deadline
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="xs"
+                                      className={coverageActionButtonClassName}
+                                      disabled={dismissGap.isPending}
+                                      onClick={() =>
+                                        dismissGap.mutate({
+                                          obligationId: obl.obligationId,
+                                        })
+                                      }
+                                    >
+                                      Dismiss
+                                    </Button>
+                                  </>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="block text-right text-xs text-muted-foreground">
+                                No action
+                              </span>
                             )}
                           </TableCell>
                         </TableRow>
@@ -544,44 +561,32 @@ function VerificationBadge({ statusKey }: { statusKey: VerificationStatusKey }) 
 }
 
 function StatusColumnHeader() {
-  const tooltipId = useId();
-
   return (
-    <div className="flex min-w-0 items-center gap-1">
-      <span>STATUS</span>
-      <span className="group relative inline-flex shrink-0 items-center">
-        <button
-          type="button"
-          aria-label={statusHeaderTooltipLabel}
-          aria-describedby={tooltipId}
-          className="inline-flex size-4 items-center justify-center rounded-full border border-border/70 bg-background/70 text-muted-foreground/80 transition-colors hover:border-border hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
-        >
-          <HelpCircle className="size-3" aria-hidden="true" />
-        </button>
-        <span
-          id={tooltipId}
-          role="tooltip"
-          className="pointer-events-none absolute right-0 top-full z-30 mt-1.5 hidden w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-[6px] border border-border bg-popover p-2.5 text-left text-[11px] font-normal normal-case leading-4 text-popover-foreground shadow-md group-hover:block group-focus-within:block"
-        >
-          <span className="block whitespace-normal text-[11px] font-semibold uppercase text-muted-foreground">
-            Status meanings
-          </span>
-          <span className="mt-2 grid gap-1.5">
-            {statusHeaderKeys.map((statusKey) => (
-              <span
-                key={statusKey}
-                className="grid min-w-0 grid-cols-[max-content_minmax(0,1fr)] items-start gap-2"
-              >
-                <VerificationBadge statusKey={statusKey} />
-                <span className="min-w-0 whitespace-normal break-words text-muted-foreground">
-                  {statusDescriptions[statusKey]}
-                </span>
-              </span>
-            ))}
-          </span>
-        </span>
+    <div className="flex min-w-0 items-center gap-1.5">
+      <span>Status</span>
+      <span className="flex shrink-0 items-center gap-0.5" aria-label="Status meanings">
+        {statusHeaderKeys.map((statusKey) => (
+          <StatusHeaderIcon key={statusKey} statusKey={statusKey} />
+        ))}
       </span>
     </div>
+  );
+}
+
+function StatusHeaderIcon({ statusKey }: { statusKey: VerificationStatusKey }) {
+  const Icon = statusIcons[statusKey];
+  const description = `${statusLabels[statusKey]}: ${statusDescriptions[statusKey]}`;
+
+  return (
+    <span
+      role="img"
+      tabIndex={0}
+      title={description}
+      aria-label={description}
+      className={`inline-flex size-4 items-center justify-center rounded-[6px] border border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${statusHeaderIconStyles[statusKey]}`}
+    >
+      <Icon className="size-3" aria-hidden="true" />
+    </span>
   );
 }
 

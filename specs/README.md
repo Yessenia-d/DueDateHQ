@@ -44,7 +44,7 @@ Implementation agents must read the relevant spec before modifying code. If the 
 
 ```txt
 Only Verified tax rules can create official system-generated deadline tasks.
-User-provided deadlines can be shown as user tasks, but must be marked as not verified by DueDateHQ.
+Entered deadlines can be shown as firm tasks, but must be marked as not verified by DueDateHQ.
 Coverage gaps and needs-review entries must remain visible without implying official verified support.
 Firm target dates are planning metadata, not official due dates.
 ```
@@ -55,7 +55,7 @@ Feature specs must preserve DueDateHQ's trust model while reaching parity or bet
 
 - Client setup with client relationships, filing/tax profiles, tax-relevant profile fields, notes, entity type, jurisdiction context, and import/manual entry paths.
 - CSV import preview, header handling, field mapping, row review, duplicate handling, CPA-confirmed relationship suggestions, and profile/problem grouped commit summary.
-- Obligation/service setup that can generate tasks while distinguishing known obligations, Verified rules, Needs review, Source changed, Unsupported, and user-provided deadlines.
+- Obligation/service setup that can generate tasks while distinguishing known obligations, Verified rules, Needs review, Source changed, Unsupported, and entered deadlines.
 - Task generation from Verified rules only for official system deadlines.
 - Dashboard triage with due today/this week/this month urgency, filters/sorting, task status including `Waiting on client`, firm target dates, date event history, extension status, and evidence/trust badges.
 - Recurrence/upcoming tasks from maintained Verified rules, with no manual rollover for official recurring deadlines.

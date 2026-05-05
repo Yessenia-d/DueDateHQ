@@ -26,12 +26,12 @@ DueDateHQ should not merely borrow isolated ideas from File In Time. For core CP
 |---|---|---|
 | Client setup | Client records with tax-relevant fields, notes, client/entity type, jurisdiction context, and manual/import paths | Match the practical filing/tax profile fields needed for scheduling while modeling `Client relationship -> Filing/Tax profile -> Deadline task`; keep primary UI language CPA-friendly and avoid internal tax-subject jargon |
 | CSV import | Delimited-file preview, header handling, drag/drop mapping, review before commit, duplicate resolution | Better with source-specific client/profile adapters for TaxDome, Drake, Karbon, and QuickBooks, automatic recognition for client name/EIN/state/entity type when present or confidently inferred, non-blocking review suggestions, CPA-confirmed relationship suggestions, and duplicate handling |
-| Obligation/service setup | Services define work type, frequency, due dates, and extension dates | Map services to tax obligations and verified tax rules while separating known, verified, needs-review, unsupported, and user-provided items |
+| Obligation/service setup | Services define work type, frequency, due dates, and extension dates | Map services to tax obligations and verified tax rules while separating known, verified, needs-review, unsupported, and entered deadline items |
 | Task generation | Assign services to clients to create due-date tasks | Generate official tasks only from Verified rules; show unsupported or needs-review obligations without pretending they are official deadlines |
 | Dashboard triage | Task view can be filtered to this week | Better with first-class `Overdue`, `Due this week`, `This month`, and `Long range` sections by default, all this-week work visible within 30 seconds after login, and a 5-minute triage target |
 | Filters and sorting | Date, client, type, service, status, key person, and saved views | Match core filters by horizon, client, jurisdiction/state, form/obligation type, entity type, tax type, task status, and verification status; advanced saved views can wait |
 | Task status | Status codes, dates, notes, extension flag | Match simple work-progress status with `Not started`, `In progress`, `Waiting on client`, and `Done`, plus an `Extended` badge derived from date events so extension and work status are independent |
-| Extensions and date changes | Service-supported extension dates and extension state | Track current due date, original due date, optional firm target date, and date event history for official extensions, official relief/change, user-provided adjustments, and firm target changes; dashboard shows only the current due date with date history in the evidence drawer; keep extension form printing out |
+| Extensions and date changes | Service-supported extension dates and extension state | Track current due date, original due date, optional firm target date, and date event history for official extensions, official relief/change, entered-deadline adjustments, and firm target changes; dashboard shows only the current due date with date history in the evidence drawer; keep extension form printing out |
 | Recurrence/upcoming tasks | Manual rollover creates the next period's tasks | Better by generating upcoming official tasks from maintained Verified rules, with no manual rollover for official recurring deadlines |
 | Exports | Excel/task view export and printed reports | Match practical dashboard/task export for workload sharing and review; skip Crystal Reports-style builders |
 | Bulk operations | Batch status, due date, target date, extension, and notes changes | Support light bulk task status updates, firm target date updates, and current-filter export; do not support bulk official due-date edits |
@@ -45,7 +45,7 @@ Where DueDateHQ must be better:
 - Rule publishing requires human approval before a rule becomes `Verified`.
 - Source-specific CSV adapters reduce manual mapping compared with a generic delimited-file importer.
 - Official recurring deadlines come from maintained rules, not user-run rollover.
-- Unsupported, needs-review, source-changed, and user-provided items are visible without being represented as verified official deadlines.
+- Unsupported, needs-review, source-changed, and entered deadline items are visible without being represented as verified official deadlines.
 - Users do not manage desktop installs, shared database files, check/optimize tools, or backup/restore screens.
 
 Desktop-era features intentionally excluded from Beta and only revisited later if explicitly reprioritized:
@@ -120,7 +120,7 @@ Acceptance:
 - CPA can add one or more filing/tax profiles under the client relationship.
 - CPA can add a one-time or recurring custom deadline.
 - Manually added deadlines appear on the dashboard.
-- Manual deadlines are labeled `User provided · Not verified by DueDateHQ`.
+- Manual deadlines are labeled `Entered deadline · Not verified by DueDateHQ`.
 - User can request DueDateHQ verification for a manual deadline.
 
 ### Story 4: Official Source Monitoring
@@ -198,7 +198,7 @@ Manual deadline source status:
 
 | Source type | Meaning | Dashboard behavior |
 |---|---|---|
-| `User provided` | User entered the deadline manually | Appears as user's task, clearly marked not verified by DueDateHQ |
+| `Entered deadline` | CPA firm entered the deadline manually | Appears as a firm task, clearly marked not verified by DueDateHQ |
 
 ### Evidence Drawer
 
@@ -218,7 +218,7 @@ It shows:
 - Source last changed time.
 - Current rule version.
 - Previous rule version when applicable.
-- Date event history for official extensions, official relief/change, user-provided adjustments, and firm target changes.
+- Date event history for official extensions, official relief/change, entered-deadline adjustments, and firm target changes.
 - Audit trail.
 - Actions: `Mark reviewed`, `Report issue`, `Request re-verification`.
 
@@ -236,7 +236,7 @@ Columns include:
 - Last checked.
 - Last changed.
 - Last verified.
-- Available actions: request DueDateHQ verification, add user-provided deadline, or ignore/dismiss for now.
+- Available actions: request DueDateHQ verification, add entered deadline, or ignore/dismiss for now.
 
 It must make coverage gaps visible instead of implying complete 50-state coverage. The P0 official source allowlist is IRS, California FTB, New York Tax Department, Texas Comptroller, and Florida Department of Revenue.
 
@@ -434,7 +434,7 @@ Mitigation:
 
 - Coverage matrix.
 - Explicit needs-review, unsupported, and coverage-gap states and tax categories.
-- User actions to request DueDateHQ verification, add a user-provided deadline, or ignore/dismiss for now.
+- CPA actions to request DueDateHQ verification, add an entered deadline, or ignore/dismiss for now.
 
 ### Trust Risk
 
@@ -442,7 +442,7 @@ Mitigation:
 
 - Show source evidence in context.
 - Do not overclaim "all deadlines verified".
-- Separate official system-generated tasks from user-provided tasks.
+- Separate official system-generated tasks from entered deadline tasks.
 - Separate official due dates from firm target dates.
 - Require CPA confirmation before applying official notice impacts.
 
@@ -463,7 +463,7 @@ Mitigation:
 - Import automatically recognizes client name, EIN, state, and entity type when present or confidently inferred; fuzzy or missing fields get non-blocking suggestions and review rows.
 - A CPA can understand why a verified deadline exists and where it came from.
 - After import, matching Verified rules generate deadline tasks for the current tax year plus the next tax year immediately; tasks with due dates before today are shown as overdue; needs-review, coverage-gap, and unsupported obligations stay visible but not official confirmed deadlines.
-- The product clearly marks unverified, source-changed, unsupported, and user-provided items.
+- The product clearly marks unverified, source-changed, unsupported, and entered deadline items.
 - The system design supports 24h official source/notice change detection without auto-publishing unreviewed rules or automatically mutating CPA workspace data.
 - Official Notice Monitor supports the P0 source allowlist, explainable confidence gates, in-app-only alerts, before/after diffs, CPA confirmation, proposal statuses, and audit logging.
 - The product supports optional firm target dates without confusing them with official due dates.

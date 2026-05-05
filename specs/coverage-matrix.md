@@ -27,7 +27,7 @@ flowchart TD
   D -- Coverage gap --> H[Gap actions]
   D -- Unsupported --> H
   H --> I[Request verification]
-  H --> J[Add user-provided deadline]
+  H --> J[Add entered deadline]
   H --> K[Ignore or dismiss for now]
 ```
 
@@ -44,7 +44,7 @@ flowchart TD
 - `coverage.matrix`
 - `coverage.getRule`
 - `coverage.requestCoverage`
-- `coverage.addUserProvidedDeadlineFromGap`
+- `coverage.addEnteredDeadlineFromGap`
 - `coverage.dismissGapForNow`
 
 ## Data Model
@@ -82,7 +82,7 @@ Display fields:
 - Unsupported cells do not imply scheduling support.
 - Monitor status is visible when an official source exists.
 - Needs-review, coverage-gap, and unsupported entries are visible without being presented as verified official deadlines.
-- Coverage gaps support request DueDateHQ verification, add user-provided deadline, and ignore/dismiss for now.
+- Coverage gaps support request DueDateHQ verification, add entered deadline, and ignore/dismiss for now.
 - P0 official sources are IRS, California FTB, New York Tax Department, Texas Comptroller, and Florida Department of Revenue.
 
 ## Out of Scope

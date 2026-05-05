@@ -40,6 +40,22 @@ pnpm run dev
 
 Web 应用默认运行在 [http://localhost:5173](http://localhost:5173)。API 默认运行在 [http://localhost:3000](http://localhost:3000)。
 
+## Demo CPA Accounts
+
+本地 Server 可重复 seed demo 数据：
+
+```bash
+curl -X POST http://localhost:3000/api/demo/seed
+```
+
+该 seed path 会创建三个 CPA 登录账号，共用密码 `DueDateHQ-demo-2026!`：
+
+- `demo-triage@duedatehq.test`：dashboard triage、Verified deadlines、firm target dates、export。
+- `demo-coverage@duedatehq.test`：Coverage gaps、unsupported profiles、verification requests、带 Reference 的 entered deadlines。
+- `demo-notices@duedatehq.test`：Source changed rules、official notice audit trail、date history。
+
+非 loopback 环境需设置 `DEMO_SEED_TOKEN`，并在请求中发送 `X-Demo-Seed-Token`。
+
 ## 可用脚本
 
 - `pnpm run dev`：启动所有应用

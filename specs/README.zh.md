@@ -48,7 +48,7 @@
 Only Verified tax rules can create official system-generated deadline tasks.
 只有 Verified 税务规则可以创建官方系统截止日期任务。
 
-User-provided deadlines can be shown as user tasks,
+Entered deadlines can be shown as firm tasks,
 but must be marked as not verified by DueDateHQ.
 用户手动录入的截止日期可以显示为用户任务，
 但必须标记为未经 DueDateHQ 核验。
@@ -62,7 +62,7 @@ Feature specs 必须保留 DueDateHQ 的信任模型，同时在 File In Time �
 
 - Client setup：包含 client relationships、filing/tax profiles、税务相关 profile fields、notes、entity type、jurisdiction context，以及 import/manual entry paths。
 - CSV import：包含 preview、header handling、field mapping、row review、duplicate handling、CPA-confirmed relationship suggestions 和按 profile/problem 分组的 commit summary。
-- Obligation/service setup：可以生成任务，同时区分 known obligations、Verified rules、Needs review、Source changed、Unsupported 和 user-provided deadlines。
+- Obligation/service setup：可以生成任务，同时区分 known obligations、Verified rules、Needs review、Source changed、Unsupported 和 entered deadlines。
 - Task generation：只有 Verified rules 可以生成 official system deadlines。
 - Dashboard triage：包含 due today/this week/this month urgency、filters/sorting、包含 `Waiting on client` 的 task status、firm target dates、date event history、extension status 和 evidence/trust badges。
 - Recurrence/upcoming tasks：来自维护过的 Verified rules，official recurring deadlines 不需要 manual rollover。

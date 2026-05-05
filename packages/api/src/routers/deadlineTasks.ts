@@ -13,6 +13,7 @@ import { z } from "zod";
 
 import { requireFirmSession, type Context } from "../context";
 import { publicProcedure, router } from "../index";
+import { ENTERED_DEADLINE_TRUST_LABEL } from "../lib/deadline-labels";
 import { serializeDeadlineTask } from "./clients";
 
 const dateStringSchema = z
@@ -151,7 +152,7 @@ export const deadlineTasksRouter = router({
         firmTargetDate: dateStringSchema.optional(),
         priority: z.enum(deadlineTaskPriorities).default("normal"),
         recurrence: recurrenceSchema.default("none"),
-        sourceNote: z.string().trim().min(1).max(2000),
+        referenceNote: z.string().trim().min(1).max(2000),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -181,9 +182,9 @@ export const deadlineTasksRouter = router({
           recurrenceKey: input.recurrence === "none" ? null : input.recurrence,
           status: "not_started",
           priority: input.priority,
-          sourceType: "user_provided",
+          sourceType: "entered_deadline",
           createdVia: "manual",
-          userProvidedSourceNote: input.sourceNote,
+          enteredDeadlineReferenceNote: input.referenceNote,
           createdAt: now,
           updatedAt: now,
         })
@@ -192,7 +193,7 @@ export const deadlineTasksRouter = router({
       if (!deadline) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: "Manual deadline could not be created.",
+          message: "Entered deadline could not be created.",
         });
       }
 
@@ -210,7 +211,7 @@ export const deadlineTasksRouter = router({
         entityType: "deadline_task",
         metadata: {
           deadlineKind: input.deadlineKind,
-          trustLabel: "User provided - Not verified by DueDateHQ",
+          trustLabel: ENTERED_DEADLINE_TRUST_LABEL,
         },
         session,
         sourceId: deadline.id,
@@ -232,7 +233,7 @@ export const deadlineTasksRouter = router({
           createdBy: session.user.id,
           auditLogId,
           createdAt: now,
-          notes: "Firm target date added during manual deadline entry.",
+          notes: "Firm target date added during entered deadline entry.",
         });
       }
 
@@ -268,10 +269,10 @@ export const deadlineTasksRouter = router({
         });
       }
 
-      if (deadline.sourceType !== "user_provided") {
+      if (deadline.sourceType !== "entered_deadline") {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "Only user-provided manual deadlines can be sent for verification.",
+          message: "Only entered deadlines can be sent for verification.",
         });
       }
 
@@ -312,7 +313,7 @@ export const deadlineTasksRouter = router({
         success: true,
         requestId,
         status: "open" as const,
-        message: "Verification request recorded. The original user-provided deadline was not changed.",
+        message: "Verification request recorded. The original entered deadline was not changed.",
       };
     }),
 });

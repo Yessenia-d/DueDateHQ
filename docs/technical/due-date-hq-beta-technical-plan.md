@@ -11,7 +11,7 @@ DueDateHQ uses the existing Better-T-Stack structure:
 - Deployment: Cloudflare through Alchemy.
 - Auth: Better Auth, email/password only for Beta.
 
-The technical goal is to implement a real Beta product while preserving a strict distinction between verified official rules, user-provided deadlines, and unverified obligations.
+The technical goal is to implement a real Beta product while preserving a strict distinction between verified official rules, entered deadlines, and unverified obligations.
 
 Technical parity target: implement the useful File In Time workflow baseline as a cloud product, not as a desktop clone. The system should support client setup, source-specific CSV import preview/mapping/review/duplicate handling, obligation-driven task generation, dashboard triage, filters/sorting, task status, extension/date-change handling, verified recurrence/upcoming tasks, dashboard/task exports, in-product urgency surfaces, and light bulk operations. It should deliberately omit local database administration, backup/restore UI, Crystal Reports-style reporting, mail merge/labels, extension form printing, arbitrary field renaming, network-user maintenance, detailed rights matrices, client portal, document upload/checklist automation, e-signature, direct end-client notifications, and external email/SMS/Slack/calendar push unless later prioritized.
 
@@ -175,8 +175,8 @@ Primary UI copy should say `Filing profile` or `Tax profile`. Internal implement
 - `recurrenceKey`
 - `status`: `not_started | in_progress | waiting_on_client | done`
 - `priority`
-- `sourceType`: `verified_rule | user_provided`
-- `userProvidedSourceNote`
+- `sourceType`: `verified_rule | entered_deadline`
+- `enteredDeadlineReferenceNote`
 - `createdVia`: `system_rule | manual`
 - `createdAt`
 - `updatedAt`
@@ -185,7 +185,7 @@ Primary UI copy should say `Filing profile` or `Tax profile`. Internal implement
 
 - `id`
 - `deadlineTaskId`
-- `eventType`: `official_extension | official_relief_change | user_provided_adjustment | firm_target_change`
+- `eventType`: `official_extension | official_relief_change | entered_deadline_adjustment | firm_target_change`
 - `previousCurrentDueDate`
 - `newCurrentDueDate`
 - `previousFirmTargetDate`
@@ -458,7 +458,7 @@ Coverage:
 - `coverage.matrix`
 - `coverage.getRule`
 - `coverage.requestCoverage`
-- `coverage.addUserProvidedDeadlineFromGap`
+- `coverage.addEnteredDeadlineFromGap`
 - `coverage.dismissGapForNow`
 
 Verification:
@@ -607,17 +607,17 @@ Other statuses:
 
 Manual deadlines:
 
-- Stored as `deadline_tasks.sourceType = user_provided`.
+- Stored as `deadline_tasks.sourceType = entered_deadline`.
 - Can appear on dashboard.
-- Must show `User provided · Not verified by DueDateHQ`.
+- Must show `Entered deadline · Not verified by DueDateHQ`.
 - Can create a `verification_request`.
 
 Date rules:
 
-- `deadline_tasks.currentDueDate` is the current official or user-provided task date used for work planning. The dashboard shows only this date; it does not show original and current dates side by side.
+- `deadline_tasks.currentDueDate` is the current official or entered deadline task date used for work planning. The dashboard shows only this date; it does not show original and current dates side by side.
 - `deadline_tasks.originalDueDate` preserves the original official due date where one exists.
 - `deadline_tasks.firmTargetDate` is optional firm planning metadata and must not be displayed as an official due date.
-- `deadline_date_events` backs the Evidence drawer and records official extensions, official relief/change, user-provided adjustments, and firm target changes.
+- `deadline_date_events` backs the Evidence drawer and records official extensions, official relief/change, entered-deadline adjustments, and firm target changes.
 - Extension state is derived, not stored as a task status. A task is considered extended when `deadline_date_events` contains an `official_extension` event. The dashboard shows an "Extended" badge alongside the task's work-progress status.
 - Overdue state is derived. A task is overdue when `currentDueDate < today AND status != done`.
 
@@ -671,7 +671,7 @@ Manual:
 - Confirm bulk task status update and current-filter export work, and that bulk official due-date edits are unavailable.
 - Confirm core dashboard filters respond in `< 1 second` for a Beta-sized solo CPA workspace and the weekly triage flow can be completed within 5 minutes.
 - Confirm coverage matrix shows monitor status.
-- Confirm coverage gaps offer request verification, add user-provided deadline, and ignore/dismiss actions.
+- Confirm coverage gaps offer request verification, add entered deadline, and ignore/dismiss actions.
 - Confirm evidence drawer shows current due date, original due date, firm target date, date event history, last checked, last changed, and rule versions.
 - Confirm verification queue approval publishes a new version.
 - Confirm Official Notice Monitor only analyzes official notices, uses platform-level AI configuration, does not send customer PII by default, matches profiles locally, and only alerts CPAs in-app.
@@ -685,7 +685,7 @@ Manual:
 - Do not describe Beta as complete 50-state verified coverage.
 - Do not confuse firm target dates with official due dates.
 - Do not expose internal tax-subject terminology in primary UI copy.
-- Do not hide user-provided deadlines from dashboard, but clearly mark them.
+- Do not hide entered deadlines from dashboard, but clearly mark them.
 - Keep user-facing copy explicit about Beta data coverage.
 - Do not treat extension as a task work-progress status. Extension is a derived date state from date events.
 - Do not show original and current due dates side by side on dashboard task rows. Show only the current due date; date history belongs in the evidence drawer.

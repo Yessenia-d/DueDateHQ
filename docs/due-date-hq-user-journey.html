@@ -1094,7 +1094,7 @@
             </div>
             <div class="principle">
               <h3>第三问题：哪里不能信</h3>
-              <p>Needs review、Source changed、Unsupported、Coverage gap 和 User provided 必须可见，不能伪装成 Verified。</p>
+              <p>Needs review、Source changed、Unsupported、Coverage gap 和 Entered deadline 必须可见，不能伪装成 Verified。</p>
             </div>
           </div>
         </div>
@@ -1188,7 +1188,7 @@
               </div>
               <div class="journey-cell">
                 <h3>系统解释能做什么和不能做什么</h3>
-                <p>Ready profiles 匹配 obligation library。缺口可 request verification、add user-provided deadline 或 dismiss for now。</p>
+                <p>Ready profiles 匹配 obligation library。缺口可 request verification、add entered deadline 或 dismiss for now。</p>
               </div>
               <div class="journey-cell">
                 <h3>信任边界</h3>
@@ -1212,7 +1212,7 @@
               </div>
               <div class="journey-cell">
                 <h3>信任边界</h3>
-                <p>Firm target date 是计划字段，不替代 official due date。User-provided deadline 必须标注 not verified by DueDateHQ。</p>
+                <p>Firm target date 是计划字段，不替代 official due date。Entered deadline 必须标注 not verified by DueDateHQ。</p>
               </div>
             </article>
 
@@ -1343,8 +1343,8 @@
               <div class="screen-body">
                 <ul class="screen-list">
                   <li><strong>CPA question</strong><span>我能不能把真实工作先放进 dashboard，即使官方规则暂未覆盖？</span></li>
-                  <li><strong>Primary controls</strong><span>create relationship、add filing/tax profile、add one-time or recurring user-provided deadline。</span></li>
-                  <li><strong>Trust cue</strong><span>User provided, not verified by DueDateHQ。</span></li>
+                  <li><strong>Primary controls</strong><span>create relationship、add filing/tax profile、add one-time or recurring entered deadline。</span></li>
+                  <li><strong>Trust cue</strong><span>Entered deadline, not verified by DueDateHQ。</span></li>
                 </ul>
               </div>
             </article>
@@ -1394,7 +1394,7 @@
               <div class="screen-body">
                 <ul class="screen-list">
                   <li><strong>CPA question</strong><span>我服务的 state 和 tax category 哪些被 DueDateHQ 覆盖？</span></li>
-                  <li><strong>Primary controls</strong><span>filter by state/category/entity type、request verification、add user-provided deadline、dismiss for now。</span></li>
+                  <li><strong>Primary controls</strong><span>filter by state/category/entity type、request verification、add entered deadline、dismiss for now。</span></li>
                   <li><strong>Trust cue</strong><span>Coverage gap 不生成 official task，但必须保持可见。</span></li>
                 </ul>
               </div>
@@ -1456,7 +1456,7 @@
                   <td data-label="Status"><span class="badge review">Needs review</span></td>
                   <td data-label="用户看到什么">匹配不确定或新 rule candidate，需要内部 review。</td>
                   <td data-label="系统可以做什么">展示候选和影响范围，不能生成 official task。</td>
-                  <td data-label="下一步动作">Request DueDateHQ verification 或 add user-provided deadline。</td>
+                  <td data-label="下一步动作">Request DueDateHQ verification 或 add entered deadline。</td>
                 </tr>
                 <tr>
                   <td data-label="Status"><span class="badge review">Source changed</span></td>
@@ -1468,7 +1468,7 @@
                   <td data-label="Status"><span class="badge gap">Coverage gap</span></td>
                   <td data-label="用户看到什么">当前 jurisdiction/category/profile 没有覆盖。</td>
                   <td data-label="系统可以做什么">显示 gap 和可选行动，不能创建 official confirmed deadline。</td>
-                  <td data-label="下一步动作">Request verification、add user-provided deadline、dismiss for now。</td>
+                  <td data-label="下一步动作">Request verification、add entered deadline、dismiss for now。</td>
                 </tr>
                 <tr>
                   <td data-label="Status"><span class="badge neutral">Unsupported</span></td>
@@ -1477,7 +1477,7 @@
                   <td data-label="下一步动作">Manual tracking or ignore，避免误导成即将覆盖。</td>
                 </tr>
                 <tr>
-                  <td data-label="Status"><span class="badge neutral">User provided</span></td>
+                  <td data-label="Status"><span class="badge neutral">Entered deadline</span></td>
                   <td data-label="用户看到什么">用户自行录入的 one-time 或 recurring deadline。</td>
                   <td data-label="系统可以做什么">展示在 dashboard，允许 status/target date/export。</td>
                   <td data-label="下一步动作">Request DueDateHQ review，不显示为 verified。</td>
@@ -1600,7 +1600,7 @@
               <p class="section-kicker">Success criteria</p>
               <h2>旅程评审时用这些结果判断页面是否讲对了产品</h2>
               <p>
-                如果评审者看完页面仍然分不清 official due date、firm target date、coverage gap 和 user-provided deadline，说明页面还不够 DueDateHQ。
+                如果评审者看完页面仍然分不清 official due date、firm target date、coverage gap 和 entered deadline，说明页面还不够 DueDateHQ。
               </p>
             </div>
             <div class="note">

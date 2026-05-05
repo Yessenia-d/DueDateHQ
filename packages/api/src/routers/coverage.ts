@@ -11,6 +11,7 @@ import { z } from "zod";
 
 import { requireFirmSession, type Context } from "../context";
 import { publicProcedure, router } from "../index";
+import { ENTERED_DEADLINE_LABEL } from "../lib/deadline-labels";
 import { calculateDueDates } from "../lib/due-date-engine";
 import { getSeedObligations, getSeedRules } from "../lib/seed-tax-data";
 
@@ -399,10 +400,10 @@ export const coverageRouter = router({
     }),
 
   /**
-   * Start a user-provided deadline path from a coverage gap without creating an
+   * Start an entered deadline path from a coverage gap without creating an
    * official DueDateHQ deadline task.
    */
-  addUserProvidedDeadlineFromGap: publicProcedure
+  addEnteredDeadlineFromGap: publicProcedure
     .input(z.object({ obligationId: z.string() }))
     .mutation(async ({ ctx, input }) => {
       const item = getActionableObligation(input.obligationId);
@@ -411,14 +412,14 @@ export const coverageRouter = router({
         item,
         requestType: "manual_deadline",
         status: "open",
-        message: `User started a user-provided deadline from coverage for ${item.obligationName}.`,
+        message: `CPA started an entered deadline from coverage for ${item.obligationName}.`,
       });
 
       return {
         success: true,
         ...recorded,
         nextPath: `/clients/new?coverageObligationId=${encodeURIComponent(item.obligationId)}`,
-        message: "Start a user-provided deadline. It will not be marked as DueDateHQ Verified.",
+        message: `Start an ${ENTERED_DEADLINE_LABEL.toLowerCase()}. It will not be marked as DueDateHQ Verified.`,
       };
     }),
 

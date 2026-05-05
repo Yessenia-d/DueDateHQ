@@ -10,7 +10,7 @@ The core product principle is:
 Traceable tax deadlines, not black-box dates.
 ```
 
-DueDateHQ maintains a transparent tax obligation and coverage library, monitors supported official sources within a 24-hour detection window, and clearly separates verified system rules from needs-review, coverage-gap, user-provided, or unsupported items. Beta does not promise complete 50-state verified coverage; it promises visible coverage status for supported sources and states.
+DueDateHQ maintains a transparent tax obligation and coverage library, monitors supported official sources within a 24-hour detection window, and clearly separates verified system rules from needs-review, coverage-gap, entered deadlines, or unsupported items. Beta does not promise complete 50-state verified coverage; it promises visible coverage status for supported sources and states.
 
 Competitor framing: DueDateHQ Beta should reach parity or better with the useful core workflows from File In Time, while replacing desktop-era database, rollover, and reporting overhead with a cloud workflow and a verified-source trust model. Parity means CPAs can set up clients, import files, generate and triage deadline work, filter/sort tasks, handle extensions, export workload views, and see urgency without falling back to spreadsheets. Better means official tasks carry source evidence, verification status, source monitoring, rule versions, and no manual rollover for verified recurring deadlines.
 
@@ -62,9 +62,9 @@ TaxDome/import 30 clients:
 
 ```txt
 Only Verified tax rules can create official system-generated deadline tasks.
-User-provided deadlines can appear in the user's workspace, but must be marked as not verified by DueDateHQ.
+Entered deadlines can appear in the CPA firm's workspace, but must be marked as not verified by DueDateHQ.
 Needs review, Source changed, and Unsupported rules must be transparent but cannot be treated as confirmed deadlines.
-Coverage gaps must be visible and actionable: request DueDateHQ verification, add a user-provided deadline, or ignore/dismiss for now.
+Coverage gaps must be visible and actionable: request DueDateHQ verification, add an entered deadline, or ignore/dismiss for now.
 Firm target dates are planning metadata, not official due dates.
 Extension is a date state derived from date events, not a work-progress status. A task can be extended and have any work-progress status simultaneously.
 ```

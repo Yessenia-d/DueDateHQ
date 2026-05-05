@@ -77,12 +77,12 @@ packages/db/drizzle.config.ts
   `filing_profiles(firm_id, client_relationship_id, id)`.
 - Parent tables used by composite FKs must expose matching composite unique
   indexes, e.g. `(firm_id, id)` or `(firm_id, client_relationship_id, id)`.
-- `deadline_tasks.current_due_date` is the current official or user-provided
+- `deadline_tasks.current_due_date` is the current official or entered-deadline
   planning date. `deadline_tasks.original_due_date` preserves the first
   official date where one exists. `deadline_tasks.firm_target_date` is firm
   planning metadata and is never official.
 - `deadline_date_events` is the append-only history for official original dates,
-  official extensions, official relief changes, user-provided adjustments, and
+  official extensions, official relief changes, entered-deadline adjustments, and
   firm target changes.
 - `audit_logs` must be reusable by task status changes, notice proposal
   decisions, import commits, and date-event changes.
@@ -92,9 +92,10 @@ packages/db/drizzle.config.ts
 - `source_type = verified_rule` without `tax_rule_id` -> reject by CHECK.
 - `source_type = verified_rule` with `created_via != system_rule` -> reject by
   CHECK.
-- `source_type = user_provided` without `user_provided_source_note` -> reject by
+- `source_type = entered_deadline` without `entered_deadline_reference_note` ->
+  reject by CHECK.
+- `source_type = entered_deadline` with `created_via != manual` -> reject by
   CHECK.
-- `source_type = user_provided` with `created_via != manual` -> reject by CHECK.
 - Official date event without new current due date -> reject by CHECK.
 - Official date event without any source evidence -> reject by CHECK.
 - Firm target event that also mutates current due-date fields -> reject by CHECK.
@@ -107,9 +108,9 @@ packages/db/drizzle.config.ts
   `created_via = system_rule`, separate `current_due_date` and optional
   `firm_target_date`, and official changes recorded in
   `deadline_date_events`.
-- Base: a manual task has `source_type = user_provided`,
-  `created_via = manual`, a user source note, nullable `tax_rule_id`, and can
-  appear on the dashboard as not verified.
+- Base: an entered deadline task has `source_type = entered_deadline`,
+  `created_via = manual`, an entered-deadline reference note, nullable
+  `tax_rule_id`, and can appear on the dashboard as not verified.
 - Bad: a deadline task stores a `filing_profile_id` from another firm while
   carrying the current firm's `firm_id`.
 
@@ -117,7 +118,8 @@ packages/db/drizzle.config.ts
 
 - Assert every owned table exposes required contract columns.
 - Assert enum arrays include individual and business entity types, task statuses,
-  source types, date-event types, and coverage states.
+  source types (`verified_rule | entered_deadline`), date-event types including
+  `entered_deadline_adjustment`, and coverage states.
 - Assert CHECK constraint names exist for trust-boundary, date-event separation,
   and source evidence rules.
 - Assert composite unique index and FK names exist for the firm-owned chain.

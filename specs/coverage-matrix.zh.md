@@ -27,7 +27,7 @@ flowchart TD
   D -- Coverage gap --> H[Gap actions]
   D -- Unsupported --> H
   H --> I[Request verification]
-  H --> J[Add user-provided deadline]
+  H --> J[Add entered deadline]
   H --> K[Ignore or dismiss for now]
 ```
 
@@ -44,7 +44,7 @@ flowchart TD
 - `coverage.matrix`
 - `coverage.getRule`
 - `coverage.requestCoverage`
-- `coverage.addUserProvidedDeadlineFromGap`
+- `coverage.addEnteredDeadlineFromGap`
 - `coverage.dismissGapForNow`
 
 ## Data Model
@@ -82,7 +82,7 @@ flowchart TD
 - Unsupported cells 不暗示已支持安排。
 - 存在官方来源时显示 monitor status。
 - Needs-review、coverage-gap 和 unsupported entries 可见，但不能被呈现为 verified official deadlines。
-- Coverage gaps 支持 request DueDateHQ verification、add user-provided deadline、ignore/dismiss for now。
+- Coverage gaps 支持 request DueDateHQ verification、add entered deadline、ignore/dismiss for now。
 - P0 官方来源是 IRS、California FTB、New York Tax Department、Texas Comptroller、Florida Department of Revenue。
 
 ## Out of Scope

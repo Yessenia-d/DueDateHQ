@@ -177,7 +177,7 @@ Badge meanings:
 - Source changed: amber soft background, amber text, stronger border.
 - Unsupported: gap slate soft background, slate text.
 - Coverage gap: gap slate soft background, slate text.
-- User provided: neutral soft background, muted text.
+- Entered deadline: neutral soft background, muted text.
 - Waiting on client: amber soft background, amber text.
 - Done: green soft background, green text.
 
@@ -282,7 +282,7 @@ Good:
 - "Apply selected updates"
 - "Reject selected updates"
 - "Decide later"
-- "User provided, not verified by DueDateHQ"
+- "Entered deadline, not verified by DueDateHQ"
 - "Source changed, review before applying"
 
 Avoid:

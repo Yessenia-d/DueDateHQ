@@ -27,12 +27,12 @@ DueDateHQ 不应该只是零散借鉴 File In Time 的几个想法。对于 CPA 
 |---|---|---|
 | Client setup | Client records 包含税务相关字段、notes、client/entity type、jurisdiction context，并支持 manual/import paths | 覆盖安排截止日期所需的实用 filing/tax profile fields，并在数据层建模 `Client relationship -> Filing/Tax profile -> Deadline task`；主 UI 使用 CPA 友好词汇，避免内部 tax-subject jargon |
 | CSV import | Delimited-file preview、header handling、drag/drop mapping、commit 前 review、duplicate resolution | 通过 TaxDome、Drake、Karbon、QuickBooks 来源专属 client/profile adapters 做得更好，在字段存在或可高置信推断时自动识别 client name/EIN/state/entity type，提供非阻塞 review suggestions、CPA-confirmed relationship suggestions，并处理 duplicates |
-| Obligation/service setup | Services 定义 work type、frequency、due dates 和 extension dates | 将 services 映射为 tax obligations 和 verified tax rules，同时区分 known、verified、needs-review、unsupported 和 user-provided items |
+| Obligation/service setup | Services 定义 work type、frequency、due dates 和 extension dates | 将 services 映射为 tax obligations 和 verified tax rules，同时区分 known、verified、needs-review、unsupported 和 entered deadline items |
 | Task generation | 将 services 分配给 clients 来创建 due-date tasks | 只有 Verified rules 生成官方任务；unsupported 或 needs-review obligations 可见，但不能伪装成官方截止日期 |
 | Dashboard triage | Task view 可以过滤到 this week | 默认提供一等公民的 `逾期`、`本周到期`、`本月预警`、`长期计划` 分区，登录后 30 秒内看到所有本周工作，并以 5 分钟完成分诊为目标 |
 | Filters and sorting | Date、client、type、service、status、key person 和 saved views | 覆盖 horizon、client、jurisdiction/state、form/obligation type、entity type、tax type、task status、verification status 核心过滤；advanced saved views 可以后置 |
 | Task status | Status codes、dates、notes、extension flag | 用 `Not started`、`进行中` (`In progress`)、`Waiting on client`、`已完成` (`Done`) 覆盖简单工作进度状态，并附带从 date events 派生的 `Extended` badge，使延期与工作状态独立 |
-| Extensions and date changes | Service-supported extension dates 和 extension state | 跟踪 current due date、original due date、可选 firm target date，以及 official extensions、official relief/change、user-provided adjustments 和 firm target changes 的 date event history；extension form printing 不进入 Beta；dashboard 只显示 current due date，date history 在 evidence drawer 中 |
+| Extensions and date changes | Service-supported extension dates 和 extension state | 跟踪 current due date、original due date、可选 firm target date，以及 official extensions、official relief/change、entered-deadline adjustments 和 firm target changes 的 date event history；extension form printing 不进入 Beta；dashboard 只显示 current due date，date history 在 evidence drawer 中 |
 | Recurrence/upcoming tasks | 手动 rollover 创建下一周期任务 | 由维护过的 Verified rules 生成 upcoming official tasks，official recurring deadlines 不需要手动 rollover |
 | Exports | Excel/task view export 和 printed reports | 支持实用 dashboard/task export，用于 workload sharing 和 review；不做 Crystal Reports-style builders |
 | Bulk operations | Batch status、due date、target date、extension 和 notes changes | 支持轻量 bulk task status updates、firm target date updates 和 current-filter export；不支持 bulk official due-date edits |
@@ -46,7 +46,7 @@ DueDateHQ 必须更好的地方：
 - Rule publishing 需要人工批准后才能成为 `Verified`。
 - Source-specific CSV adapters 比通用 delimited-file importer 减少手工 mapping。
 - Official recurring deadlines 来自维护过的规则，而不是用户手动 rollover。
-- Unsupported、needs-review、source-changed 和 user-provided items 可见，但不能被表现为 verified official deadlines。
+- Unsupported、needs-review、source-changed 和 entered deadline items 可见，但不能被表现为 verified official deadlines。
 - 用户不需要管理 desktop installs、shared database files、check/optimize tools 或 backup/restore screens。
 
 桌面时代功能在 Beta 阶段排除，只有后续明确重新排序时才重新评估：
@@ -122,7 +122,7 @@ DueDateHQ 必须更好的地方：
 - CPA 可以在 client relationship 下添加一个或多个 filing/tax profiles。
 - CPA 可以添加一次性或重复的自定义截止日期。
 - 手动添加的截止日期显示在 dashboard。
-- 手动截止日期标记为 `User provided · Not verified by DueDateHQ`。
+- 手动截止日期标记为 `Entered deadline · Not verified by DueDateHQ`。
 - 用户可以请求 DueDateHQ 核验手动截止日期。
 
 ### Story 4：官方来源监听
@@ -201,7 +201,7 @@ Known obligation does not mean verified deadline.
 
 | 来源类型 | 含义 | Dashboard 行为 |
 |---|---|---|
-| `User provided` | 用户手动录入截止日期 | 作为用户任务显示，但明确标注未经 DueDateHQ 核验 |
+| `Entered deadline` | CPA firm manually enters the deadline | 作为 entered deadline task 显示，但明确标注未经 DueDateHQ 核验 |
 
 ### Evidence Drawer
 
@@ -221,7 +221,7 @@ Known obligation does not mean verified deadline.
 - 来源最后变化时间。
 - 当前规则版本。
 - 上一版本。
-- Date event history：official extensions、official relief/change、user-provided adjustments、firm target changes。
+- Date event history：official extensions、official relief/change、entered-deadline adjustments、firm target changes。
 - 审计记录。
 - 操作：`Mark reviewed`、`Report issue`、`Request re-verification`。
 
@@ -239,7 +239,7 @@ Coverage Matrix 是产品透明度层，展示所有州和主要税种的核验�
 - Last checked。
 - Last changed。
 - Last verified。
-- 可用操作：request DueDateHQ verification、add user-provided deadline、ignore/dismiss for now。
+- 可用操作：request DueDateHQ verification、add entered deadline、ignore/dismiss for now。
 
 Coverage Matrix 必须明确 coverage gaps，不能暗示完整 50 州覆盖。P0 官方来源 allowlist 是 IRS、California FTB、New York Tax Department、Texas Comptroller、Florida Department of Revenue。
 
@@ -439,7 +439,7 @@ User imports or manually enters at least 10 clients and completes one dashboard 
 
 - Coverage matrix。
 - 明确 needs-review、unsupported 和 coverage-gap 州和税种。
-- 用户可 request DueDateHQ verification、add user-provided deadline、ignore/dismiss for now。
+- CPA 可 request DueDateHQ verification、add entered deadline、ignore/dismiss for now。
 
 ### 信任风险
 

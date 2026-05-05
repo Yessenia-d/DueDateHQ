@@ -42,7 +42,7 @@ Firm
 Important concepts:
 
 - `Verified Tax Rule`: a reviewed rule with official source evidence. Only this can create official system-generated Deadline Tasks.
-- `User-Provided Deadline`: a CPA-entered deadline. It can appear in the workspace but must be marked as not verified by DueDateHQ.
+- `Entered Deadline`: a CPA-entered deadline. It can appear in the workspace but must be marked as not verified by DueDateHQ.
 - `Coverage Gap`: a known area where DueDateHQ does not yet have verified support.
 - `Firm Target Date`: a planning date set by the CPA. It must never replace or obscure the official due date.
 - `Official Notice`: a monitored government notice that may affect tax deadlines.
@@ -51,7 +51,7 @@ Important concepts:
 ## Trust Rules
 
 - Only Verified Tax Rules can create official DueDateHQ Deadline Tasks.
-- Needs review, Source changed, Unsupported, Coverage gap, and User-provided states must remain visible.
+- Needs review, Source changed, Unsupported, Coverage gap, and Entered deadline states must remain visible.
 - Unverified data must never look official.
 - Official source evidence must stay close to every official deadline.
 - Monitor agents can detect and summarize notices, but CPAs control whether proposed workspace changes are applied.
@@ -71,7 +71,7 @@ Good copy:
 
 - "6 profiles need review before deadlines can be generated."
 - "Source changed. Review before applying this update."
-- "User provided. Not verified by DueDateHQ."
+- "Entered deadline. Not verified by DueDateHQ."
 - "Apply selected updates"
 - "Reject selected updates"
 

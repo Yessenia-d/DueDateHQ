@@ -317,13 +317,13 @@ test("coverage.requestCoverage rejects already verified obligations", async () =
   );
 });
 
-// ── coverage.addUserProvidedDeadlineFromGap ──
+// ── coverage.addEnteredDeadlineFromGap ──
 
-test("coverage.addUserProvidedDeadlineFromGap records a manual-deadline intent", async () => {
+test("coverage.addEnteredDeadlineFromGap records an entered-deadline intent", async () => {
   const rows: WrittenVerificationRequest[] = [];
   const firmCaller = createCaller({ rows, session: mockSession });
 
-  const result = await firmCaller.coverage.addUserProvidedDeadlineFromGap({
+  const result = await firmCaller.coverage.addEnteredDeadlineFromGap({
     obligationId: "obl-fl-rt6",
   });
 

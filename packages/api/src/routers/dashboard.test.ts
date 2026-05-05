@@ -42,6 +42,7 @@ function makeRow(overrides: Partial<DashboardTaskRow>): DashboardTaskRow {
     smartPriorityScore: 770,
     sourceName: "IRS",
     sourceUrl: "https://www.irs.gov/forms-pubs/about-form-1120-s",
+    enteredDeadlineReferenceNote: null,
     lastVerifiedAt: "2026-04-01T00:00:00.000Z",
     sourceLastCheckedAt: "2026-04-01T00:00:00.000Z",
     sourceLastChangedAt: null,
@@ -105,8 +106,8 @@ test("dashboard filters by core CPA triage fields", () => {
       jurisdiction: "NY",
       horizon: "this_month",
       urgency: "due_this_month",
-      sourceType: "user_provided",
-      verificationStatus: "user_provided",
+      sourceType: "entered_deadline",
+      verificationStatus: "entered_deadline",
       status: "waiting_on_client",
       taxCategory: "Franchise Tax",
     }),
@@ -122,7 +123,7 @@ test("dashboard filters by core CPA triage fields", () => {
     entityType: "llc",
     taskStatus: "waiting_on_client",
     taxCategory: "Franchise Tax",
-    verificationStatus: "user_provided",
+    verificationStatus: "entered_deadline",
   });
 
   assert.equal(filtered.length, 1);
@@ -162,4 +163,22 @@ test("dashboard export keeps official due date and firm target date separate", (
   assert.match(csv, /2026-03-15/);
   assert.match(csv, /2026-05-01/);
   assert.match(csv, /Extended/);
+});
+
+test("dashboard export labels entered deadlines with reference notes", () => {
+  const csv = createDashboardCsv([
+    makeRow({
+      id: "entered-row",
+      sourceName: "Reference",
+      sourceType: "entered_deadline",
+      verificationLabel: "Entered deadline - Not verified by DueDateHQ",
+      verificationStatus: "entered_deadline",
+      enteredDeadlineReferenceNote: "Prior-year workpaper and CPA judgment.",
+    }),
+  ]);
+
+  assert.match(csv, /Entered deadline - Not verified by DueDateHQ/);
+  assert.match(csv, /Reference/);
+  assert.match(csv, /Prior-year workpaper and CPA judgment/);
+  assert.doesNotMatch(csv, /User provided/);
 });

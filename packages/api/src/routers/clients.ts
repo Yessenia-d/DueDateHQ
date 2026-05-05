@@ -13,6 +13,12 @@ import { z } from "zod";
 
 import { requireFirmSession } from "../context";
 import { publicProcedure, router } from "../index";
+import {
+  ENTERED_DEADLINE_REFERENCE_LABEL,
+  getDeadlineRecurrenceLabel,
+  getDeadlineReferenceNote,
+  getDeadlineTrustLabel,
+} from "../lib/deadline-labels";
 
 const optionalTextSchema = z.string().trim().max(2000).optional();
 
@@ -24,6 +30,15 @@ export type ClientRelationshipResponse = {
   createdVia: ClientRelationship["createdVia"];
   createdAt: string;
   updatedAt: string;
+};
+
+export type ClientListItemResponse = ClientRelationshipResponse & {
+  filingProfileCount: number;
+  deadlineTaskCount: number;
+};
+
+export type ClientListResponse = {
+  clients: ClientListItemResponse[];
 };
 
 export type FilingProfileResponse = {
@@ -57,8 +72,10 @@ export type DeadlineTaskResponse = {
   priority: DeadlineTask["priority"];
   sourceType: DeadlineTask["sourceType"];
   createdVia: DeadlineTask["createdVia"];
-  userProvidedSourceNote: string | null;
+  enteredDeadlineReferenceNote: string | null;
   trustLabel: string;
+  referenceLabel: string | null;
+  referenceNote: string | null;
   recurrenceLabel: string;
   createdAt: string;
   updatedAt: string;
@@ -77,6 +94,18 @@ function nullableText(value: string | null | undefined): string | null {
 
 function serializeDate(value: Date): string {
   return value.toISOString();
+}
+
+function countByClientRelationship(
+  rows: readonly { clientRelationshipId: string }[],
+): Map<string, number> {
+  const counts = new Map<string, number>();
+
+  for (const row of rows) {
+    counts.set(row.clientRelationshipId, (counts.get(row.clientRelationshipId) ?? 0) + 1);
+  }
+
+  return counts;
 }
 
 export function serializeClientRelationship(
@@ -111,8 +140,7 @@ export function serializeFilingProfile(profile: FilingProfile): FilingProfileRes
 }
 
 export function serializeDeadlineTask(task: DeadlineTask): DeadlineTaskResponse {
-  const isUserProvided = task.sourceType === "user_provided";
-  const isVerifiedRule = task.sourceType === "verified_rule";
+  const isEnteredDeadline = task.sourceType === "entered_deadline";
 
   return {
     id: task.id,
@@ -130,21 +158,53 @@ export function serializeDeadlineTask(task: DeadlineTask): DeadlineTaskResponse 
     priority: task.priority,
     sourceType: task.sourceType,
     createdVia: task.createdVia,
-    userProvidedSourceNote: task.userProvidedSourceNote,
-    trustLabel: isUserProvided
-      ? "User provided - Not verified by DueDateHQ"
-      : "Verified by DueDateHQ",
-    recurrenceLabel: isVerifiedRule
-      ? "Generated from a DueDateHQ Verified rule"
-      : task.recurrenceKey
-        ? "Recurring user-provided deadline"
-        : "One-time user-provided deadline",
+    enteredDeadlineReferenceNote: task.enteredDeadlineReferenceNote,
+    trustLabel: getDeadlineTrustLabel(task.sourceType),
+    referenceLabel: isEnteredDeadline ? ENTERED_DEADLINE_REFERENCE_LABEL : null,
+    referenceNote: isEnteredDeadline ? getDeadlineReferenceNote(task) : null,
+    recurrenceLabel: getDeadlineRecurrenceLabel(task),
     createdAt: serializeDate(task.createdAt),
     updatedAt: serializeDate(task.updatedAt),
   };
 }
 
 export const clientsRouter = router({
+  list: publicProcedure.query(async ({ ctx }): Promise<ClientListResponse> => {
+    const session = requireFirmSession(ctx);
+
+    const clients = await ctx.db
+      .select()
+      .from(clientRelationships)
+      .where(eq(clientRelationships.firmId, session.firm.id))
+      .orderBy(asc(clientRelationships.displayName));
+
+    if (clients.length === 0) {
+      return { clients: [] };
+    }
+
+    const profileRows = await ctx.db
+      .select({ clientRelationshipId: filingProfiles.clientRelationshipId })
+      .from(filingProfiles)
+      .where(eq(filingProfiles.firmId, session.firm.id))
+      .orderBy(asc(filingProfiles.clientRelationshipId));
+    const deadlineRows = await ctx.db
+      .select({ clientRelationshipId: deadlineTasks.clientRelationshipId })
+      .from(deadlineTasks)
+      .where(eq(deadlineTasks.firmId, session.firm.id))
+      .orderBy(asc(deadlineTasks.clientRelationshipId));
+
+    const filingProfileCounts = countByClientRelationship(profileRows);
+    const deadlineTaskCounts = countByClientRelationship(deadlineRows);
+
+    return {
+      clients: clients.map((client) => ({
+        ...serializeClientRelationship(client),
+        filingProfileCount: filingProfileCounts.get(client.id) ?? 0,
+        deadlineTaskCount: deadlineTaskCounts.get(client.id) ?? 0,
+      })),
+    };
+  }),
+
   createRelationship: publicProcedure
     .input(
       z.object({

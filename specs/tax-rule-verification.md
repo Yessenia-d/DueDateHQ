@@ -64,11 +64,11 @@ Evidence fields:
 - Current version.
 - Previous version.
 - Verification notes.
-- Date event history: official extension, official relief/change, user-provided adjustment, firm target change.
+- Date event history: official extension, official relief/change, entered-deadline adjustment, firm target change.
 
-Manual deadlines use `deadline_tasks.sourceType = user_provided` and are not tax rule verification statuses.
+Manual deadlines use `deadline_tasks.sourceType = entered_deadline` and are not tax rule verification statuses.
 
-Unsupported, needs-review, source-changed, manual, and user-provided items must remain transparent to the user, but they must not be presented as verified official deadlines.
+Unsupported, needs-review, source-changed, manual, and entered deadline items must remain transparent to the user, but they must not be presented as verified official deadlines.
 
 Extension handling is separate from verification status and task work-progress status. Extension is a derived date state from `deadline_date_events` with `official_extension` type. A task's work-progress status (`not_started`, `in_progress`, `waiting_on_client`, `done`) is independent of whether its due date has been extended.
 
@@ -109,7 +109,7 @@ Firm target dates are not part of official rule verification. They can appear in
 - `unsupported` obligations only appear in coverage.
 - Evidence drawer can explain status and source lineage.
 - Evidence drawer shows current due date, original due date, optional firm target date, date event history, rule versioning, and source last checked/changed timestamps for official tasks.
-- Manual or user-provided deadlines are clearly marked outside the verification status taxonomy.
+- Manual or entered deadlines are clearly marked outside the verification status taxonomy.
 - Official extensions and relief/change updates are recorded as date events rather than silent overwrites.
 
 ## Out of Scope

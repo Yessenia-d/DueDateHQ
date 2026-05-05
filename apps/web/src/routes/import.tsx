@@ -7,7 +7,7 @@ import { Button } from "@due-date-hq/ui/components/button";
 import { Input } from "@due-date-hq/ui/components/input";
 import { Label } from "@due-date-hq/ui/components/label";
 import { useMutation } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import {
   AlertTriangle,
   DatabaseZap,
@@ -608,6 +608,53 @@ function CommitSummary({ result }: { result: ImportCommitResponse }) {
         <Metric label="Profile review" value={result.profileReviewItemCount} tone="review" />
         <Metric label="Coverage gaps" value={result.coverageGapCount} tone="neutral" />
       </div>
+      {result.profileResults.length > 0 ? (
+        <div className="border bg-muted/20">
+          <div className="flex items-center justify-between gap-3 border-b px-3 py-2">
+            <h3 className="text-sm font-semibold">Imported clients</h3>
+            <Link
+              to="/clients"
+              className="text-xs font-medium text-primary underline-offset-2 hover:underline"
+            >
+              View all clients
+            </Link>
+          </div>
+          <div className="divide-y">
+            {result.profileResults.slice(0, 8).map((profile) => (
+              <div
+                key={profile.reviewItemId}
+                className="grid gap-2 px-3 py-2 text-xs sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
+              >
+                <div className="min-w-0">
+                  <Link
+                    to="/clients/$clientId"
+                    params={{ clientId: profile.clientRelationshipId }}
+                    className="font-medium text-foreground underline-offset-2 hover:text-primary hover:underline"
+                  >
+                    {profile.clientName}
+                  </Link>
+                  <div className="mt-0.5 text-muted-foreground">
+                    {profile.generatedVerifiedTaskCount} verified task
+                    {profile.generatedVerifiedTaskCount === 1 ? "" : "s"} generated
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {profile.coverageGapObligations.length > 0 ? (
+                    <StatusBadge tone="neutral">
+                      {profile.coverageGapObligations.length} coverage gap
+                    </StatusBadge>
+                  ) : null}
+                  {profile.needsReviewObligations.length > 0 ? (
+                    <StatusBadge tone="review">
+                      {profile.needsReviewObligations.length} needs review
+                    </StatusBadge>
+                  ) : null}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }

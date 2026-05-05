@@ -2,7 +2,7 @@
 
 ## Goal
 
-为服务约 80 个混合个人与小企业客户的 solo/independent CPA 提供快速的每周截止日期分诊工作台，并为每个官方或 user-provided deadline 提供清晰核验证据、urgency surfaces、确定性智能优先级排序、filters/sorting、extension/date-change handling、可选 firm target dates、轻量 bulk operations 和 export。
+为服务约 80 个混合个人与小企业客户的 solo/independent CPA 提供快速的每周截止日期分诊工作台，并为每个官方或 entered deadline 提供清晰核验证据、urgency surfaces、确定性智能优先级排序、filters/sorting、extension/date-change handling、可选 firm target dates、轻量 bulk operations 和 export。
 
 ## User Flow
 
@@ -36,7 +36,7 @@ flowchart TD
   E --> H{Verification status}
   H -- Verified --> I[Show official source]
   H -- Source changed --> J[Show warning]
-  H -- User provided --> K[Show user source note]
+  H -- Entered deadline --> K[Show reference note]
   A --> M[Export current view]
 ```
 
@@ -102,7 +102,7 @@ Task row fields：
 Source types：
 
 - `verified_rule`
-- `user_provided`
+- `entered_deadline`
 
 ## CSV Export Contract
 
@@ -150,7 +150,7 @@ File In Time 支持 weekly task views、status updates、extension flags、start
 - 支持 smart priority sorting，Beta 阶段可以用确定性规则优先级实现。
 - Verified tasks 可以打开 evidence drawer。
 - Source changed tasks 显示 warning。
-- User-provided tasks 显示 not verified label。
+- Entered deadline tasks 显示 not verified label。
 - Extension 状态显示为从 date events 派生的 badge，不是 task status。一个 task 可以同时处于 extended 状态和任意工作进度状态。
 - Evidence drawer 显示 current due date、original due date、firm target date 和 date event history，包括 extensions、relief changes 和 user adjustments。
 - Task 工作进度状态可以一键标记为 `已完成`、`Waiting on client` 或 `进行中`。

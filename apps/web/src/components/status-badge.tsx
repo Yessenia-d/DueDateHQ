@@ -10,7 +10,7 @@ type StatusBadgeStatus =
   | "unsupported"
   | "coverage_gap"
   | "no_rule"
-  | "user_provided"
+  | "entered_deadline"
   | "not_started"
   | "in_progress"
   | "neutral"
@@ -33,7 +33,7 @@ const statusStyles: Record<string, string> = {
   coverage_gap: "bg-ddhq-gap-soft text-ddhq-gap",
   no_rule: "bg-ddhq-gap-soft text-ddhq-gap",
   gap: "bg-ddhq-gap-soft text-ddhq-gap",
-  user_provided: "bg-muted text-muted-foreground",
+  entered_deadline: "bg-muted text-muted-foreground",
   not_started: "bg-muted text-muted-foreground",
   neutral: "bg-muted text-muted-foreground",
   in_progress: "bg-ddhq-accent-soft text-primary",
@@ -49,7 +49,7 @@ const statusLabels: Record<string, string> = {
   unsupported: "Unsupported",
   coverage_gap: "Coverage gap",
   no_rule: "Coverage gap",
-  user_provided: "User provided",
+  entered_deadline: "Entered deadline",
   not_started: "Not started",
   in_progress: "In progress",
   blocked: "Blocked",

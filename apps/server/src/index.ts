@@ -1,5 +1,6 @@
 import { createDueDateAuth } from "@due-date-hq/api/auth";
 import { createContext } from "@due-date-hq/api/context";
+import { seedDemoData } from "@due-date-hq/api/lib/demo-seed";
 import { appRouter } from "@due-date-hq/api/routers/index";
 import { env } from "@due-date-hq/env/server";
 import { trpcServer } from "@hono/trpc-server";
@@ -14,7 +15,7 @@ app.use(
   "/*",
   cors({
     origin: (origin, c) => resolveCorsOrigin(origin, c.req.url),
-    allowHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+    allowHeaders: ["Content-Type", "Authorization", "X-Requested-With", "X-Demo-Seed-Token"],
     allowMethods: ["GET", "POST", "OPTIONS"],
     credentials: true,
   }),
@@ -40,6 +41,32 @@ app.use(
     },
   }),
 );
+
+app.post("/api/demo/seed", async (c) => {
+  if (!canSeedDemoData(c.req.raw)) {
+    return c.json({ error: "Demo seed is only available from loopback or with a seed token." }, 403);
+  }
+
+  try {
+    const result = await seedDemoData(env.DB);
+
+    return c.json({
+      seeded: true,
+      accounts: result.accounts,
+      password: result.password,
+    });
+  } catch (error) {
+    console.error("Demo seed failed", error);
+
+    return c.json(
+      {
+        error: "Demo seed failed.",
+        message: error instanceof Error ? error.message : "Unknown seed error.",
+      },
+      500,
+    );
+  }
+});
 
 app.get("/", (c) => {
   return c.text("OK");
@@ -106,6 +133,21 @@ function isAllowedLoopbackAlias(origin: string, configuredOrigins: string[]) {
         return false;
       }
     });
+  } catch {
+    return false;
+  }
+}
+
+function canSeedDemoData(request: Request) {
+  const token = env.DEMO_SEED_TOKEN.trim();
+  const providedToken = request.headers.get("x-demo-seed-token")?.trim();
+
+  if (token && providedToken === token) {
+    return true;
+  }
+
+  try {
+    return isLoopbackOrigin(new URL(request.url).origin);
   } catch {
     return false;
   }

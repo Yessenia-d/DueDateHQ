@@ -65,7 +65,7 @@ DueDateHQ 维护透明税务义务与覆盖库，在 24 小时检测窗口内监
 Only Verified tax rules can create official system-generated deadline tasks.
 只有 Verified 税务规则可以生成官方系统截止日期任务。
 
-User-provided deadlines can appear in the user's workspace,
+Entered deadlines can appear in the CPA firm's workspace,
 but must be marked as not verified by DueDateHQ.
 用户手动录入的截止日期可以出现在工作台中，
 但必须标记为未经 DueDateHQ 核验。
@@ -74,7 +74,7 @@ Needs review, Source changed, and Unsupported rules must be transparent
 but cannot be treated as confirmed deadlines.
 Needs review、Source changed 和 Unsupported 规则必须透明展示，
 但不能被当作已确认截止日期。
-Coverage gaps 必须可见且可操作：request DueDateHQ verification、add user-provided deadline、ignore/dismiss for now。
+Coverage gaps 必须可见且可操作：request DueDateHQ verification、add entered deadline、ignore/dismiss for now。
 Firm target dates 是规划信息，不是 official due dates。
 延期是从 date events 派生的日期状态，不是工作进度状态。一个任务可以同时处于延期状态和任意工作进度状态。
 ```

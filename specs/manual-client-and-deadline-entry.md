@@ -11,7 +11,7 @@ Support CPAs who need to add client relationships, filing/tax profiles, or deadl
 3. User adds one or more filing/tax profiles with tax-relevant fields.
 4. User optionally adds one or more custom one-time or recurring deadlines.
 5. Custom deadlines appear on dashboard.
-6. Custom deadlines are clearly marked as user-provided.
+6. Custom deadlines are clearly marked as entered deadlines.
 7. User can request DueDateHQ verification.
 
 ## Flow Diagram
@@ -23,11 +23,11 @@ flowchart TD
   C --> D{Add custom deadline?}
   D -- No --> E[Client created]
   D -- Yes --> F[Enter deadline details]
-  F --> G[Save user-provided task]
+  F --> G[Save entered deadline task]
   G --> H[Show on dashboard with warning badge]
   H --> I{Request verification?}
   I -- Yes --> J[Create verification request]
-  I -- No --> K[Keep as user-provided]
+  I -- No --> K[Keep as entered deadline]
 ```
 
 ## Pages
@@ -69,15 +69,15 @@ flowchart TD
 
 `deadline_tasks`
 
-- `sourceType = user_provided`
+- `sourceType = entered_deadline`
 - `createdVia = manual`
-- `userProvidedSourceNote`
+- `enteredDeadlineReferenceNote`
 - `taxRuleId` nullable.
 - `currentDueDate`
 - `originalDueDate` nullable.
 - `firmTargetDate` nullable.
 
-Manual recurrence stays user-provided unless and until a reviewer creates or updates a Verified tax rule. It must never appear as an official DueDateHQ recurring deadline before verification.
+Manual recurrence stays an entered deadline unless and until a reviewer creates or updates a Verified tax rule. It must never appear as an official DueDateHQ recurring deadline before verification.
 
 Firm target dates are optional planning metadata. They must never be labeled or treated as official due dates.
 
@@ -90,7 +90,7 @@ Firm target dates are optional planning metadata. They must never be labeled or 
 File In Time supports manual client setup, client notes, client/entity type context, custom services, and recurring service-driven tasks. DueDateHQ should match the useful manual-entry path for client setup and special deadlines, but keep a stronger trust boundary:
 
 - Manual clients use tax-relevant profile fields and notes without adding broad arbitrary custom fields in Beta.
-- User-entered deadlines can be one-time or recurring, but remain `User provided` until a reviewer creates or updates a Verified tax rule.
+- User-entered deadlines can be one-time or recurring, but remain `Entered deadline` until a reviewer creates or updates a Verified tax rule.
 - Manual custom deadlines cannot create official DueDateHQ tasks, extension dates, or recurring official deadlines without verified source evidence.
 - The workflow avoids desktop-era client database administration, mail merge, labels, and custom field renaming.
 
@@ -102,7 +102,7 @@ File In Time supports manual client setup, client notes, client/entity type cont
 - Manual deadlines appear on dashboard.
 - Manual deadlines are never labeled as DueDateHQ verified.
 - Manual deadlines show current due date and optional firm target date as separate concepts.
-- Manual recurring deadlines are clearly labeled as user-provided and not verified by DueDateHQ.
+- Manual recurring deadlines are clearly labeled as entered deadlines and not verified by DueDateHQ.
 - Manual deadlines can be converted into verification requests.
 - Verification request does not mutate the user's original task until approved.
 

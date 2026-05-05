@@ -11,7 +11,7 @@
 3. 用户添加一个或多个包含税务相关字段的 filing/tax profiles。
 4. 用户可选添加一个或多个一次性或 recurring 自定义截止日期。
 5. 自定义截止日期显示在 dashboard。
-6. 自定义截止日期明确标记为 user-provided。
+6. 自定义截止日期明确标记为 Entered deadline。
 7. 用户可以请求 DueDateHQ 核验。
 
 ## Flow Diagram
@@ -23,11 +23,11 @@ flowchart TD
   C --> D{Add custom deadline?}
   D -- No --> E[Client created]
   D -- Yes --> F[Enter deadline details]
-  F --> G[Save user-provided task]
+  F --> G[Save entered deadline task]
   G --> H[Show on dashboard with warning badge]
   H --> I{Request verification?}
   I -- Yes --> J[Create verification request]
-  I -- No --> K[Keep as user-provided]
+  I -- No --> K[Keep as entered deadline]
 ```
 
 ## Pages
@@ -69,15 +69,15 @@ flowchart TD
 
 `deadline_tasks`
 
-- `sourceType = user_provided`
+- `sourceType = entered_deadline`
 - `createdVia = manual`
-- `userProvidedSourceNote`
+- `enteredDeadlineReferenceNote`
 - `taxRuleId` nullable。
 - `currentDueDate`
 - `originalDueDate` nullable。
 - `firmTargetDate` nullable。
 
-Manual recurrence 保持 user-provided，除非审核员创建或更新 Verified tax rule。核验前，它绝不能显示为官方 DueDateHQ recurring deadline。
+Manual recurrence 保持 Entered deadline，除非审核员创建或更新 Verified tax rule。核验前，它绝不能显示为官方 DueDateHQ recurring deadline。
 
 Firm target dates 是可选 planning metadata，绝不能标记或当作 official due dates。
 
@@ -90,7 +90,7 @@ Firm target dates 是可选 planning metadata，绝不能标记或当作 officia
 File In Time 支持手动 client setup、client notes、client/entity type context、custom services，以及 service-driven recurring tasks。DueDateHQ 应覆盖有价值的 manual-entry path，用于 client setup 和特殊 deadlines，但保持更强的信任边界：
 
 - 手动客户使用税务相关 profile fields 和 notes，Beta 不加入广泛 arbitrary custom fields。
-- 用户录入的 deadlines 可以是 one-time 或 recurring，但在审核员创建或更新 Verified tax rule 之前都保持 `User provided`。
+- 用户录入的 deadlines 可以是 one-time 或 recurring，但在审核员创建或更新 Verified tax rule 之前都保持 `Entered deadline`。
 - 没有 verified source evidence 时，manual custom deadlines 不能创建官方 DueDateHQ tasks、extension dates 或 recurring official deadlines。
 - 该工作流避免 desktop-era client database administration、mail merge、labels 和 custom field renaming。
 
@@ -102,7 +102,7 @@ File In Time 支持手动 client setup、client notes、client/entity type conte
 - 手动截止日期显示在 dashboard。
 - 手动截止日期绝不标记为 DueDateHQ verified。
 - 手动截止日期将 current due date 和可选 firm target date 作为不同概念展示。
-- 手动 recurring deadlines 明确标记为 user-provided 且未经 DueDateHQ 核验。
+- 手动 recurring deadlines 明确标记为 Entered deadline 且未经 DueDateHQ 核验。
 - 手动截止日期可以转为 verification request。
 - Verification request 不会在批准前改变用户原始任务。
 

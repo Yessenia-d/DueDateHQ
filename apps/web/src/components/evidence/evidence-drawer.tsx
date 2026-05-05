@@ -62,7 +62,14 @@ function EvidenceContent({ evidence }: { evidence: TaskEvidenceResponse }) {
           {evidence.clientRelationship.displayName} / {evidence.filingProfile.displayName}
         </div>
         <div className="mt-3 grid gap-2 text-xs sm:grid-cols-2">
-          <EvidenceField label="Current official due date" value={formatDate(evidence.task.currentDueDate)} />
+          <EvidenceField
+            label={
+              evidence.task.sourceType === "entered_deadline"
+                ? "Current due date"
+                : "Current official due date"
+            }
+            value={formatDate(evidence.task.currentDueDate)}
+          />
           <EvidenceField
             label="Original due date"
             value={evidence.task.originalDueDate ? formatDate(evidence.task.originalDueDate) : "None recorded"}
@@ -82,7 +89,7 @@ function EvidenceContent({ evidence }: { evidence: TaskEvidenceResponse }) {
           ) : (
             <ShieldAlert className="size-4 text-ddhq-review" />
           )}
-          Source evidence
+          {evidence.task.sourceType === "entered_deadline" ? "Reference" : "Source evidence"}
         </div>
         {evidence.rule ? (
           <div className="space-y-3 text-xs">
@@ -139,8 +146,13 @@ function EvidenceContent({ evidence }: { evidence: TaskEvidenceResponse }) {
             </div>
           </div>
         ) : (
-          <div className="rounded-lg border border-border bg-muted p-3 text-xs text-muted-foreground">
-            {evidence.task.userProvidedSourceNote ?? "User provided, not verified by DueDateHQ."}
+          <div className="grid gap-2 rounded-lg border border-border bg-muted p-3 text-xs text-muted-foreground">
+            <StatusBadge status="entered_deadline">Entered deadline</StatusBadge>
+            <div>Not verified by DueDateHQ</div>
+            <EvidenceField
+              label="Reference"
+              value={evidence.task.enteredDeadlineReferenceNote ?? "No reference recorded."}
+            />
           </div>
         )}
       </section>

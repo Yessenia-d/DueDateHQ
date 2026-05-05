@@ -853,7 +853,7 @@ export const importsRouter = router({
               priority: "normal",
               sourceType: "verified_rule",
               createdVia: "system_rule",
-              userProvidedSourceNote: null,
+              enteredDeadlineReferenceNote: null,
               createdAt: now,
               updatedAt: now,
             })

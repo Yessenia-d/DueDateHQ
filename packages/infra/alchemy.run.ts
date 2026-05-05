@@ -23,6 +23,7 @@ export const server = await Worker("server", {
     DB: db,
     CORS_ORIGIN: process.env.CORS_ORIGIN ?? "*",
     BETTER_AUTH_SECRET: betterAuthSecret,
+    DEMO_SEED_TOKEN: process.env.DEMO_SEED_TOKEN ?? "",
   },
   dev: {
     port: 3000,

@@ -63,8 +63,8 @@ test("deadline domain schema keeps the firm-owned client profile task chain", ()
   );
 });
 
-test("deadline task enums preserve the verified versus user-provided trust boundary", () => {
-  assert.deepEqual(deadlineTaskSourceTypes, ["verified_rule", "user_provided"]);
+test("deadline task enums preserve the verified versus entered-deadline trust boundary", () => {
+  assert.deepEqual(deadlineTaskSourceTypes, ["verified_rule", "entered_deadline"]);
   assert.ok(deadlineTaskStatuses.includes("waiting_on_client"));
   assert.ok(filingProfileEntityTypes.includes("individual"));
   assert.ok(filingProfileEntityTypes.includes("s_corp"));
@@ -77,12 +77,12 @@ test("deadline task enums preserve the verified versus user-provided trust bound
   ]);
 });
 
-test("date event history supports official changes, user adjustments, and firm target changes", () => {
+test("date event history supports official changes, entered-deadline adjustments, and firm target changes", () => {
   assert.deepEqual(deadlineDateEventTypes, [
     "official_original_due_date",
     "official_extension",
     "official_relief_change",
-    "user_provided_adjustment",
+    "entered_deadline_adjustment",
     "firm_target_change",
   ]);
 
@@ -109,7 +109,7 @@ test("schema constraints require source evidence for user-visible changes", () =
 
   assert.ok(taskCheckNames.has("deadline_tasks_source_created_via_check"));
   assert.ok(taskCheckNames.has("deadline_tasks_verified_rule_tax_rule_check"));
-  assert.ok(taskCheckNames.has("deadline_tasks_user_source_note_check"));
+  assert.ok(taskCheckNames.has("deadline_tasks_entered_deadline_reference_note_check"));
   assert.ok(auditCheckNames.has("audit_logs_user_actor_check"));
 });
 

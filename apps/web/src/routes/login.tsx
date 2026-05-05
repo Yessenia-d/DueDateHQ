@@ -62,50 +62,54 @@ function LoginComponent() {
   }
 
   return (
-    <main className="min-h-0 overflow-auto">
-      <div className="mx-auto grid min-h-full max-w-5xl gap-8 px-4 py-8 lg:grid-cols-[1fr_24rem] lg:items-start">
-        <section className="border-b pb-6 lg:border-b-0 lg:pr-8">
-          <div className="mb-3 inline-flex items-center gap-2 border px-2 py-1 text-xs text-muted-foreground">
-            <LogIn className="size-3.5" />
-            Firm workspace
-          </div>
+    <main className="min-h-svh overflow-auto bg-background">
+      <div className="mx-auto grid min-h-svh w-full min-w-0 max-w-[1000px] grid-cols-[minmax(0,1fr)] content-center gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[minmax(0,420px)_minmax(400px,440px)] lg:items-center lg:gap-10 lg:py-12 lg:pb-20">
+        <section className="min-w-0 max-w-full border-b pb-5 sm:max-w-[34rem] lg:border-b-0 lg:pb-0">
           <h1 className="text-2xl font-semibold tracking-normal">DueDateHQ</h1>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Sign in to the Beta workspace used for client relationships, filing profiles, and
-            deadline task work.
+          <p className="mt-3 max-w-full text-sm leading-6 text-muted-foreground sm:max-w-md">
+            Manage CPA deadline work for one firm workspace.
           </p>
-          <dl className="mt-6 grid gap-3 text-xs sm:grid-cols-3">
-            <WorkspaceCue label="Scope" value="Firm-owned data" />
-            <WorkspaceCue label="Auth" value="Email/password" />
-            <WorkspaceCue label="Boundary" value="Session required" />
-          </dl>
+          <ul className="mt-5 grid gap-2 text-xs text-muted-foreground">
+            <WorkspaceCue>Firm-scoped workspace data</WorkspaceCue>
+            <WorkspaceCue>Verified source status stays visible</WorkspaceCue>
+            <WorkspaceCue>Entered deadlines are marked not verified</WorkspaceCue>
+          </ul>
         </section>
 
-        <section className="border p-4">
-          <div className="grid grid-cols-2 border text-xs">
-            <button
+        <section className="w-full min-w-0 max-w-full justify-self-center border border-ddhq-border-strong bg-card p-5 shadow-sm sm:max-w-[440px] sm:p-6 lg:justify-self-end">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-xs text-muted-foreground">Secure firm access</p>
+              <h2 id="auth-heading" className="mt-1 text-base font-semibold">
+                {mode === "register" ? "Create workspace" : "Log in"}
+              </h2>
+            </div>
+            <Button
               type="button"
-              className={`flex h-9 items-center justify-center gap-2 border-r ${
-                mode === "login" ? "bg-primary text-primary-foreground" : "bg-background"
-              }`}
-              onClick={() => handleModeChange("login")}
+              variant="outline"
+              className="h-10 w-full sm:w-auto sm:min-w-[8.75rem]"
+              onClick={() => handleModeChange(mode === "register" ? "login" : "register")}
             >
-              <LogIn className="size-3.5" />
-              Log in
-            </button>
-            <button
-              type="button"
-              className={`flex h-9 items-center justify-center gap-2 ${
-                mode === "register" ? "bg-primary text-primary-foreground" : "bg-background"
-              }`}
-              onClick={() => handleModeChange("register")}
-            >
-              <UserPlus className="size-3.5" />
-              Register
-            </button>
+              {mode === "register" ? (
+                <>
+                  <LogIn className="size-3.5" />
+                  Use login
+                </>
+              ) : (
+                <>
+                  <UserPlus className="size-3.5" />
+                  Register
+                </>
+              )}
+            </Button>
           </div>
+          <p className="mt-2 text-xs leading-5 text-muted-foreground">
+            {mode === "register"
+              ? "Set up a Beta workspace for one CPA firm."
+              : "Use your DueDateHQ email and password to continue."}
+          </p>
 
-          <form className="mt-4 grid gap-3" onSubmit={handleSubmit}>
+          <form aria-labelledby="auth-heading" className="mt-5 grid gap-3" onSubmit={handleSubmit}>
             {mode === "register" ? (
               <>
                 <Field
@@ -148,7 +152,7 @@ function LoginComponent() {
               </div>
             ) : null}
 
-            <Button type="submit" disabled={isSubmitting} className="mt-1 w-full">
+            <Button type="submit" disabled={isSubmitting} className="mt-1 h-10 w-full md:h-9">
               {mode === "register" ? (
                 <>
                   <UserPlus className="size-3.5" />
@@ -210,16 +214,17 @@ function Field({
         placeholder={placeholder}
         onChange={(event) => onChange(event.target.value)}
         required={!placeholder}
+        className="h-10 text-sm md:h-9 md:text-xs"
       />
     </div>
   );
 }
 
-function WorkspaceCue({ label, value }: { label: string; value: string }) {
+function WorkspaceCue({ children }: { children: React.ReactNode }) {
   return (
-    <div className="border px-3 py-2">
-      <dt className="text-muted-foreground">{label}</dt>
-      <dd className="mt-1 font-medium">{value}</dd>
-    </div>
+    <li className="flex min-h-6 items-center gap-2">
+      <span className="size-1.5 shrink-0 bg-ddhq-verified" aria-hidden="true" />
+      <span>{children}</span>
+    </li>
   );
 }

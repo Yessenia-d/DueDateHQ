@@ -44,7 +44,7 @@ into tRPC context. `routers/index.ts` registers the app router and exports
 
 - API responses that expose deadline tasks must carry trust state clearly:
   verified, needs review, source changed, unsupported, coverage gap, or
-  user-provided.
+  entered deadline.
 - Notice proposal APIs must expose before/after diffs and never apply workspace
   mutations until approval.
 - IRS due-date adjustment logic must treat District of Columbia legal holidays
@@ -319,15 +319,16 @@ export const progressRouter = router({
 - Manual filing profiles write `created_via = manual`, normalize state codes to
   uppercase unique values, and start with `coverage_state = needs_review`.
 - Manual deadlines must write `tax_rule_id = null`, `source_type =
-  user_provided`, `created_via = manual`, and a required
-  `user_provided_source_note`.
-- Manual deadline responses must expose the trust label
-  `User provided - Not verified by DueDateHQ`; the UI must display this label
-  instead of inferring trust from local route state.
+  entered_deadline`, `created_via = manual`, and a required
+  `entered_deadline_reference_note`.
+- Manual deadline request payloads use `referenceNote`; responses expose
+  `enteredDeadlineReferenceNote`, `referenceNote`, and the trust label
+  `Entered deadline - Not verified by DueDateHQ`. The UI must display API trust
+  labels/reference data instead of inferring trust from local route state.
 - `firm_target_date` is optional planning data and must remain separate from
   `current_due_date`; writing a firm target may create a
   `deadline_date_events.firm_target_change` event, but the initial
-  user-provided due date must not be recorded as an official date event.
+  entered deadline must not be recorded as an official date event.
 - `deadlineTasks.requestVerification` creates a
   `verification_requests.request_type = manual_deadline` row and an audit log;
   it must not mutate the original `deadline_tasks` row.
@@ -342,20 +343,20 @@ export const progressRouter = router({
   client and firm -> `NOT_FOUND`.
 - Date input not in real `YYYY-MM-DD` form -> Zod validation failure before DB
   writes.
-- Empty source note for a manual deadline -> Zod validation failure.
+- Empty reference note for a manual deadline -> Zod validation failure.
 - `deadlineTasks.requestVerification` for a missing task -> `NOT_FOUND`.
-- `deadlineTasks.requestVerification` for an official/non-user-provided task ->
+- `deadlineTasks.requestVerification` for an official/non-entered-deadline task ->
   `BAD_REQUEST`.
 
 ### 5. Good/Base/Bad Cases
 
-- Good: create client -> create manual profile -> create user-provided deadline
-  -> request verification; the deadline still has `sourceType =
-  user_provided`.
+- Good: create client -> create manual profile -> create entered deadline
+  with a reference note -> request verification; the deadline still has
+  `sourceType = entered_deadline`.
 - Base: create a manual deadline with no firm target date; no firm-target date
   event is required.
-- Base: create a manual recurring deadline; recurrence is visible as
-  user-provided and not verified by DueDateHQ.
+- Base: create a manual recurring deadline; recurrence is visible as an entered
+  deadline and not verified by DueDateHQ.
 - Bad: request verification rewrites `tax_rule_id`, `source_type`, or
   `current_due_date` on the original deadline task.
 - Bad: the UI labels a manual deadline as verified because it has a due date.
@@ -367,10 +368,12 @@ export const progressRouter = router({
 - API test covers manual filing profile creation with normalized states and
   `needs_review` coverage state.
 - API test covers manual one-time and recurring deadline creation, including
-  trust label, source type, optional firm target, and audit/date-event behavior.
+  trust label, source type, required reference note, optional firm target, and
+  audit/date-event behavior.
 - API test covers verification request creation and asserts the original
   deadline task is unchanged.
-- API test rejects verification requests for official/non-user-provided tasks.
+- API test rejects verification requests for official/non-entered-deadline
+  tasks.
 - Route check verifies `/clients/new`, `/clients/:clientId`, and
   `/clients/:clientId/deadlines/new` render through the app router.
 
@@ -397,7 +400,7 @@ export const deadlineTasksRouter = router({
     const session = requireFirmSession(ctx);
     const deadline = await getFirmScopedDeadline(ctx.db, session.firm.id, input.deadlineTaskId);
 
-    if (deadline.sourceType !== "user_provided") {
+    if (deadline.sourceType !== "entered_deadline") {
       throw new TRPCError({ code: "BAD_REQUEST" });
     }
 

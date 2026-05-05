@@ -1,5 +1,6 @@
 import { Button } from "@due-date-hq/ui/components/button";
 import { Checkbox } from "@due-date-hq/ui/components/checkbox";
+import { Input } from "@due-date-hq/ui/components/input";
 import {
   Select,
   SelectContent,
@@ -16,7 +17,8 @@ import {
   TableRow,
 } from "@due-date-hq/ui/components/table";
 import { useMutation } from "@tanstack/react-query";
-import { Eye, History, ShieldAlert, ShieldCheck } from "lucide-react";
+import { CalendarPlus, Eye, History, ShieldAlert, ShieldCheck } from "lucide-react";
+import * as React from "react";
 import { toast } from "sonner";
 
 import { StatusBadge } from "@/components/status-badge";
@@ -53,10 +55,25 @@ export function TaskTable({
   section: DashboardSection;
   selectedTaskIds: Set<string>;
 }) {
+  const [extensionDates, setExtensionDates] = React.useState<Record<string, string>>({});
   const updateStatus = useMutation(
     trpc.tasks.updateStatus.mutationOptions({
       onSuccess: () => {
         toast.success("Task status updated.");
+        void queryClient.invalidateQueries();
+      },
+      onError: (error) => toast.error(error.message),
+    }),
+  );
+  const markExtended = useMutation(
+    trpc.tasks.markExtended.mutationOptions({
+      onSuccess: (_result, variables) => {
+        toast.success("Extension recorded.");
+        setExtensionDates((current) => {
+          const next = { ...current };
+          delete next[variables.taskId];
+          return next;
+        });
         void queryClient.invalidateQueries();
       },
       onError: (error) => toast.error(error.message),
@@ -84,7 +101,7 @@ export function TaskTable({
           No tasks in this horizon.
         </div>
       ) : (
-        <Table className="min-w-[1180px]">
+        <Table className="min-w-[1380px]">
           <TableHeader>
             <TableRow className="bg-muted/40">
               <TableHead className="w-8 text-[11px] font-semibold uppercase text-muted-foreground">Select</TableHead>
@@ -170,15 +187,44 @@ export function TaskTable({
                   <VerificationBadge task={task} />
                 </TableCell>
                 <TableCell className="text-right">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onOpenEvidence(task.id)}
-                  >
-                    <Eye className="size-3.5" />
-                    Evidence
-                  </Button>
+                  <div className="flex justify-end gap-2">
+                    <Input
+                      aria-label={`Extension date for ${task.title}`}
+                      className="h-8 w-36 text-xs"
+                      type="date"
+                      value={extensionDates[task.id] ?? ""}
+                      onChange={(event) =>
+                        setExtensionDates((current) => ({
+                          ...current,
+                          [task.id]: event.target.value,
+                        }))
+                      }
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={!extensionDates[task.id] || markExtended.isPending}
+                      onClick={() =>
+                        markExtended.mutate({
+                          taskId: task.id,
+                          newCurrentDueDate: extensionDates[task.id] ?? "",
+                        })
+                      }
+                    >
+                      <CalendarPlus className="size-3.5" />
+                      Extend
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onOpenEvidence(task.id)}
+                    >
+                      <Eye className="size-3.5" />
+                      Evidence
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -224,8 +270,13 @@ function VerificationBadge({ task }: { task: DashboardTaskRow }) {
     );
   }
 
-  if (task.verificationStatus === "user_provided") {
-    return <StatusBadge status="user_provided">User provided, not verified</StatusBadge>;
+  if (task.verificationStatus === "entered_deadline") {
+    return (
+      <div className="grid gap-1">
+        <StatusBadge status="entered_deadline">Entered deadline</StatusBadge>
+        <span className="text-xs text-muted-foreground">Not verified by DueDateHQ</span>
+      </div>
+    );
   }
 
   return <StatusBadge status="needs_review">{task.verificationLabel}</StatusBadge>;

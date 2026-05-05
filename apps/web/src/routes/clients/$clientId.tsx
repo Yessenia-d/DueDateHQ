@@ -22,9 +22,12 @@ import { Link, createFileRoute } from "@tanstack/react-router";
 import {
   Building2,
   CalendarDays,
+  ClipboardList,
   CircleDashed,
   FileText,
+  History,
   ShieldAlert,
+  ShieldCheck,
   UserPlus,
 } from "lucide-react";
 import * as React from "react";
@@ -73,6 +76,11 @@ const fiscalYearOptions = [
   { value: "calendar_year", label: "Calendar year" },
   { value: "fiscal_year", label: "Fiscal year" },
 ] as const satisfies readonly { value: FiscalYearType; label: string }[];
+
+const createdViaLabels = {
+  manual: "Manual",
+  csv_import: "CSV import",
+} as const;
 
 function ClientDetailComponent() {
   const { clientId } = Route.useParams();
@@ -136,6 +144,17 @@ function ClientDetailComponent() {
   }
 
   const { client, deadlines, profiles } = clientDetail.data;
+  const nextDeadline = deadlines[0] ?? null;
+  const enteredDeadlineCount = deadlines.filter(
+    (deadline) => deadline.sourceType === "entered_deadline",
+  ).length;
+  const verifiedDeadlineCount = deadlines.length - enteredDeadlineCount;
+  const profileNeedsReviewCount = profiles.filter(
+    (profile) => profile.coverageState === "needs_review",
+  ).length;
+  const coverageGapCount = profiles.filter(
+    (profile) => profile.coverageState === "coverage_gap",
+  ).length;
 
   return (
     <main className="min-h-0 overflow-auto">
@@ -149,7 +168,7 @@ function ClientDetailComponent() {
             <h1 className="text-2xl font-semibold tracking-normal">{client.displayName}</h1>
             <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               <StatusBadge status="neutral">{relationshipTypeLabel(client.relationshipType)}</StatusBadge>
-              <StatusBadge status="neutral">Created manually</StatusBadge>
+              <StatusBadge status="neutral">{createdViaLabels[client.createdVia]}</StatusBadge>
             </div>
             {client.notes ? (
               <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">
@@ -157,17 +176,48 @@ function ClientDetailComponent() {
               </p>
             ) : null}
           </div>
-          <Link
-            to="/clients/$clientId/deadlines/new"
-            params={{ clientId }}
-            className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-input bg-card px-2.5 text-xs font-medium hover:bg-muted"
-          >
-            <CalendarDays className="size-3.5" />
-            Add deadline
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <a
+              href="#profiles"
+              className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-input bg-card px-2.5 text-xs font-medium hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <FileText className="size-3.5" />
+              Add tax profile
+            </a>
+            <Link
+              to="/clients/$clientId/deadlines/new"
+              params={{ clientId }}
+              className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-input bg-card px-2.5 text-xs font-medium hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <CalendarDays className="size-3.5" />
+              Add entered deadline
+            </Link>
+          </div>
         </section>
 
-        <section className="grid gap-6 lg:grid-cols-[24rem_1fr]">
+        <section id="overview" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+          <SummaryMetric label="Filing profiles" value={profiles.length} />
+          <SummaryMetric label="Deadline tasks" value={deadlines.length} />
+          <SummaryMetric label="Verified tasks" value={verifiedDeadlineCount} />
+          <SummaryMetric label="Needs review" value={profileNeedsReviewCount + coverageGapCount} />
+          <SummaryMetric
+            label="Next deadline"
+            value={nextDeadline ? formatDate(nextDeadline.currentDueDate) : "None"}
+          />
+        </section>
+
+        <nav
+          aria-label="Client data sections"
+          className="flex gap-1 overflow-x-auto border-b border-border pb-2"
+        >
+          <SectionLink href="#overview" icon={Building2} label="Overview" />
+          <SectionLink href="#profiles" icon={FileText} label="Filing profiles" />
+          <SectionLink href="#tasks" icon={ClipboardList} label="Tasks" />
+          <SectionLink href="#coverage" icon={ShieldCheck} label="Coverage" />
+          <SectionLink href="#audit" icon={History} label="Audit" />
+        </nav>
+
+        <section id="profiles" className="grid scroll-mt-6 gap-6 lg:grid-cols-[24rem_1fr]">
           <form className="grid content-start gap-4 border-b border-border pb-5 lg:border-b-0 lg:border-r lg:pr-5" onSubmit={handleProfileSubmit}>
             <div>
               <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase text-muted-foreground">
@@ -301,7 +351,9 @@ function ClientDetailComponent() {
                               .join(" / ")}
                           </TableCell>
                           <TableCell>
-                            <StatusBadge status="needs_review" />
+                            <StatusBadge status={coverageStateBadgeStatus(profile.coverageState)}>
+                              {coverageStateLabel(profile.coverageState)}
+                            </StatusBadge>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -311,20 +363,21 @@ function ClientDetailComponent() {
               )}
             </section>
 
-            <section>
+            <section id="tasks" className="scroll-mt-6">
               <div className="mb-3 flex items-end justify-between gap-3">
                 <div>
-                  <h2 className="text-base font-semibold">Manual deadlines</h2>
+                  <h2 className="text-base font-semibold">Deadline tasks</h2>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    {deadlines.length} user-provided task{deadlines.length === 1 ? "" : "s"}
+                    {deadlines.length} task{deadlines.length === 1 ? "" : "s"} for this client.
+                    Entered deadlines remain separate from DueDateHQ Verified tasks.
                   </p>
                 </div>
               </div>
               {deadlines.length === 0 ? (
                 <EmptyState
                   icon={CalendarDays}
-                  title="No manual deadlines"
-                  detail="User-provided deadlines will stay separate from verified DueDateHQ tasks."
+                  title="No deadline tasks"
+                  detail="Verified tasks and entered deadlines for this client will appear here."
                 />
               ) : (
                 <div className="rounded-xl border border-border">
@@ -335,6 +388,7 @@ function ClientDetailComponent() {
                         <TableHead className="text-[11px] font-semibold uppercase text-muted-foreground">Current due date</TableHead>
                         <TableHead className="text-[11px] font-semibold uppercase text-muted-foreground">Firm target date</TableHead>
                         <TableHead className="text-[11px] font-semibold uppercase text-muted-foreground">Trust</TableHead>
+                        <TableHead className="text-[11px] font-semibold uppercase text-muted-foreground">Reference</TableHead>
                         <TableHead className="text-[11px] font-semibold uppercase text-muted-foreground">Recurrence</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -354,13 +408,30 @@ function ClientDetailComponent() {
                             {deadline.firmTargetDate ? formatDate(deadline.firmTargetDate) : "None"}
                           </TableCell>
                           <TableCell>
-                            <StatusBadge status="user_provided">
-                              <ShieldAlert className="size-3" />
-                              User provided
-                            </StatusBadge>
-                            <div className="mt-1 text-xs text-muted-foreground">
-                              Not verified by DueDateHQ
-                            </div>
+                            {deadline.sourceType === "entered_deadline" ? (
+                              <>
+                                <StatusBadge status="entered_deadline">
+                                  <ShieldAlert className="size-3" />
+                                  Entered deadline
+                                </StatusBadge>
+                                <div className="mt-1 text-xs text-muted-foreground">
+                                  Not verified by DueDateHQ
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <StatusBadge status="verified">Verified</StatusBadge>
+                                <div className="mt-1 text-xs text-muted-foreground">
+                                  {deadline.trustLabel}
+                                </div>
+                              </>
+                            )}
+                          </TableCell>
+                          <TableCell className="max-w-64 text-xs leading-5 text-muted-foreground">
+                            {deadline.referenceNote ??
+                              (deadline.sourceType === "verified_rule"
+                                ? "Official source evidence is attached to the verified rule."
+                                : "No reference recorded.")}
                           </TableCell>
                           <TableCell className="text-xs text-muted-foreground">
                             {deadline.recurrenceKey ? deadline.recurrenceLabel : "One-time"}
@@ -372,10 +443,86 @@ function ClientDetailComponent() {
                 </div>
               )}
             </section>
+
+            <section id="coverage" className="scroll-mt-6 border-t border-border pt-5">
+              <div className="mb-3">
+                <h2 className="text-base font-semibold">Coverage</h2>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Filing profile coverage determines whether DueDateHQ can generate official
+                  verified deadline tasks.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {profiles.length === 0 ? (
+                  <StatusBadge status="neutral">No filing profiles</StatusBadge>
+                ) : (
+                  profiles.map((profile) => (
+                    <StatusBadge
+                      key={profile.id}
+                      status={coverageStateBadgeStatus(profile.coverageState)}
+                    >
+                      {profile.displayName}: {coverageStateLabel(profile.coverageState)}
+                    </StatusBadge>
+                  ))
+                )}
+              </div>
+            </section>
+
+            <section id="audit" className="scroll-mt-6 border-t border-border pt-5">
+              <div className="mb-3">
+                <h2 className="text-base font-semibold">Audit</h2>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Source and update metadata for this client relationship.
+                </p>
+              </div>
+              <div className="grid gap-2 text-xs text-muted-foreground sm:grid-cols-3">
+                <AuditField label="Created via" value={createdViaLabels[client.createdVia]} />
+                <AuditField label="Created" value={formatDateTime(client.createdAt)} />
+                <AuditField label="Updated" value={formatDateTime(client.updatedAt)} />
+              </div>
+            </section>
           </div>
         </section>
       </div>
     </main>
+  );
+}
+
+function SummaryMetric({ label, value }: { label: string; value: number | string }) {
+  return (
+    <div className="border border-border bg-muted/20 px-3 py-2">
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className="mt-1 text-lg font-semibold text-foreground">{value}</div>
+    </div>
+  );
+}
+
+function SectionLink({
+  href,
+  icon: Icon,
+  label,
+}: {
+  href: string;
+  icon: typeof Building2;
+  label: string;
+}) {
+  return (
+    <a
+      href={href}
+      className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-[6px] px-2.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      <Icon className="size-3.5" />
+      {label}
+    </a>
+  );
+}
+
+function AuditField({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="border border-border bg-muted/20 px-3 py-2">
+      <div className="font-medium text-foreground">{label}</div>
+      <div className="mt-1">{value}</div>
+    </div>
   );
 }
 
@@ -431,10 +578,32 @@ function entityTypeLabel(value: string) {
   return entityTypeOptions.find((option) => option.value === value)?.label ?? value;
 }
 
+function coverageStateBadgeStatus(value: string) {
+  if (value === "ready") return "verified";
+  if (value === "coverage_gap") return "coverage_gap";
+  if (value === "unsupported") return "unsupported";
+  return "needs_review";
+}
+
+function coverageStateLabel(value: string) {
+  if (value === "ready") return "Verified";
+  if (value === "coverage_gap") return "Coverage gap";
+  if (value === "unsupported") return "Unsupported";
+  return "Needs review";
+}
+
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("en", {
     month: "short",
     day: "numeric",
     year: "numeric",
   }).format(new Date(`${value}T00:00:00`));
+}
+
+function formatDateTime(value: string) {
+  return new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(new Date(value));
 }

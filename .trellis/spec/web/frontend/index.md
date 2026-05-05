@@ -43,7 +43,7 @@ router context, and wraps the app in `QueryClientProvider`.
 - The default product surface should be work-focused, dense, and scannable.
 - Prefer explicit filters, badges, tables/lists, and action menus over
   marketing-style sections.
-- Do not hide `Needs review`, `Coverage gap`, `Unsupported`, or user-provided
+- Do not hide `Needs review`, `Coverage gap`, `Unsupported`, or entered-deadline
   status behind generic "warning" labels.
 - For dashboards, keep due-date horizon, client/profile, jurisdiction, task
   status, and verification status easy to scan.
