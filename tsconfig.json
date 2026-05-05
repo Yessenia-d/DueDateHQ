@@ -1,0 +1,3 @@
+{
+  "extends": "@due-date-hq/config/tsconfig.base.json"
+}
