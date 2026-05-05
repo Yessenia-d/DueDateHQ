@@ -77,3 +77,38 @@ Updated docs/due-date-hq-user-journey.html from the latest DueDateHQ product and
 ### Next Steps
 
 - None - task complete
+
+
+## Session 3: Implement glossary and feature progress
+
+**Date**: 2026-05-05
+**Task**: Implement glossary and feature progress
+**Package**: server
+**Branch**: `main`
+
+### Summary
+
+Aligned DueDateHQ domain glossary, implemented the Beta feature progress page across DB schema, API, web route, migration, tests, and recorded the feature-progress read model code-spec.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `16d3c3e` | (see git log) |
+| `f8a43e5` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
