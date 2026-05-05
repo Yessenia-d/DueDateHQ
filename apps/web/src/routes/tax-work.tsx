@@ -18,8 +18,8 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   Building2,
+  ChevronDown,
   ClipboardList,
-  FileSearch,
   FileUp,
   Filter,
   RotateCcw,
@@ -141,6 +141,7 @@ function TaxWorkComponent() {
     React.useState<DashboardSection["id"]>("due_this_week");
   const [clientSearchQuery, setClientSearchQuery] = React.useState("");
   const [workFilters, setWorkFilters] = React.useState<TaxWorkFilters>(emptyTaxWorkFilters);
+  const [showWorkFilters, setShowWorkFilters] = React.useState(true);
   const [selectedTaskIds, setSelectedTaskIds] = React.useState<Set<string>>(new Set());
   const [evidenceTaskId, setEvidenceTaskId] = React.useState<string | null>(null);
 
@@ -291,8 +292,8 @@ function TaxWorkComponent() {
   }
 
   return (
-    <main className="min-h-0 overflow-auto bg-background text-foreground">
-      <div className="mx-auto flex max-w-[1440px] flex-col gap-5 px-5 py-5">
+    <main className="h-full min-h-0 overflow-hidden bg-background text-foreground">
+      <div className="mx-auto flex h-full min-h-0 max-w-[1440px] flex-col gap-4 px-5 py-5">
         <section className="grid gap-4 pb-1 lg:grid-cols-[1fr_auto] lg:items-end">
           <div className="min-w-0">
             <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
@@ -328,8 +329,8 @@ function TaxWorkComponent() {
             No clients yet. Add clients before importing tax information.
           </section>
         ) : (
-          <section className="grid min-h-[560px] gap-4 lg:grid-cols-[300px_minmax(0,1fr)]">
-            <aside className="overflow-hidden rounded-lg border border-border/80 bg-card">
+          <section className="grid min-h-0 flex-1 gap-4 overflow-hidden lg:grid-cols-[300px_minmax(0,1fr)]">
+            <aside className="flex min-h-0 flex-col overflow-hidden rounded-lg border border-border/80 bg-card">
               <div className="px-3 py-3">
                 <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
                   <Users className="size-3.5" />
@@ -353,7 +354,7 @@ function TaxWorkComponent() {
                   />
                 </div>
               </div>
-              <div className="max-h-[560px] overflow-auto p-2">
+              <div className="min-h-0 flex-1 overflow-auto p-2">
                 {visibleClients.length === 0 ? (
                   <div className="rounded-md border border-dashed border-border bg-muted/20 px-3 py-3 text-xs leading-5 text-muted-foreground">
                     No clients match this search.
@@ -386,14 +387,14 @@ function TaxWorkComponent() {
               </div>
             </aside>
 
-            <section className="min-w-0">
+            <section className="min-h-0 min-w-0">
               {!selectedClientId || !selectedClient ? (
                 <div className="rounded-xl border border-border bg-muted/20 p-6 text-sm text-muted-foreground">
                   Select a client to review tax work.
                 </div>
               ) : (
-                <div className="grid min-w-0 gap-4">
-                  <section className="min-w-0 overflow-hidden rounded-lg border border-border/80 bg-card">
+                <div className="flex h-full min-h-0 min-w-0 flex-col gap-4">
+                  <section className="min-w-0 shrink-0 overflow-hidden rounded-lg border border-border/80 bg-card">
                     <div className="min-w-0 px-4 py-3">
                       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                         <div className="min-w-0">
@@ -429,42 +430,10 @@ function TaxWorkComponent() {
                           Import for this client
                         </a>
                       </div>
-
-                      <div className="mt-4">
-                        <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-muted-foreground">
-                          <FileSearch className="size-3.5" />
-                          Filing profile scope
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          <button
-                            type="button"
-                            aria-pressed={!workFilters.filingProfileId}
-                            className={`rounded-md border px-2.5 py-2 text-left text-xs transition-colors ${
-                              !workFilters.filingProfileId
-                                ? "border-primary/35 bg-ddhq-accent-soft/65 text-foreground"
-                                : "border-border/70 bg-background text-muted-foreground hover:bg-muted/40 hover:text-foreground"
-                            }`}
-                            onClick={() => updateWorkFilter("filingProfileId", "")}
-                          >
-                            <span className="font-semibold">All profiles</span>
-                            <span className="ml-2 font-mono tabular-nums">
-                              {clientQueueSummary.total}
-                            </span>
-                          </button>
-                          {profileSummaries.map((profile) => (
-                            <ProfileScopeButton
-                              key={profile.id}
-                              profile={profile}
-                              isSelected={workFilters.filingProfileId === profile.id}
-                              onSelect={() => updateWorkFilter("filingProfileId", profile.id)}
-                            />
-                          ))}
-                        </div>
-                      </div>
                     </div>
                   </section>
 
-                  <section className="min-w-0 rounded-lg border border-border/80 bg-card p-3">
+                  <section className="min-w-0 shrink-0 rounded-lg border border-border/80 bg-card p-3">
                     <div className="mb-3 flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
                       <div>
                         <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
@@ -481,22 +450,43 @@ function TaxWorkComponent() {
                           })}
                         </div>
                       </div>
-                      {activeFilterCount > 0 ? (
+                      <div className="flex items-center gap-1.5">
+                        {activeFilterCount > 0 ? (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 rounded-lg"
+                            onClick={resetWorkFilters}
+                          >
+                            <RotateCcw className="size-3.5" />
+                            Reset filters
+                          </Button>
+                        ) : null}
                         <Button
                           type="button"
-                          variant="ghost"
+                          variant="outline"
                           size="sm"
                           className="h-7 rounded-lg"
-                          onClick={resetWorkFilters}
+                          aria-expanded={showWorkFilters}
+                          onClick={() => setShowWorkFilters((current) => !current)}
                         >
-                          <RotateCcw className="size-3.5" />
-                          Reset filters
+                          Filters
+                          <ChevronDown
+                            className={`size-3.5 transition-transform ${
+                              showWorkFilters ? "rotate-180" : ""
+                            }`}
+                          />
                         </Button>
-                      ) : null}
+                      </div>
                     </div>
 
-                    <div className="max-w-5xl">
-                      <div className="mb-2 flex flex-wrap items-center gap-1 rounded-lg border border-border/80 bg-background p-1">
+                    <div>
+                      <div
+                        className={`flex flex-wrap items-center gap-1 rounded-lg border border-border/80 bg-background p-1 ${
+                          showWorkFilters ? "mb-2" : ""
+                        }`}
+                      >
                         {sections.map((section) => (
                           <QueueTab
                             key={section.id}
@@ -508,87 +498,91 @@ function TaxWorkComponent() {
                         ))}
                       </div>
 
-                      <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-                      <FilterSelect
-                        label="Profile"
-                        value={workFilters.filingProfileId ?? ""}
-                        onChange={(value) => updateWorkFilter("filingProfileId", value)}
-                        options={profileSummaries.map((profile) => ({
-                          value: profile.id,
-                          label: profile.displayName,
-                        }))}
-                        placeholder="All profiles"
-                      />
-                      <FilterSelect
-                        label="Jurisdiction"
-                        value={workFilters.jurisdiction ?? ""}
-                        onChange={(value) => updateWorkFilter("jurisdiction", value)}
-                        options={getClientOptions(selectedClientTasks, "jurisdiction")}
-                        placeholder="All jurisdictions"
-                      />
-                      <FilterSelect
-                        label="Entity type"
-                        value={workFilters.entityType ?? ""}
-                        onChange={(value) =>
-                          updateWorkFilter(
-                            "entityType",
-                            value as TaxWorkFilters["entityType"] | "",
-                          )
-                        }
-                        options={getClientOptions(selectedClientTasks, "entityType")}
-                        placeholder="All entities"
-                      />
-                      <FilterSelect
-                        label="Tax type"
-                        value={workFilters.taxCategory ?? ""}
-                        onChange={(value) => updateWorkFilter("taxCategory", value)}
-                        options={getClientOptions(selectedClientTasks, "taxCategory")}
-                        placeholder="All tax types"
-                      />
-                      <FilterSelect
-                        label="Status"
-                        value={workFilters.taskStatus ?? ""}
-                        onChange={(value) =>
-                          updateWorkFilter(
-                            "taskStatus",
-                            value as TaxWorkFilters["taskStatus"] | "",
-                          )
-                        }
-                        options={dashboard.data.filterOptions.taskStatuses.map((value) => ({
-                          value,
-                          label: taskStatusLabels[value],
-                        }))}
-                        placeholder="All statuses"
-                      />
-                      <FilterSelect
-                        label="Verification"
-                        value={workFilters.verificationStatus ?? ""}
-                        onChange={(value) =>
-                          updateWorkFilter(
-                            "verificationStatus",
-                            value as TaxWorkFilters["verificationStatus"] | "",
-                          )
-                        }
-                        options={dashboard.data.filterOptions.verificationStatuses.map((value) => ({
-                          value,
-                          label: verificationLabels[value],
-                        }))}
-                        placeholder="All verification"
-                      />
-                      <FilterSelect
-                        label="Sort"
-                        value={workFilters.sort ?? "smart_priority"}
-                        onChange={(value) => updateWorkFilter("sort", value as DashboardSort)}
-                        options={Object.entries(sortLabels).map(([value, label]) => ({
-                          value,
-                          label,
-                        }))}
-                      />
-                      </div>
+                      {showWorkFilters ? (
+                        <div className="grid max-w-5xl gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                          <FilterSelect
+                            label="Profile"
+                            value={workFilters.filingProfileId ?? ""}
+                            onChange={(value) => updateWorkFilter("filingProfileId", value)}
+                            options={profileSummaries.map((profile) => ({
+                              value: profile.id,
+                              label: profile.displayName,
+                            }))}
+                            placeholder="All profiles"
+                          />
+                          <FilterSelect
+                            label="Jurisdiction"
+                            value={workFilters.jurisdiction ?? ""}
+                            onChange={(value) => updateWorkFilter("jurisdiction", value)}
+                            options={getClientOptions(selectedClientTasks, "jurisdiction")}
+                            placeholder="All jurisdictions"
+                          />
+                          <FilterSelect
+                            label="Entity type"
+                            value={workFilters.entityType ?? ""}
+                            onChange={(value) =>
+                              updateWorkFilter(
+                                "entityType",
+                                value as TaxWorkFilters["entityType"] | "",
+                              )
+                            }
+                            options={getClientOptions(selectedClientTasks, "entityType")}
+                            placeholder="All entities"
+                          />
+                          <FilterSelect
+                            label="Tax type"
+                            value={workFilters.taxCategory ?? ""}
+                            onChange={(value) => updateWorkFilter("taxCategory", value)}
+                            options={getClientOptions(selectedClientTasks, "taxCategory")}
+                            placeholder="All tax types"
+                          />
+                          <FilterSelect
+                            label="Status"
+                            value={workFilters.taskStatus ?? ""}
+                            onChange={(value) =>
+                              updateWorkFilter(
+                                "taskStatus",
+                                value as TaxWorkFilters["taskStatus"] | "",
+                              )
+                            }
+                            options={dashboard.data.filterOptions.taskStatuses.map((value) => ({
+                              value,
+                              label: taskStatusLabels[value],
+                            }))}
+                            placeholder="All statuses"
+                          />
+                          <FilterSelect
+                            label="Verification"
+                            value={workFilters.verificationStatus ?? ""}
+                            onChange={(value) =>
+                              updateWorkFilter(
+                                "verificationStatus",
+                                value as TaxWorkFilters["verificationStatus"] | "",
+                              )
+                            }
+                            options={dashboard.data.filterOptions.verificationStatuses.map(
+                              (value) => ({
+                                value,
+                                label: verificationLabels[value],
+                              }),
+                            )}
+                            placeholder="All verification"
+                          />
+                          <FilterSelect
+                            label="Sort"
+                            value={workFilters.sort ?? "smart_priority"}
+                            onChange={(value) => updateWorkFilter("sort", value as DashboardSort)}
+                            options={Object.entries(sortLabels).map(([value, label]) => ({
+                              value,
+                              label,
+                            }))}
+                          />
+                        </div>
+                      ) : null}
                     </div>
                   </section>
 
-                  <section className="grid min-w-0 gap-1">
+                  <section className="flex min-h-0 min-w-0 flex-1 flex-col gap-1 overflow-hidden">
                     <BulkTaskActions
                       selectedTaskIds={selectedTaskIds}
                       taskStatuses={dashboard.data.filterOptions.taskStatuses}
@@ -729,11 +723,7 @@ function TrustBadge({
 
 type ProfileSummary = {
   displayName: string;
-  entityType: string;
   id: string;
-  open: number;
-  review: number;
-  states: string[];
   total: number;
 };
 
@@ -743,64 +733,15 @@ function summarizeProfiles(tasks: DashboardTaskRow[]): ProfileSummary[] {
   for (const task of tasks) {
     const profile = profiles.get(task.filingProfile.id) ?? {
       displayName: task.filingProfile.displayName,
-      entityType: task.filingProfile.entityType,
       id: task.filingProfile.id,
-      open: 0,
-      review: 0,
-      states: task.filingProfile.states,
       total: 0,
     };
 
     profile.total += 1;
-    if (task.status !== "done") profile.open += 1;
-    if (
-      task.verificationStatus === "needs_review" ||
-      task.verificationStatus === "source_changed"
-    ) {
-      profile.review += 1;
-    }
     profiles.set(task.filingProfile.id, profile);
   }
 
   return [...profiles.values()].sort((a, b) => a.displayName.localeCompare(b.displayName));
-}
-
-function ProfileScopeButton({
-  isSelected,
-  onSelect,
-  profile,
-}: {
-  isSelected: boolean;
-  onSelect: () => void;
-  profile: ProfileSummary;
-}) {
-  return (
-    <button
-      type="button"
-      aria-pressed={isSelected}
-      className={`min-w-[13rem] rounded-md border px-2.5 py-2 text-left transition-colors ${
-        isSelected
-          ? "border-primary/35 bg-ddhq-accent-soft/65 text-foreground"
-          : "border-border/70 bg-background text-foreground hover:bg-muted/40"
-      }`}
-      onClick={onSelect}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="truncate text-xs font-semibold">{profile.displayName}</div>
-          <div className="mt-0.5 text-[11px] text-muted-foreground">
-            {profile.entityType}
-            {profile.states.length > 0 ? ` / ${profile.states.join(", ")}` : ""}
-          </div>
-        </div>
-        <div className="font-mono text-sm font-semibold tabular-nums">{profile.total}</div>
-      </div>
-      <div className="mt-1 flex gap-1.5 text-[11px] text-muted-foreground">
-        <span>{profile.open} open</span>
-        {profile.review > 0 ? <span>{profile.review} review</span> : null}
-      </div>
-    </button>
-  );
 }
 
 function FilterSelect({
