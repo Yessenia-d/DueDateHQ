@@ -21,12 +21,34 @@ type InsertWrite = {
   row: Record<string, unknown>;
 };
 
+type UpdateWrite = {
+  table: unknown;
+  values: Record<string, unknown>;
+};
+
 function createReturningInsert(rowSink: InsertWrite[], table: unknown) {
   return {
     values: (row: Record<string, unknown>) => {
       rowSink.push({ table, row });
       return {
         returning: async () => [row],
+      };
+    },
+  };
+}
+
+function createReturningUpdate(
+  rowSink: UpdateWrite[],
+  table: unknown,
+  updateQueue: unknown[][],
+) {
+  return {
+    set: (values: Record<string, unknown>) => {
+      rowSink.push({ table, values });
+      return {
+        where: (_predicate: unknown) => ({
+          returning: async () => updateQueue.shift() ?? [],
+        }),
       };
     },
   };
@@ -45,14 +67,19 @@ function createSelectChain(selectQueue: unknown[][]) {
 
 function createMockDb({
   selectQueue = [],
+  updateQueue = [],
+  updateWrites = [],
   writes = [],
 }: {
   selectQueue?: unknown[][];
+  updateQueue?: unknown[][];
+  updateWrites?: UpdateWrite[];
   writes?: InsertWrite[];
 } = {}) {
   return {
     insert: (table: unknown) => createReturningInsert(writes, table),
     select: () => createSelectChain(selectQueue),
+    update: (table: unknown) => createReturningUpdate(updateWrites, table, updateQueue),
   } as unknown as Context["db"];
 }
 
@@ -74,14 +101,18 @@ const mockSession = {
 
 function createCaller({
   selectQueue,
+  updateQueue,
+  updateWrites,
   writes,
 }: {
   selectQueue?: unknown[][];
+  updateQueue?: unknown[][];
+  updateWrites?: UpdateWrite[];
   writes?: InsertWrite[];
 } = {}) {
   return appRouter.createCaller({
     auth: null as unknown as Context["auth"],
-    db: createMockDb({ selectQueue, writes }),
+    db: createMockDb({ selectQueue, updateQueue, updateWrites, writes }),
     firm: mockSession.firm,
     session: mockSession,
   });
@@ -173,6 +204,33 @@ test("clients.createRelationship creates a manual firm-owned relationship", asyn
   assert.equal(writes[0]?.row.firmId, "firm-test");
   assert.equal(writes[0]?.row.createdVia, "manual");
   assert.equal(writes[0]?.row.sourceSystem, "manual");
+});
+
+test("clients.updateNotes updates firm-owned relationship notes and clears empty notes", async () => {
+  const updateWrites: UpdateWrite[] = [];
+  const caller = createCaller({
+    updateQueue: [
+      [
+        makeClient({
+          notes: null,
+          updatedAt: new Date("2026-05-05T12:00:00.000Z"),
+        }),
+      ],
+    ],
+    updateWrites,
+  });
+
+  const result = await caller.clients.updateNotes({
+    clientRelationshipId: "client-test",
+    notes: "   ",
+  });
+
+  assert.equal(result.client.id, "client-test");
+  assert.equal(result.client.notes, null);
+  assert.equal(updateWrites.length, 1);
+  assert.equal(updateWrites[0]?.table, clientRelationships);
+  assert.equal(updateWrites[0]?.values.notes, null);
+  assert.ok(updateWrites[0]?.values.updatedAt instanceof Date);
 });
 
 test("clients.list returns firm-owned relationships with profile and deadline counts", async () => {

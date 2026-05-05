@@ -244,6 +244,41 @@ export const clientsRouter = router({
       };
     }),
 
+  updateNotes: publicProcedure
+    .input(
+      z.object({
+        clientRelationshipId: z.string().trim().min(1),
+        notes: optionalTextSchema.nullable(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const session = requireFirmSession(ctx);
+      const [client] = await ctx.db
+        .update(clientRelationships)
+        .set({
+          notes: nullableText(input.notes),
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(clientRelationships.firmId, session.firm.id),
+            eq(clientRelationships.id, input.clientRelationshipId),
+          ),
+        )
+        .returning();
+
+      if (!client) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Client relationship was not found.",
+        });
+      }
+
+      return {
+        client: serializeClientRelationship(client),
+      };
+    }),
+
   get: publicProcedure
     .input(z.object({ clientId: z.string().trim().min(1) }))
     .query(async ({ ctx, input }): Promise<ClientDetailResponse> => {
