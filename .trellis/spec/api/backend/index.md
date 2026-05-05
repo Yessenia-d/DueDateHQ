@@ -36,6 +36,9 @@ into tRPC context. `routers/index.ts` registers the app router and exports
 - Keep public procedures limited to health/status or unauthenticated auth flows.
 - Return data shapes designed for the UI workflow, not raw database rows when a
   screen needs grouped or explained state.
+- Keep `packages/api` enrolled in root verification with a `check-types`
+  package script so router implementations and router tests are covered by
+  `pnpm check-types`.
 
 ## Product Contract Reminders
 
@@ -218,6 +221,125 @@ export const progressRouter = router({
 ```typescript
 export const progressRouter = router({
   list: publicProcedure.query(() => listFeatureProgress()),
+});
+```
+
+## Scenario: Manual Client Profile and Deadline Entry
+
+### 1. Scope / Trigger
+
+- Trigger: manual entry crosses firm-session tRPC procedures, deadline-domain
+  tables, verification request records, audit logs, and TanStack Router pages.
+- Use this pattern when a CPA enters client/profile/deadline data that is useful
+  operationally but is not verified official DueDateHQ rule output.
+
+### 2. Signatures
+
+- API procedures:
+  `clients.createRelationship(input): { client }`,
+  `clients.get({ clientId }): { client, profiles, deadlines }`,
+  `filingProfiles.createManual(input): { profile }`,
+  `deadlineTasks.createManual(input): { deadline }`, and
+  `deadlineTasks.requestVerification(input): { success, requestId, status, message }`.
+- Web routes:
+  `/clients/new`, `/clients/:clientId`, and
+  `/clients/:clientId/deadlines/new`.
+- DB tables used:
+  `client_relationships`, `filing_profiles`, `deadline_tasks`,
+  `deadline_date_events`, `verification_requests`, and `audit_logs`.
+
+### 3. Contracts
+
+- Every procedure must resolve firm context through `requireFirmSession(ctx)`;
+  client/profile/deadline lookups must be scoped by `firm_id`.
+- Manual clients write `source_system = manual` and `created_via = manual`.
+- Manual filing profiles write `created_via = manual`, normalize state codes to
+  uppercase unique values, and start with `coverage_state = needs_review`.
+- Manual deadlines must write `tax_rule_id = null`, `source_type =
+  user_provided`, `created_via = manual`, and a required
+  `user_provided_source_note`.
+- Manual deadline responses must expose the trust label
+  `User provided - Not verified by DueDateHQ`; the UI must display this label
+  instead of inferring trust from local route state.
+- `firm_target_date` is optional planning data and must remain separate from
+  `current_due_date`; writing a firm target may create a
+  `deadline_date_events.firm_target_change` event, but the initial
+  user-provided due date must not be recorded as an official date event.
+- `deadlineTasks.requestVerification` creates a
+  `verification_requests.request_type = manual_deadline` row and an audit log;
+  it must not mutate the original `deadline_tasks` row.
+
+### 4. Validation & Error Matrix
+
+- Missing session -> `UNAUTHORIZED` from `requireFirmSession`.
+- `clients.get` with a client outside the firm -> `NOT_FOUND`.
+- `filingProfiles.createManual` with a missing or cross-firm client ->
+  `NOT_FOUND`.
+- `deadlineTasks.createManual` with a profile that does not belong to the
+  client and firm -> `NOT_FOUND`.
+- Date input not in real `YYYY-MM-DD` form -> Zod validation failure before DB
+  writes.
+- Empty source note for a manual deadline -> Zod validation failure.
+- `deadlineTasks.requestVerification` for a missing task -> `NOT_FOUND`.
+- `deadlineTasks.requestVerification` for an official/non-user-provided task ->
+  `BAD_REQUEST`.
+
+### 5. Good/Base/Bad Cases
+
+- Good: create client -> create manual profile -> create user-provided deadline
+  -> request verification; the deadline still has `sourceType =
+  user_provided`.
+- Base: create a manual deadline with no firm target date; no firm-target date
+  event is required.
+- Base: create a manual recurring deadline; recurrence is visible as
+  user-provided and not verified by DueDateHQ.
+- Bad: request verification rewrites `tax_rule_id`, `source_type`, or
+  `current_due_date` on the original deadline task.
+- Bad: the UI labels a manual deadline as verified because it has a due date.
+
+### 6. Tests Required
+
+- API test covers manual client creation and firm-scoped `clients.get` detail
+  response.
+- API test covers manual filing profile creation with normalized states and
+  `needs_review` coverage state.
+- API test covers manual one-time and recurring deadline creation, including
+  trust label, source type, optional firm target, and audit/date-event behavior.
+- API test covers verification request creation and asserts the original
+  deadline task is unchanged.
+- API test rejects verification requests for official/non-user-provided tasks.
+- Route check verifies `/clients/new`, `/clients/:clientId`, and
+  `/clients/:clientId/deadlines/new` render through the app router.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```typescript
+export const deadlineTasksRouter = router({
+  requestVerification: publicProcedure.mutation(async ({ ctx, input }) => {
+    await ctx.db
+      .update(deadlineTasks)
+      .set({ sourceType: "official_rule", taxRuleId: input.taxRuleId })
+      .where(eq(deadlineTasks.id, input.deadlineTaskId));
+  }),
+});
+```
+
+#### Correct
+
+```typescript
+export const deadlineTasksRouter = router({
+  requestVerification: publicProcedure.mutation(async ({ ctx, input }) => {
+    const session = requireFirmSession(ctx);
+    const deadline = await getFirmScopedDeadline(ctx.db, session.firm.id, input.deadlineTaskId);
+
+    if (deadline.sourceType !== "user_provided") {
+      throw new TRPCError({ code: "BAD_REQUEST" });
+    }
+
+    return createManualDeadlineVerificationRequest(ctx.db, deadline.id);
+  }),
 });
 ```
 

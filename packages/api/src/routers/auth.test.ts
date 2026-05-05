@@ -4,6 +4,8 @@ import test from "node:test";
 import type { Context } from "../context";
 import { appRouter } from "./index";
 
+const mockDb = {} as Context["db"];
+
 const firmSession = {
   firm: {
     id: "firm-1",
@@ -36,6 +38,7 @@ const firmSession = {
 test("auth.session returns the firm-scoped Better Auth session", async () => {
   const caller = appRouter.createCaller({
     auth: {} as Context["auth"],
+    db: mockDb,
     firm: firmSession.firm,
     session: firmSession,
   });
@@ -50,6 +53,7 @@ test("auth.session returns the firm-scoped Better Auth session", async () => {
 test("auth.workspace rejects unauthenticated business access", async () => {
   const caller = appRouter.createCaller({
     auth: {} as Context["auth"],
+    db: mockDb,
     firm: null,
     session: null,
   });

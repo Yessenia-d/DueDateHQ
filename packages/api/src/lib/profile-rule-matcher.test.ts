@@ -61,13 +61,6 @@ const individualProfile: FilingProfileForMatching = {
   jurisdictions: ["federal", "CA"],
 };
 
-const cCorpProfile: FilingProfileForMatching = {
-  id: "profile-2",
-  firmId: "firm-1",
-  entityType: "c_corp",
-  jurisdictions: ["federal"],
-};
-
 // ── matchProfileToRules ──
 
 test("matchProfileToRules matches by jurisdiction and entity type", () => {

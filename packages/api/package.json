@@ -9,13 +9,16 @@
       "default": "./src/*.ts"
     }
   },
-  "scripts": {},
+  "scripts": {
+    "check-types": "tsc --noEmit"
+  },
   "dependencies": {
     "@due-date-hq/db": "workspace:*",
     "@due-date-hq/env": "workspace:*",
     "@trpc/client": "catalog:",
     "@trpc/server": "catalog:",
     "better-auth": "^1.6.9",
+    "drizzle-orm": "^0.45.1",
     "dotenv": "catalog:",
     "zod": "catalog:"
   },

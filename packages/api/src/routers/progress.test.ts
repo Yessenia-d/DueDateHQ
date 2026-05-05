@@ -5,6 +5,8 @@ import type { Context } from "../context";
 import { appRouter } from "./index";
 import { featureProgressStatuses } from "./progress";
 
+const mockDb = {} as Context["db"];
+
 const requiredFeatureNames = [
   "Auth and firm workspace",
   "CSV import with profile review",
@@ -23,6 +25,7 @@ const requiredFeatureNames = [
 test("progress.list returns grouped Beta feature progress with derived readiness", async () => {
   const caller = appRouter.createCaller({
     auth: {} as Context["auth"],
+    db: mockDb,
     firm: null,
     session: null,
   });
