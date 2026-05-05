@@ -46,6 +46,10 @@ Use `CONTEXT.md` vocabulary when naming domain concepts in issues, PRDs, tests, 
 
 ## DueDateHQ Project Rules
 
+### Documentation Source of Truth
+
+If implementation code and project documentation/specifications disagree, treat the documentation/specification as the source of truth. Update the code to match the docs unless the user explicitly confirms that the docs are outdated and should be changed.
+
 ### Bilingual Documentation Sync
 
 This project maintains bilingual documentation. Every `.md` file under `docs/` and `specs/` has a corresponding `.zh.md` Chinese translation.
