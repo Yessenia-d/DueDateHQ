@@ -71,6 +71,7 @@ Needs review、Source changed 和 Unsupported 规则必须透明展示，
 
 ## 文档
 
+- 产品用户旅程地图：`docs/due-date-hq-user-journey.html`
 - 产品方案：`docs/product/due-date-hq-product-plan.zh.md`
 - 技术方案：`docs/technical/due-date-hq-beta-technical-plan.zh.md`
 - SDD specs 索引：`specs/README.zh.md`

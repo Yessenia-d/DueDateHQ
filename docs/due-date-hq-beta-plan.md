@@ -61,6 +61,7 @@ Needs review, Source changed, and Unsupported rules must be transparent but cann
 
 ## Documents
 
+- Product journey map: `docs/due-date-hq-user-journey.html`
 - Product plan: `docs/product/due-date-hq-product-plan.md`
 - Technical plan: `docs/technical/due-date-hq-beta-technical-plan.md`
 - SDD specs index: `specs/README.md`
