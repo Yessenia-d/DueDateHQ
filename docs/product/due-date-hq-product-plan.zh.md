@@ -26,7 +26,7 @@ DueDateHQ 不应该只是零散借鉴 File In Time 的几个想法。对于 CPA 
 | Workflow area | File In Time baseline | DueDateHQ Beta direction |
 |---|---|---|
 | Client setup | Client records 包含税务相关字段、notes、client/entity type、jurisdiction context，并支持 manual/import paths | 覆盖安排截止日期所需的实用 filing/tax profile fields，并在数据层建模 `Client relationship -> Filing/Tax profile -> Deadline task`；主 UI 使用 CPA 友好词汇，避免内部 tax-subject jargon |
-| CSV import | Delimited-file preview、header handling、drag/drop mapping、commit 前 review、duplicate resolution | 通过 TaxDome、Drake、Karbon、QuickBooks 来源专属 adapters 做得更好，自动识别 client name/EIN/state/entity type，提供非阻塞 review suggestions、CPA-confirmed relationship suggestions，并处理 duplicates |
+| CSV import | Delimited-file preview、header handling、drag/drop mapping、commit 前 review、duplicate resolution | 通过 TaxDome、Drake、Karbon、QuickBooks 来源专属 client/profile adapters 做得更好，在字段存在或可高置信推断时自动识别 client name/EIN/state/entity type，提供非阻塞 review suggestions、CPA-confirmed relationship suggestions，并处理 duplicates |
 | Obligation/service setup | Services 定义 work type、frequency、due dates 和 extension dates | 将 services 映射为 tax obligations 和 verified tax rules，同时区分 known、verified、needs-review、unsupported 和 user-provided items |
 | Task generation | 将 services 分配给 clients 来创建 due-date tasks | 只有 Verified rules 生成官方任务；unsupported 或 needs-review obligations 可见，但不能伪装成官方截止日期 |
 | Monday triage | Task view 可以过滤到 this week | 默认提供一等公民的 `本周到期`、`本月预警`、`长期计划` 分区，登录后 30 秒内看到所有本周工作，并以 5 分钟完成分诊为目标 |
@@ -98,17 +98,17 @@ DueDateHQ 必须更好的地方：
 
 验收标准：
 
-- 存在四类 CSV 来源 adapter。
+- 存在四类 client/profile import CSV 来源 adapter profiles。
 - 从 TaxDome 迁移的 CPA 可在 30 分钟内完成 30 个客户导入；可衡量目标是 `P95 <= 30 minutes for a 30-client import`。
-- 支持 TaxDome、Drake、Karbon、QuickBooks 导出的 CSV。
+- 通过 adapter profiles 支持 TaxDome、Drake、Karbon、QuickBooks source CSV exports 的 client/profile import；当来源文档没有公开固定 schema 时，不承诺 exact fixed schemas。
 - 提交前展示 header handling、字段映射、duplicate candidates 和 import preview。
-- 字段映射自动识别 client name、EIN、state 和 entity type。
+- 当字段存在或可高置信推断时，字段映射自动识别 client name、EIN、state 和 entity type；不确定值进入 review。
 - 模糊或缺失字段获得智能、非阻塞建议，不确定行进入 review，而不是阻塞整个导入。
 - Import 可以建议个人与企业之间的潜在关系，但绝不自动合并；CPA 必须确认。
 - Import review 和最终 summary 按 filing/tax profile 与 problem type 分组，用平实语言展示 ready profiles、generated verified tasks、profile review items 和 coverage gaps。
 - 导入后，当存在匹配的 Verified tax rules 时，立即生成每个 ready filing/tax profile 的全年 deadline calendar/tasks。
 - Unsupported、Coverage gap 和 Needs review 义务可见，但不会作为官方已确认截止日期被安排。
-- 相关 P0 能力包括 CSV import、field mapping、calendar/task auto-generation、entity type auto-recognition 和 intelligent field matching。
+- 相关 P0 能力包括 CSV import、field mapping、calendar/task auto-generation、entity type recognition/review 和 intelligent field matching。
 
 ### Story 3：手动录入
 
@@ -150,7 +150,7 @@ Beta 用户使用邮箱和密码注册登录。因为 CSV 和客户截止日期�
 - CSV 导入，用于迁移和批量初始化。
 - 手动录入，用于新增客户、边界情况和快速补充。
 
-CSV 导入支持 TaxDome、Drake、Karbon、QuickBooks，通过来源专属 adapter 归一化为统一客户结构。Adapter 应在可能时自动识别 client name、EIN、state 和 entity type，并用确定性智能匹配建议处理模糊字段；不确定行进入 review，不阻塞整个导入。
+CSV 导入支持 TaxDome、Drake、Karbon、QuickBooks，通过来源专属 adapter 归一化为统一客户结构。Adapter 应在可能时自动识别 client name、EIN、state 和 entity type，并用确定性智能匹配建议处理模糊字段；不确定行进入 review，不阻塞整个导入。调研显示这些产品没有一个稳定共享 schema：TaxDome 和 Karbon 高度依赖 firm-specific custom fields，Drake Tax 公开文档确认 CSV/export workflows 但没有固定 client-list schema，QuickBooks customer exports 主要是 accounting contact data。因此 DueDateHQ 应在 commit 前展示 detected source profile、adapter version、recognized columns、unmapped columns 和需要 review 的字段。
 
 导入工作流应该达到或超过 File In Time 的实用导入流程：preview rows、detect headers、map columns、标记缺失或不确定数据、commit 前展示 likely duplicates，并汇总 created client relationships、ready filing/tax profiles、generated verified tasks、profile review items、needs-review obligations 和 coverage gaps。系统可以建议个人与企业之间的潜在关系，但不能自动合并；必须由 CPA 确认。Beta 成功标准要求 CPA 在 30 分钟内完成 30-client import，指标为 `P95 <= 30 minutes for a 30-client import`。
 
@@ -311,7 +311,7 @@ CPA 的主要工作台。
 - 核验 badge。
 - 来源证据入口。
 
-Dashboard controls 必须支持按 due horizon、client relationship、filing/tax profile、jurisdiction/state、form/obligation type、entity type、tax type、task status 和 verification status 过滤/排序。Dashboard urgency surfaces 应该在 Beta 阶段先展示 due today、due this week、due this month，而不是加入外部 reminder channels。基础 dashboard/task export 支持 CPA 在系统外分享和复核 workload。
+Dashboard controls 必须支持按 due horizon、client relationship、filing/tax profile、jurisdiction/state、form/obligation type、entity type、tax type、task status 和 verification status 过滤/排序。Dashboard urgency surfaces 应该在 Beta 阶段先展示 due today、due this week、due this month，而不是加入外部 reminder channels。基础 dashboard/task export 支持 CPA 在系统外分享和复核 workload。Product-specific task export 不是通用 Beta 承诺；从已调研的官方文档看，Karbon work-item export 是唯一较可信的 optional target，而 TaxDome、Drake、QuickBooks 在 P0 中仍作为 source client/profile import targets，除非后续确认官方 task-import schemas。
 
 核心筛选在 Beta 规模 solo CPA workspaces 内应以 `< 1 second` 更新。默认 priority sort 应根据 official due date、firm target date、days remaining、verification warning state、extension state 和 unfinished task status 等确定性因素，将本周工作排在前面；Beta 不需要实时 AI 来满足 smart priority sorting。
 
@@ -462,7 +462,7 @@ User imports or manually enters at least 10 clients and completes one Monday tri
 - 服务约 80 个混合个人与小企业客户的 solo/independent CPA 登录并打开产品后，能在 30 秒内看到本周所有需要行动的截止日期。
 - CPA 可在 5 分钟内完成每周分诊，依靠 `本周到期`、`本月预警`、`长期计划`、按天倒计时、一键 `已完成`/`已延期`/`Waiting on client`/`进行中` 状态标记、快速筛选和确定性智能优先级排序。
 - 从 TaxDome 迁移的 CPA 可在 30 分钟内导入 30 个客户，指标为 `P95 <= 30 minutes for a 30-client import`，同时支持 Drake、Karbon、QuickBooks CSV 导出。
-- 导入自动识别 client name、EIN、state 和 entity type；模糊或缺失字段获得非阻塞建议并进入 review rows。
+- 导入在字段存在或可高置信推断时自动识别 client name、EIN、state 和 entity type；模糊或缺失字段获得非阻塞建议并进入 review rows。
 - CPA 可以理解一个 Verified 截止日期为什么存在、来自哪里。
 - 导入后，匹配的 Verified rules 立即生成全年 deadline calendar/tasks；needs-review、coverage-gap 和 unsupported obligations 保持可见，但不是官方已确认截止日期。
 - 产品清楚标注未核验、来源变化、暂不支持和用户手动录入项。

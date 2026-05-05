@@ -63,7 +63,7 @@ flowchart TD
 
 - `imports.preview`
   - Input: source system, CSV file or text.
-  - Output: batch id, header detection result, column mapping, automatically recognized key fields, mapping confidence, accepted profile rows, review rows, duplicate candidates, relationship suggestions, suggestions, validation messages.
+  - Output: batch id, detected source profile, adapter version, header detection result, column mapping, automatically recognized key fields, unmapped source columns, mapping confidence, accepted profile rows, review rows, duplicate candidates, relationship suggestions, suggestions, validation messages.
 
 - `imports.commit`
   - Input: batch id, reviewed row corrections, duplicate resolutions, and accepted/rejected relationship suggestions.
@@ -122,19 +122,50 @@ Duplicate candidate shape:
 - Differing fields.
 - Suggested action: create, update existing, or skip.
 
+## Source Adapter Profiles
+
+Detailed research lives in `.trellis/tasks/05-05-due-date-hq-docs-specs/research/csv-source-export-format-research.md`.
+Additional official-source profile research lives in `.trellis/tasks/05-05-due-date-hq-docs-specs/research/csv-export-import-profiles-taxdome-drake-karbon-quickbooks.md`.
+
+| Source | P0 adapter profiles | Strong fields | Review-first fields and caveats |
+|---|---|---|---|
+| TaxDome | `taxdome_accounts_v1`, `taxdome_contacts_v1` | Account name, contact name, first/last name, company name, state/province, email, phone, linked accounts/contacts, tags, custom fields | EIN, SSN, filing entity type, fiscal year, and tax-state fields usually depend on firm-defined custom fields. Linked accounts/contacts create relationship suggestions only; they must not auto-merge records. |
+| Drake | `drake_client_export_v1` | Public docs confirm Drake Tax can export client data files to CSV, but do not publish a stable public field list | Treat Drake as sample-driven. Support likely aliases such as client id, SSN/EIN, taxpayer/company name, address, state, return type, and entity, but require mapping review when headers are missing or weak. |
+| Karbon | `karbon_import_file_v1`, `karbon_bulk_update_v1` | Organization name, first/last name, client identifier, fiscal year end, email, phone, address, client group, belongs-to/associated-organization fields | Bulk update data may arrive as multi-tab XLSX rather than single CSV. Business Number is not always a US EIN. Belongs-to and associated organization fields create relationship suggestions only. |
+| QuickBooks | `quickbooks_online_customer_contact_v1`, `quickbooks_desktop_customer_vendor_v1` | Customer/name, company/full name, first/last name, email, phone, billing address, billing state, customer/entity type when selected | QuickBooks customer exports are contact/accounting data, not tax-profile data. EIN/SSN is usually absent unless stored in custom, notes, or other user-selected columns. Bank transaction CSVs are not valid client import files. |
+
+All adapters must:
+
+- Preserve identifiers as strings, including ZIP, SSN, EIN, phone numbers, and source IDs with leading zeros.
+- Use header-based mapping when possible and require user mapping when no reliable headers exist.
+- Show detected source profile, adapter version, recognized columns, unmapped columns, and review-required fields before commit.
+- Surface source custom fields in the mapping preview rather than discarding them.
+- Send uncertain entity type, tax ID, tax state, fiscal year, and relationship fields to review instead of blocking the whole import.
+- Keep adapter versions on import batches so source-format changes are auditable.
+
+## Export Compatibility Boundary
+
+DueDateHQ's P0 CSV compatibility primarily means importing client/profile data from CSVs exported by TaxDome, Drake, Karbon, and QuickBooks. Dashboard/task CSV export is a separate operational feature.
+
+Outbound CSV exports must not imply two-way product compatibility unless a target product's official import schema is documented and supported:
+
+- The default DueDateHQ task export is a generic current task view CSV for workload sharing and review.
+- Product-specific task export is only plausible for a Karbon work-item profile, and should stay optional until exact template requirements are confirmed.
+- TaxDome, Drake, and QuickBooks task-import compatibility is not a Beta promise; their supported P0 role is source client/profile import.
+
 ## Competitor Parity Notes
 
 File In Time treats import as a review workflow, not a blind upload. DueDateHQ must match preview, mapping, header handling, review before commit, and duplicate resolution. DueDateHQ should be better by using source-specific adapters that start from known TaxDome, Drake, Karbon, and QuickBooks exports instead of making every user map a generic delimited file from scratch. It should also group review by filing/tax profile and problem type so CPAs are not forced to reason through every generated task.
 
 ## Acceptance Criteria
 
-- TaxDome adapter supports representative TaxDome client export fields.
-- Drake adapter supports representative Drake client export fields.
-- Karbon adapter supports representative Karbon contact export fields.
-- QuickBooks adapter supports representative QuickBooks customer export fields.
+- TaxDome adapter supports account and contact export profiles, including linked accounts/contacts and custom fields.
+- Drake adapter supports sample-driven Drake client exports and requires mapping review when public-header confidence is low.
+- Karbon adapter supports import/contact-list exports and bulk-contact-update organization/person data when provided as CSV.
+- QuickBooks adapter supports QBO customer/contact-list exports and QuickBooks Desktop customer/vendor list exports; bank transaction CSVs are rejected as the wrong source type.
 - A CPA migrating from TaxDome can complete import of 30 clients within 30 minutes.
 - Import performance target is `P95 <= 30 minutes for a 30-client import`.
-- System automatically recognizes field mapping for client name, EIN, state, and entity type.
+- System automatically recognizes field mapping for client name, EIN, state, and entity type when present or confidently inferred; uncertain values go to review.
 - Fuzzy or missing fields receive intelligent, non-blocking suggestions and send uncertain rows to review instead of blocking the full import.
 - Possible relationships between individuals and businesses are suggested but never auto-merged.
 - CPA must explicitly confirm or reject relationship suggestions.

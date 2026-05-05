@@ -98,6 +98,33 @@ Source types:
 - `verified_rule`
 - `user_provided`
 
+## CSV Export Contract
+
+The dashboard export is a DueDateHQ current task view CSV, not a blanket promise that every third-party product can import DueDateHQ tasks.
+
+Minimum columns:
+
+- Client relationship.
+- Filing/tax profile.
+- Obligation.
+- Jurisdiction.
+- Tax category.
+- Current official due date.
+- Original due date.
+- Firm target date.
+- Status.
+- Verification status.
+- Source type.
+- Source name.
+- Source URL.
+- Last verified at.
+- Source last changed at.
+- Priority.
+- Extension status.
+- Notes.
+
+Product-specific export profiles are out of scope unless a target product has a documented task/work import schema. Research found Karbon work-item export is the only plausible optional target for later validation; TaxDome, Drake, and QuickBooks task-import compatibility is not part of the Beta commitment.
+
 ## Competitor Parity Notes
 
 File In Time supports weekly task views, status updates, extension flags, startup reminders, calendar counts, filtering/sorting, Excel export, and broad batch changes. DueDateHQ should match the useful workflow with a default Monday triage surface, richer trust badges, evidence drawer access, in-dashboard urgency for due today/this week/this month, light bulk status/firm-target/export operations, and export of the current task view. External reminder channels, bulk official due-date edits, and heavy reporting stay out of Beta.
@@ -124,6 +151,8 @@ File In Time supports weekly task views, status updates, extension flags, startu
 - Bulk official due-date edits are not supported.
 - The full weekly triage flow is completable within 5 minutes, compared with the current 30-45 minute spreadsheet/calendar workflow.
 - Current task view can be exported for workload sharing or review.
+- Current task view export keeps official due date, firm target date, verification status, and source evidence in separate columns.
+- Export copy does not imply TaxDome, Drake, or QuickBooks can import DueDateHQ tasks unless that target profile is later verified.
 
 ## Out of Scope
 

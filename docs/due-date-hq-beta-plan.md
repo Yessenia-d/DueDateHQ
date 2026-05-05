@@ -49,8 +49,8 @@ TaxDome/import 30 clients:
 
 - Persona: CPA migrating from TaxDome; Drake, Karbon, and QuickBooks CSV exports are also supported.
 - User can complete import of 30 clients within 30 minutes; measurable target is `P95 <= 30 minutes for a 30-client import`.
-- TaxDome, Drake, Karbon, and QuickBooks exported CSVs are supported.
-- Field mapping automatically recognizes client name, EIN, state, and entity type.
+- TaxDome, Drake, Karbon, and QuickBooks source CSV exports are supported for client/profile import through adapter profiles; exact fixed schemas are not promised where source docs do not publish them.
+- Field mapping automatically recognizes client name, EIN, state, and entity type when present or confidently inferred; uncertain values go to review.
 - Fuzzy or missing fields receive intelligent, non-blocking suggestions and uncertain rows go to review without blocking the full import.
 - CSV import can suggest possible relationships between individuals and businesses, but must not auto-merge them; the CPA confirms relationship suggestions.
 - Import review and result summaries are grouped by filing/tax profile and problem type, not by every generated task.
@@ -94,7 +94,7 @@ Firm target dates are planning metadata, not official due dates.
 In scope:
 
 - Email/password registration and login.
-- Client import from four CSV sources using representative adapters.
+- Client/profile import from four CSV sources using representative adapters.
 - Manual client and deadline entry.
 - Verified tax rules generating official tasks.
 - Filing/tax profiles under client relationships.
@@ -103,7 +103,7 @@ In scope:
 - Verification queue for rule review and publishing.
 - Cloudflare deployment plan.
 - Source-specific CSV adapters with preview, mapping, review, and duplicate handling.
-- CSV import field mapping for client name, EIN, state, and entity type, with non-blocking suggestions for uncertain rows.
+- CSV import field mapping for client name, EIN, state, and entity type when present or confidently inferred, with non-blocking suggestions for uncertain rows.
 - CPA-confirmed relationship suggestions during import.
 - In-app notice surfaces: dashboard banner, notice inbox/alert center, and affected review page.
 - P0 workflow targets: 30-client import within 30 minutes at `P95 <= 30 minutes for a 30-client import`, weekly triage within 5 minutes, and core dashboard filters responding in `< 1 second` for Beta-sized solo CPA workspaces.

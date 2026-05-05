@@ -43,6 +43,8 @@ Create durable repo documents for:
 ## Research Inputs
 
 - File In Time user manual competitor research: `.trellis/tasks/05-05-due-date-hq-docs-specs/research/file-in-time-competitor-research.md`
+- TaxDome, Drake, Karbon, and QuickBooks CSV source export format research: `.trellis/tasks/05-05-due-date-hq-docs-specs/research/csv-source-export-format-research.md`
+- Consolidated official-source CSV profile research for TaxDome, Drake, Karbon, and QuickBooks: `.trellis/tasks/05-05-due-date-hq-docs-specs/research/csv-export-import-profiles-taxdome-drake-karbon-quickbooks.md`
 
 ## Product Direction Update
 
@@ -112,8 +114,8 @@ Planning docs and specs must also reflect these Beta decisions:
 
 - Persona is a CPA migrating from TaxDome; Drake, Karbon, and QuickBooks CSV exports are also supported.
 - The user can complete import of 30 clients within 30 minutes, with `P95 <= 30 minutes for a 30-client import` as the measurable criterion.
-- The system supports TaxDome, Drake, Karbon, and QuickBooks exported CSVs.
-- The system automatically recognizes field mapping for client name, EIN, state, and entity type.
+- The system supports TaxDome, Drake, Karbon, and QuickBooks source CSV exports for client/profile import through adapter profiles; it does not promise fixed exact schemas where source docs do not publish them.
+- The system automatically recognizes field mapping for client name, EIN, state, and entity type when those fields are present or confidently inferred; uncertain values go to review.
 - For fuzzy or missing fields, the system gives intelligent, non-blocking suggestions and sends uncertain rows to review instead of blocking the whole import.
 - After import, the system immediately generates each filing/tax profile's full-year deadline calendar/tasks when matching Verified rules exist.
 - Needs-review, coverage-gap, and unsupported obligations remain visible but are not official confirmed deadlines.

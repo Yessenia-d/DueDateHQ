@@ -323,7 +323,8 @@ Imports:
 - `imports.preview`
   - Parses TaxDome, Drake, Karbon, and QuickBooks CSV exports with source-specific adapters.
   - Automatically recognizes field mapping for client name, EIN, state, and entity type where possible.
-  - Returns mapping confidence, intelligent deterministic suggestions, accepted profile rows, review rows, duplicate candidates, CPA-confirmed relationship suggestions, and validation messages.
+  - Returns detected source profile, adapter version, recognized columns, unmapped columns, mapping confidence, intelligent deterministic suggestions, accepted profile rows, review rows, duplicate candidates, CPA-confirmed relationship suggestions, and validation messages.
+  - Treats TaxDome and Karbon custom fields, Drake low-confidence headers, and QuickBooks accounting-contact fields as review-first mapping inputs when tax identity, filing state, entity type, or fiscal-year meaning is uncertain.
 - `imports.commit`
   - Commits accepted rows, reviewed row corrections, duplicate resolutions, and accepted/rejected relationship suggestions.
   - Generates full-year official deadline tasks immediately only when matching `verified` rules exist.
@@ -343,7 +344,9 @@ Dashboard:
   - Supports fast filters by client relationship, filing/tax profile, state, form/obligation type, entity type, tax type, task status, and verification status.
   - Supports deterministic smart priority sorting for Beta.
 - `dashboard.export`
+  - Exports a generic DueDateHQ current task view CSV for workload sharing and review, with separate official due date, firm target date, verification status, and evidence/source fields.
 - `dashboard.bulkExportCurrentFilteredView`
+  - Uses the same generic task-view CSV contract for the current filtered result set.
 - `tasks.updateStatus`
   - Supports one-click marking for `done`, `extended`, `waiting_on_client`, and `in_progress`.
 - `tasks.bulkUpdateStatus`
@@ -544,7 +547,7 @@ Automated:
 - Type check.
 - Build.
 - API tests for imports, manual deadlines, verification rules, and source monitoring services.
-- Import tests covering TaxDome, Drake, Karbon, and QuickBooks CSV fixtures, auto-mapping for client name/EIN/state/entity type, review rows for fuzzy or missing fields, and Verified-only full-year task generation.
+- Import tests covering TaxDome, Drake, Karbon, and QuickBooks CSV fixtures, auto-mapping for client name/EIN/state/entity type when present or confidently inferred, review rows for fuzzy or missing fields, and Verified-only full-year task generation.
 - Dashboard tests covering default horizon grouping, countdown in days, core filter coverage, one-click `done`/`extended`/`waiting_on_client`/`in_progress` status updates, and deterministic priority sorting.
 
 Manual:

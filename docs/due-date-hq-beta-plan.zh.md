@@ -50,8 +50,8 @@ DueDateHQ 维护透明税务义务与覆盖库，在 24 小时检测窗口内监
 
 - Persona：从 TaxDome 迁移的 CPA；同时支持 Drake、Karbon、QuickBooks CSV 导出。
 - 用户可在 30 分钟内完成 30 个客户导入；可衡量目标是 `P95 <= 30 minutes for a 30-client import`。
-- 支持 TaxDome、Drake、Karbon、QuickBooks 导出的 CSV。
-- 字段映射自动识别 client name、EIN、state 和 entity type。
+- 通过 adapter profiles 支持 TaxDome、Drake、Karbon、QuickBooks source CSV exports 的 client/profile import；当来源文档没有公开固定 schema 时，不承诺 exact fixed schemas。
+- 当字段存在或可高置信推断时，字段映射自动识别 client name、EIN、state 和 entity type；不确定值进入 review。
 - 模糊或缺失字段获得智能、非阻塞建议，不确定行进入 review，不阻塞整个导入。
 - CSV import 可以建议个人与企业之间的潜在关系，但不能自动合并；CPA 必须确认 relationship suggestions。
 - Import review 和结果 summary 按 filing/tax profile 和 problem type 分组，而不是按每个 generated task。
@@ -104,7 +104,7 @@ Firm target dates 是规划信息，不是 official due dates。
 范围内：
 
 - 邮箱密码注册和登录。
-- 四类 CSV 来源导入。
+- 四类 CSV 来源的 client/profile 导入。
 - 手动录入客户和截止日期。
 - 已核验税务规则生成官方任务。
 - Client relationships 下的 filing/tax profiles。
@@ -113,7 +113,7 @@ Firm target dates 是规划信息，不是 official due dates。
 - 税务规则核验队列。
 - Cloudflare 部署计划。
 - 带 preview、mapping、review、duplicate handling 的来源专属 CSV adapters。
-- CSV import 字段映射覆盖 client name、EIN、state 和 entity type，并对不确定行提供非阻塞建议。
+- CSV import 字段映射在字段存在或可高置信推断时覆盖 client name、EIN、state 和 entity type，并对不确定行提供非阻塞建议。
 - Import 中由 CPA 确认 relationship suggestions。
 - 产品内 notice surfaces：dashboard banner、notice inbox/alert center、affected review page。
 - P0 工作流目标：30-client import 在 30 分钟内完成且达到 `P95 <= 30 minutes for a 30-client import`，每周分诊在 5 分钟内完成，核心 dashboard filters 在 Beta 规模 solo CPA workspace 内 `< 1 second` 响应。

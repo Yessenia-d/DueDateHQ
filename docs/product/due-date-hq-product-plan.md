@@ -25,7 +25,7 @@ DueDateHQ should not merely borrow isolated ideas from File In Time. For core CP
 | Workflow area | File In Time baseline | DueDateHQ Beta direction |
 |---|---|---|
 | Client setup | Client records with tax-relevant fields, notes, client/entity type, jurisdiction context, and manual/import paths | Match the practical filing/tax profile fields needed for scheduling while modeling `Client relationship -> Filing/Tax profile -> Deadline task`; keep primary UI language CPA-friendly and avoid internal tax-subject jargon |
-| CSV import | Delimited-file preview, header handling, drag/drop mapping, review before commit, duplicate resolution | Better with source-specific adapters for TaxDome, Drake, Karbon, and QuickBooks, automatic recognition for client name/EIN/state/entity type, non-blocking review suggestions, CPA-confirmed relationship suggestions, and duplicate handling |
+| CSV import | Delimited-file preview, header handling, drag/drop mapping, review before commit, duplicate resolution | Better with source-specific client/profile adapters for TaxDome, Drake, Karbon, and QuickBooks, automatic recognition for client name/EIN/state/entity type when present or confidently inferred, non-blocking review suggestions, CPA-confirmed relationship suggestions, and duplicate handling |
 | Obligation/service setup | Services define work type, frequency, due dates, and extension dates | Map services to tax obligations and verified tax rules while separating known, verified, needs-review, unsupported, and user-provided items |
 | Task generation | Assign services to clients to create due-date tasks | Generate official tasks only from Verified rules; show unsupported or needs-review obligations without pretending they are official deadlines |
 | Monday triage | Task view can be filtered to this week | Better with first-class `Due this week`, `This month`, and `Long range` sections by default, all this-week work visible within 30 seconds after login, and a 5-minute triage target |
@@ -97,17 +97,17 @@ As a CPA moving from TaxDome, Drake, Karbon, or QuickBooks, I want to import cli
 
 Acceptance:
 
-- Four CSV source adapters exist.
+- Four CSV source adapter profiles exist for client/profile imports.
 - A CPA migrating from TaxDome can complete import of 30 clients within 30 minutes; the measurable target is `P95 <= 30 minutes for a 30-client import`.
-- TaxDome, Drake, Karbon, and QuickBooks exported CSVs are supported.
+- TaxDome, Drake, Karbon, and QuickBooks source CSV exports are supported for client/profile import through adapter profiles; exact fixed schemas are not promised where source docs do not publish them.
 - Header handling, field mapping, duplicate candidates, and import preview are shown before commit.
-- Field mapping automatically recognizes client name, EIN, state, and entity type.
+- Field mapping automatically recognizes client name, EIN, state, and entity type when present or confidently inferred; uncertain values go to review.
 - Fuzzy or missing fields receive intelligent, non-blocking suggestions and uncertain rows enter review instead of blocking the whole import.
 - Import can suggest likely relationships between individuals and businesses, but never auto-merges them; the CPA confirms.
 - Import review and final summary are grouped by filing/tax profile and problem type, with plain-language counts for ready profiles, generated verified tasks, profile review items, and coverage gaps.
 - After import, matching Verified tax rules immediately generate each ready filing/tax profile's full-year deadline calendar/tasks.
 - Unsupported, coverage-gap, and needs-review obligations are visible but not scheduled as official confirmed deadlines.
-- Related P0 capabilities include CSV import, field mapping, calendar/task auto-generation, entity type auto-recognition, and intelligent field matching.
+- Related P0 capabilities include CSV import, field mapping, calendar/task auto-generation, entity type recognition/review, and intelligent field matching.
 
 ### Story 3: Manual Entry
 
@@ -149,7 +149,7 @@ Two entry points:
 - CSV import for migration and bulk setup.
 - Manual entry for new clients, edge cases, and quick additions.
 
-CSV import supports TaxDome, Drake, Karbon, and QuickBooks through source-specific adapters that normalize records into a shared client shape. The adapters should automatically recognize client name, EIN, state, and entity type where possible, use intelligent deterministic matching suggestions for fuzzy fields, and send uncertain rows to review without blocking the whole import.
+CSV import supports TaxDome, Drake, Karbon, and QuickBooks through source-specific adapters that normalize records into a shared client shape. The adapters should automatically recognize client name, EIN, state, and entity type where possible, use intelligent deterministic matching suggestions for fuzzy fields, and send uncertain rows to review without blocking the whole import. Research shows these products do not expose one stable shared schema: TaxDome and Karbon rely heavily on firm-specific custom fields, Drake Tax public docs confirm CSV/export workflows without a fixed client-list schema, and QuickBooks customer exports are mostly accounting contact data. DueDateHQ should therefore show detected source profile, adapter version, recognized columns, unmapped columns, and review-required fields before commit.
 
 The import workflow should meet or exceed File In Time's practical import flow: preview rows, detect headers, map columns, flag missing or uncertain data, surface likely duplicates before commit, and summarize created client relationships, ready filing/tax profiles, generated verified tasks, profile review items, needs-review obligations, and coverage gaps. It may suggest likely relationships between individuals and businesses, but must not auto-merge them; the CPA confirms. Beta success requires a CPA to complete a 30-client import within 30 minutes at `P95 <= 30 minutes for a 30-client import`.
 
@@ -308,7 +308,7 @@ Each task row includes:
 - Verification badge.
 - Source evidence action.
 
-Dashboard controls must support filters and sorting by due horizon, client relationship, filing/tax profile, jurisdiction/state, form/obligation type, entity type, tax type, task status, and verification status. Dashboard urgency surfaces should make due today, due this week, and due this month visible without adding external reminder channels in Beta. A basic dashboard/task export supports CPA workload sharing and review outside the app.
+Dashboard controls must support filters and sorting by due horizon, client relationship, filing/tax profile, jurisdiction/state, form/obligation type, entity type, tax type, task status, and verification status. Dashboard urgency surfaces should make due today, due this week, and due this month visible without adding external reminder channels in Beta. A basic dashboard/task export supports CPA workload sharing and review outside the app. Product-specific task export is not a general Beta promise; Karbon work-item export is the only plausible optional target from researched official docs, while TaxDome, Drake, and QuickBooks remain source client/profile import targets unless later official task-import schemas are confirmed.
 
 Core filters should update in `< 1 second` for Beta-sized solo CPA workspaces. The default priority sort should place this-week work first using deterministic factors such as official due date, firm target date, days remaining, verification warning state, extension state, and unfinished task status; Beta does not require live AI to satisfy smart priority sorting.
 
@@ -458,7 +458,7 @@ Mitigation:
 - A solo or independent CPA serving about 80 mixed individual and small-business clients can open the product after login and see all deadlines needing action this week within 30 seconds.
 - A CPA can complete weekly triage within 5 minutes using `Due this week`, `This month`, `Long range`, countdowns in days, one-click `Done`/`Extended`/`Waiting on client`/`In progress` status marking, fast filters, and smart deterministic priority sorting.
 - A CPA migrating from TaxDome can import 30 clients within 30 minutes at `P95 <= 30 minutes for a 30-client import`, with Drake, Karbon, and QuickBooks CSV exports also supported.
-- Import automatically recognizes client name, EIN, state, and entity type; fuzzy or missing fields get non-blocking suggestions and review rows.
+- Import automatically recognizes client name, EIN, state, and entity type when present or confidently inferred; fuzzy or missing fields get non-blocking suggestions and review rows.
 - A CPA can understand why a verified deadline exists and where it came from.
 - After import, matching Verified rules generate full-year deadline calendar/tasks immediately; needs-review, coverage-gap, and unsupported obligations stay visible but not official confirmed deadlines.
 - The product clearly marks unverified, source-changed, unsupported, and user-provided items.

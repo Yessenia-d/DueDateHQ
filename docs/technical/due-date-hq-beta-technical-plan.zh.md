@@ -323,7 +323,8 @@ Imports：
 - `imports.preview`
   - 使用来源专属 adapter 解析 TaxDome、Drake、Karbon、QuickBooks CSV 导出。
   - 在可能时自动识别 client name、EIN、state 和 entity type 字段映射。
-  - 返回 mapping confidence、确定性智能建议、accepted profile rows、review rows、duplicate candidates、relationship suggestions 和 validation messages。
+  - 返回 detected source profile、adapter version、recognized columns、unmapped columns、mapping confidence、确定性智能建议、accepted profile rows、review rows、duplicate candidates、relationship suggestions 和 validation messages。
+  - 当 tax identity、filing state、entity type 或 fiscal-year 含义不确定时，将 TaxDome/Karbon custom fields、Drake low-confidence headers 和 QuickBooks accounting-contact fields 作为 review-first mapping inputs 处理。
 - `imports.commit`
   - 提交 accepted rows、已修正行、duplicate resolutions，以及 accepted/rejected relationship suggestions。
   - 仅当存在匹配的 `verified` rules 时，立即生成全年官方 deadline tasks。
@@ -343,7 +344,9 @@ Dashboard：
   - 支持按 client relationship、filing/tax profile、state、form/obligation type、entity type、tax type、task status 和 verification status 快速筛选。
   - 支持 Beta 阶段确定性 smart priority sorting。
 - `dashboard.export`
+  - 导出 generic DueDateHQ current task view CSV，用于 workload sharing 和 review，并单独包含 official due date、firm target date、verification status 和 evidence/source fields。
 - `dashboard.bulkExportCurrentFilteredView`
+  - 对当前筛选结果使用同一 generic task-view CSV contract。
 - `tasks.updateStatus`
   - 支持一键标记 `done`、`extended`、`waiting_on_client` 和 `in_progress`。
 - `tasks.bulkUpdateStatus`
@@ -546,7 +549,7 @@ P0 官方来源 allowlist 和范围：
 - 类型检查。
 - 构建。
 - API tests：imports、manual deadlines、verification rules、source monitoring services。
-- Import tests 覆盖 TaxDome、Drake、Karbon、QuickBooks CSV fixtures，client name/EIN/state/entity type 自动映射，模糊或缺失字段 review rows，以及 Verified-only 全年 task generation。
+- Import tests 覆盖 TaxDome、Drake、Karbon、QuickBooks CSV fixtures，字段存在或可高置信推断时的 client name/EIN/state/entity type 自动映射，模糊或缺失字段 review rows，以及 Verified-only 全年 task generation。
 - Dashboard tests 覆盖默认时间分组、按天倒计时、核心筛选范围、一键 `done`/`extended`/`waiting_on_client`/`in_progress` 状态更新，以及确定性 priority sorting。
 
 手动：

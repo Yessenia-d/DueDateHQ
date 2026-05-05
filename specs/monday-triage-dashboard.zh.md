@@ -98,6 +98,33 @@ Source types：
 - `verified_rule`
 - `user_provided`
 
+## CSV Export Contract
+
+Dashboard export 是 DueDateHQ current task view CSV，不是承诺每个第三方产品都可以导入 DueDateHQ tasks。
+
+最小列：
+
+- Client relationship。
+- Filing/tax profile。
+- Obligation。
+- Jurisdiction。
+- Tax category。
+- Current official due date。
+- Original due date。
+- Firm target date。
+- Status。
+- Verification status。
+- Source type。
+- Source name。
+- Source URL。
+- Last verified at。
+- Source last changed at。
+- Priority。
+- Extension status。
+- Notes。
+
+除非目标产品有已记录的 task/work import schema，否则 product-specific export profiles 不在范围内。调研显示 Karbon work-item export 是唯一可作为后续验证的 optional target；TaxDome、Drake、QuickBooks task-import compatibility 不属于 Beta 承诺。
+
 ## Competitor Parity Notes
 
 File In Time 支持 weekly task views、status updates、extension flags、startup reminders、calendar counts、filtering/sorting、Excel export 和广泛 batch changes。DueDateHQ 应以默认 Monday triage surface、更强 trust badges、evidence drawer access、dashboard 内 due today/this week/this month urgency、轻量 bulk status/firm-target/export operations，以及 current task view export 覆盖有价值工作流。外部 reminder channels、bulk official due-date edits 和重型 reporting 不进入 Beta。
@@ -124,6 +151,8 @@ File In Time 支持 weekly task views、status updates、extension flags、start
 - 不支持 bulk official due-date edits。
 - 完整每周分诊流程可在 5 分钟内完成，对比当前 30-45 分钟的表格/日历流程。
 - Current task view 可以导出用于 workload sharing 或 review。
+- Current task view export 将 official due date、firm target date、verification status 和 source evidence 放在独立列。
+- Export copy 不暗示 TaxDome、Drake 或 QuickBooks 可以导入 DueDateHQ tasks，除非该 target profile 后续完成验证。
 
 ## Out of Scope
 

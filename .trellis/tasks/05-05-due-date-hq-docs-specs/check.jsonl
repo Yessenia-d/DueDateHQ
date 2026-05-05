@@ -3,3 +3,5 @@
 {"file":"docs/technical/due-date-hq-beta-technical-plan.md","reason":"Verify technical design maps to product requirements"}
 {"file":"specs/README.md","reason":"Verify all feature specs are listed and follow SDD structure"}
 {"file":".trellis/tasks/05-05-due-date-hq-docs-specs/research/file-in-time-competitor-research.md","reason":"Verify product/spec changes account for competitor-informed feature decisions"}
+{"file":".trellis/tasks/05-05-due-date-hq-docs-specs/research/csv-source-export-format-research.md","reason":"Verify CSV import requirements align with researched TaxDome, Drake, Karbon, and QuickBooks source export profiles"}
+{"file":".trellis/tasks/05-05-due-date-hq-docs-specs/research/csv-export-import-profiles-taxdome-drake-karbon-quickbooks.md","reason":"Verify CSV profile requirements reflect official-source field expectations and documented caveats"}

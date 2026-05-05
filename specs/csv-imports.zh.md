@@ -63,7 +63,7 @@ flowchart TD
 
 - `imports.preview`
   - 输入：来源系统、CSV 文件或文本。
-  - 输出：batch id、header detection result、列映射、自动识别的关键字段、mapping confidence、accepted profile rows、review rows、duplicate candidates、relationship suggestions、suggestions、validation messages。
+  - 输出：batch id、detected source profile、adapter version、header detection result、列映射、自动识别的关键字段、未映射 source columns、mapping confidence、accepted profile rows、review rows、duplicate candidates、relationship suggestions、suggestions、validation messages。
 
 - `imports.commit`
   - 输入：batch id、已修正行、duplicate resolutions，以及 accepted/rejected relationship suggestions。
@@ -122,19 +122,50 @@ Duplicate candidate shape：
 - Differing fields。
 - Suggested action：create、update existing 或 skip。
 
+## Source Adapter Profiles
+
+详细调研见 `.trellis/tasks/05-05-due-date-hq-docs-specs/research/csv-source-export-format-research.md`。
+补充 official-source profile 调研见 `.trellis/tasks/05-05-due-date-hq-docs-specs/research/csv-export-import-profiles-taxdome-drake-karbon-quickbooks.md`。
+
+| Source | P0 adapter profiles | Strong fields | Review-first fields and caveats |
+|---|---|---|---|
+| TaxDome | `taxdome_accounts_v1`、`taxdome_contacts_v1` | Account name、contact name、first/last name、company name、state/province、email、phone、linked accounts/contacts、tags、custom fields | EIN、SSN、filing entity type、fiscal year 和 tax-state 字段通常依赖 firm-defined custom fields。Linked accounts/contacts 只生成 relationship suggestions，不能自动合并 records。 |
+| Drake | `drake_client_export_v1` | 官方文档确认 Drake Tax 可将 client data files 导出为 CSV，但没有公开稳定字段列表 | Drake adapter 应按样本驱动。支持 client id、SSN/EIN、taxpayer/company name、address、state、return type、entity 等可能 aliases，但 headers 缺失或置信度低时必须进入 mapping review。 |
+| Karbon | `karbon_import_file_v1`、`karbon_bulk_update_v1` | Organization name、first/last name、client identifier、fiscal year end、email、phone、address、client group、belongs-to/associated-organization fields | Bulk update data 可能是 multi-tab XLSX 而不是 single CSV。Business Number 不一定是美国 EIN。Belongs-to 和 associated organization fields 只生成 relationship suggestions。 |
+| QuickBooks | `quickbooks_online_customer_contact_v1`、`quickbooks_desktop_customer_vendor_v1` | Customer/name、company/full name、first/last name、email、phone、billing address、billing state、customer/entity type（如被选中） | QuickBooks customer exports 主要是 contact/accounting data，不是 tax-profile data。EIN/SSN 通常不存在，除非存储在 custom、notes 或用户选择的其他列中。Bank transaction CSV 不是有效 client import file。 |
+
+所有 adapters 必须：
+
+- 将 ZIP、SSN、EIN、phone numbers、source IDs 等 identifiers 当作字符串保存，保留 leading zeros。
+- 优先使用 header-based mapping；没有可靠 headers 时要求用户 mapping。
+- Commit 前展示 detected source profile、adapter version、recognized columns、unmapped columns 和需要 review 的字段。
+- 在 mapping preview 中展示 source custom fields，而不是丢弃。
+- 对不确定 entity type、tax ID、tax state、fiscal year 和 relationship fields 进入 review，而不是阻塞整个 import。
+- 在 import batches 中保存 adapter versions，便于追踪 source-format changes。
+
+## Export Compatibility Boundary
+
+DueDateHQ 的 P0 CSV compatibility 主要表示从 TaxDome、Drake、Karbon、QuickBooks 导出的 CSV 中导入 client/profile data。Dashboard/task CSV export 是独立的 operational feature。
+
+Outbound CSV exports 不能暗示双向 product compatibility，除非目标产品的官方 import schema 已被记录并明确支持：
+
+- 默认 DueDateHQ task export 是用于 workload sharing 和 review 的 generic current task view CSV。
+- Product-specific task export 目前只对 Karbon work-item profile 有较可信落点，并且应在确认 exact template requirements 前保持 optional。
+- TaxDome、Drake、QuickBooks task-import compatibility 不是 Beta 承诺；它们在 P0 中的支持范围是作为 source client/profile import。
+
 ## Competitor Parity Notes
 
 File In Time 把 import 当作 review workflow，而不是盲目 upload。DueDateHQ 必须覆盖 preview、mapping、header handling、commit 前 review 和 duplicate resolution。DueDateHQ 应该通过 source-specific adapters 做得更好，让 TaxDome、Drake、Karbon、QuickBooks 用户不必每次从 generic delimited file 开始手工 mapping。同时 review 应按 filing/tax profile 和 problem type 分组，避免 CPA 被迫逐条理解每个 generated task。
 
 ## Acceptance Criteria
 
-- TaxDome adapter 支持代表性 TaxDome client export 字段。
-- Drake adapter 支持代表性 Drake client export 字段。
-- Karbon adapter 支持代表性 Karbon contact export 字段。
-- QuickBooks adapter 支持代表性 QuickBooks customer export 字段。
+- TaxDome adapter 支持 account 和 contact export profiles，包括 linked accounts/contacts 与 custom fields。
+- Drake adapter 支持 sample-driven Drake client exports，并在 public-header confidence 低时要求 mapping review。
+- Karbon adapter 支持 import/contact-list exports，以及以 CSV 提供的 bulk-contact-update organization/person data。
+- QuickBooks adapter 支持 QBO customer/contact-list exports 和 QuickBooks Desktop customer/vendor list exports；bank transaction CSV 会因 source type 错误被拒绝。
 - 从 TaxDome 迁移的 CPA 可在 30 分钟内完成 30 个客户导入。
 - 导入性能目标为 `P95 <= 30 minutes for a 30-client import`。
-- 系统自动识别 client name、EIN、state 和 entity type 字段映射。
+- 当字段存在或可高置信推断时，系统自动识别 client name、EIN、state 和 entity type 字段映射；不确定值进入 review。
 - 模糊或缺失字段获得智能、非阻塞建议，不确定行进入 review，而不是阻塞整个导入。
 - 个人与企业之间的潜在关系可以被建议，但绝不能自动合并。
 - CPA 必须明确确认或拒绝 relationship suggestions。

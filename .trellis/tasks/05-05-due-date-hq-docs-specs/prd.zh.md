@@ -43,6 +43,8 @@
 ## Research Inputs
 
 - File In Time 用户手册竞品调研：`.trellis/tasks/05-05-due-date-hq-docs-specs/research/file-in-time-competitor-research.md`
+- TaxDome、Drake、Karbon、QuickBooks CSV source export format 调研：`.trellis/tasks/05-05-due-date-hq-docs-specs/research/csv-source-export-format-research.md`
+- TaxDome、Drake、Karbon、QuickBooks official-source CSV profile 综合调研：`.trellis/tasks/05-05-due-date-hq-docs-specs/research/csv-export-import-profiles-taxdome-drake-karbon-quickbooks.md`
 
 ## Product Direction Update
 
@@ -112,8 +114,8 @@ DueDateHQ 必须在这些方面强于 File In Time：
 
 - Persona 是从 TaxDome 迁移的 CPA；同时支持 Drake、Karbon、QuickBooks CSV 导出。
 - 用户可在 30 分钟内完成 30 个客户导入，并以 `P95 <= 30 minutes for a 30-client import` 作为可衡量标准。
-- 系统支持 TaxDome、Drake、Karbon、QuickBooks 导出的 CSV。
-- 系统自动识别 client name、EIN、state 和 entity type 字段映射。
+- 系统通过 adapter profiles 支持 TaxDome、Drake、Karbon、QuickBooks source CSV exports 的 client/profile import；当来源文档没有公开固定 schema 时，不承诺 exact fixed schemas。
+- 当字段存在或可高置信推断时，系统自动识别 client name、EIN、state 和 entity type 字段映射；不确定值进入 review。
 - 对模糊或缺失字段，系统给出智能、非阻塞建议，并将不确定行送入 review，而不是阻塞整个导入。
 - 导入后，当存在匹配的 Verified rules 时，系统立即生成每个 filing/tax profile 的全年 deadline calendar/tasks。
 - Needs-review、coverage-gap 和 unsupported obligations 保持可见，但不会成为官方已确认截止日期。
