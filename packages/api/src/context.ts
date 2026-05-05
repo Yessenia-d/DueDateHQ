@@ -13,12 +13,25 @@ export type CreateContextOptions = {
 };
 
 type AuthSession = NonNullable<Awaited<ReturnType<DueDateAuth["api"]["getSession"]>>>;
-
-export type SessionContext = AuthSession & {
-  firm: Awaited<ReturnType<typeof ensureFirmForUser>>;
+type Firm = Awaited<ReturnType<typeof ensureFirmForUser>>;
+type OfficialSourceMonitorTokenEnv = {
+  OFFICIAL_SOURCE_MONITOR_TOKEN?: string | null;
 };
 
-export async function createContext({ context }: CreateContextOptions) {
+export type SessionContext = AuthSession & {
+  firm: Firm;
+};
+
+export type Context = {
+  auth: DueDateAuth;
+  db: ReturnType<typeof createDb>;
+  firm: Firm | null;
+  session: SessionContext | null;
+  officialSourceMonitorRequestToken?: string | null;
+  officialSourceMonitorToken?: string | null;
+};
+
+export async function createContext({ context }: CreateContextOptions): Promise<Context> {
   const db = createDb(context.env.DB);
   const auth = createDueDateAuth({
     corsOrigin: String(context.env.CORS_ORIGIN ?? ""),
@@ -32,16 +45,17 @@ export async function createContext({ context }: CreateContextOptions) {
   const firm = session
     ? await ensureFirmForUser(context.env.DB, session.user)
     : null;
+  const monitorEnv = context.env as Partial<OfficialSourceMonitorTokenEnv>;
 
   return {
     auth,
     db,
     firm,
     session: session && firm ? { ...session, firm } : null,
+    officialSourceMonitorRequestToken: readMonitorRequestToken(context.req.raw.headers),
+    officialSourceMonitorToken: normalizeOptionalText(monitorEnv.OFFICIAL_SOURCE_MONITOR_TOKEN),
   };
 }
-
-export type Context = Awaited<ReturnType<typeof createContext>>;
 
 export const protectedProcedureGuard = requireFirmSession;
 
@@ -54,4 +68,22 @@ export function requireFirmSession(context: Pick<Context, "session">) {
   }
 
   return context.session;
+}
+
+function readMonitorRequestToken(headers: Headers) {
+  const explicitToken = normalizeOptionalText(headers.get("x-official-source-monitor-token"));
+  if (explicitToken) {
+    return explicitToken;
+  }
+
+  const authorization = normalizeOptionalText(headers.get("authorization"));
+  const bearerToken = /^Bearer\s+(.+)$/i.exec(authorization ?? "")?.[1];
+
+  return normalizeOptionalText(bearerToken);
+}
+
+function normalizeOptionalText(value: string | null | undefined) {
+  const normalized = value?.trim();
+
+  return normalized ? normalized : null;
 }

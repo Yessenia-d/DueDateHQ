@@ -347,3 +347,122 @@ export const deadlineTasksRouter = router({
 
 - Run `pnpm check-types`.
 - Add focused API tests near new routers once the test harness exists.
+
+## Scenario: Official Notice Monitor Backend
+
+### 1. Scope / Trigger
+
+- Trigger: official source monitoring crosses tRPC write procedures, platform
+  monitor authentication, AI extraction helpers, Drizzle monitoring tables, and
+  Cloudflare runtime env keys.
+- Use this pattern for monitor jobs that record official source checks and
+  notice candidates. The monitor may create source runs, snapshots, and notice
+  records, but it must not mutate CPA workspace deadline tasks or coverage
+  state.
+
+### 2. Signatures
+
+- API procedures:
+  `officialSources.list(): { sources }`,
+  `officialSources.getCheckRuns({ sourceId, limit? }): { checkRuns }`,
+  `officialSources.enqueueCheck({ sourceId }): { accepted, queued }`,
+  `officialSources.recordCheckResult(input): { checkRun, snapshot, notices }`,
+  and `officialNotices.listInternal(input?): { notices }`.
+- Monitor service:
+  `recordSourceCheckResult(db, input): Promise<SourceCheckResult>`.
+- Extraction service:
+  `extractOfficialNoticeImpactConditions(input): OfficialNoticeExtraction`.
+- DB tables:
+  `official_sources`, `source_snapshots`, `source_check_runs`, and
+  `official_notices`.
+- Env keys:
+  `OFFICIAL_SOURCE_MONITOR_TOKEN`, `OFFICIAL_NOTICE_AI_PROVIDER`,
+  `OFFICIAL_NOTICE_AI_MODEL`, and `OFFICIAL_NOTICE_AI_API_KEY`.
+
+### 3. Contracts
+
+- `officialSources.list` may be public because it exposes only the P0 official
+  source allowlist and monitor status metadata.
+- `officialSources.enqueueCheck` and `officialNotices.listInternal` require a
+  firm session via `requireFirmSession`.
+- `officialSources.recordCheckResult` requires the configured platform monitor
+  token from `x-official-source-monitor-token` or `Authorization: Bearer ...`.
+- `recordCheckResult` accepts only allowlisted source IDs and `success |
+  failed | skipped` statuses.
+- Successful check results require `contentHash` or `contentText`; failed or
+  skipped results require an error message.
+- Notice candidates are accepted only for successful checks.
+- High/medium confidence notices with local workspace-match hints become
+  `workspace_alert`; low confidence or unmatched notices stay
+  `internal_queue`.
+- AI extraction input is limited to official source metadata and official notice
+  title/summary/text; customer PII is not sent to the model by default.
+
+### 4. Validation & Error Matrix
+
+- Unknown `sourceId` -> `NOT_FOUND` with
+  `Official source is not in the supported allowlist.`
+- Missing firm session on `enqueueCheck` or `listInternal` -> `UNAUTHORIZED`.
+- Missing configured monitor token -> `FORBIDDEN`.
+- Wrong monitor request token -> `UNAUTHORIZED`.
+- `status = success` without `contentHash` or `contentText` -> `BAD_REQUEST`.
+- `status != success` with notice candidates -> `BAD_REQUEST`.
+- Failed/skipped check without `errorMessage` -> DB CHECK/test failure.
+- Duplicate `(source_id, notice_url)` notice -> update the notice while
+  preserving the existing `source_snapshot_id` unless the current check created
+  a new snapshot.
+
+### 5. Good/Base/Bad Cases
+
+- Good: a successful IRS check with changed content records a check run, source
+  snapshot, extracted notice conditions, confidence reasons, and alert
+  visibility without touching deadline tasks.
+- Good: a monitor worker calls `recordCheckResult` with a bearer token matching
+  `OFFICIAL_SOURCE_MONITOR_TOKEN`.
+- Base: a source check fails with an HTTP status and error message; the source
+  status updates and no notice is recorded.
+- Bad: a public caller can record check results without the platform token.
+- Bad: monitor code marks a tax rule `Verified` or edits a workspace deadline
+  task directly.
+
+### 6. Tests Required
+
+- API tests assert P0 allowlist listing and unsupported source rejection.
+- API tests assert `enqueueCheck` and `listInternal` reject unauthenticated
+  callers.
+- API tests assert monitor-token enforcement for `recordCheckResult`.
+- Service tests assert successful checks can create snapshots/notices and
+  failed/skipped checks cannot record notices.
+- DB tests assert monitoring tables, enum values, indexes, and CHECK
+  constraints exist.
+- Extraction tests assert explainable `high | medium | low` confidence labels
+  without percentage scores.
+- Schema work must run `pnpm check-types`, focused monitor/db tests, and
+  Drizzle generation against an isolated output directory when parallel schema
+  work is dirty.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```typescript
+export const officialSourcesRouter = router({
+  recordCheckResult: publicProcedure.mutation(({ ctx, input }) => {
+    return recordSourceCheckResult(ctx.db, input);
+  }),
+});
+```
+
+#### Correct
+
+```typescript
+export const officialSourcesRouter = router({
+  recordCheckResult: publicProcedure
+    .input(recordCheckResultSchema)
+    .mutation(({ ctx, input }) => {
+      requireOfficialSourceMonitorToken(ctx);
+
+      return recordSourceCheckResult(ctx.db, input);
+    }),
+});
+```

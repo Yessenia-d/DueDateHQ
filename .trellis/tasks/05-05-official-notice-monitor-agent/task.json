@@ -3,7 +3,7 @@
   "name": "official-notice-monitor-agent",
   "title": "Implement official notice monitor agent",
   "description": "Implement P0 official source monitoring, AI notice analysis, local matching, and monitor operations.",
-  "status": "planning",
+  "status": "in_progress",
   "dev_type": null,
   "scope": null,
   "package": "server",
