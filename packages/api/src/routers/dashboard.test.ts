@@ -14,12 +14,15 @@ function makeRow(overrides: Partial<DashboardTaskRow>): DashboardTaskRow {
     clientRelationship: {
       id: "client-base",
       displayName: "Base Client",
+      notes: "Call before filing.",
       relationshipType: "business",
     },
     filingProfile: {
       id: "profile-base",
       displayName: "Base profile",
+      ein: "12-3456789",
       entityType: "s_corp",
+      ssnLast4: null,
       states: ["CA"],
     },
     title: "Form 1120-S Filing",
@@ -78,12 +81,15 @@ test("dashboard filters by core CPA triage fields", () => {
       clientRelationship: {
         id: "client-ca",
         displayName: "California Client",
+        notes: null,
         relationshipType: "business",
       },
       filingProfile: {
         id: "profile-ca",
         displayName: "California S Corp",
+        ein: "12-3456789",
         entityType: "s_corp",
+        ssnLast4: null,
         states: ["CA"],
       },
       jurisdiction: "CA",
@@ -94,12 +100,15 @@ test("dashboard filters by core CPA triage fields", () => {
       clientRelationship: {
         id: "client-ny",
         displayName: "New York Client",
+        notes: "Waiting on organizer.",
         relationshipType: "business",
       },
       filingProfile: {
         id: "profile-ny",
         displayName: "New York LLC",
+        ein: "98-7654321",
         entityType: "llc",
+        ssnLast4: null,
         states: ["NY"],
       },
       title: "NY franchise tax payment",

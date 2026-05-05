@@ -95,12 +95,15 @@ export type DashboardTaskRow = {
   clientRelationship: {
     id: string;
     displayName: string;
+    notes: string | null;
     relationshipType: ClientRelationship["relationshipType"];
   };
   filingProfile: {
     id: string;
     displayName: string;
+    ein: string | null;
     entityType: FilingProfile["entityType"];
+    ssnLast4: string | null;
     states: string[];
   };
   title: string;
@@ -348,12 +351,15 @@ function createDashboardTaskRow({
     clientRelationship: {
       id: client.id,
       displayName: client.displayName,
+      notes: client.notes,
       relationshipType: client.relationshipType,
     },
     filingProfile: {
       id: profile.id,
       displayName: profile.displayName,
+      ein: profile.ein,
       entityType: profile.entityType,
+      ssnLast4: profile.ssnLast4,
       states: profile.states,
     },
     title: task.title,
@@ -683,8 +689,10 @@ export function createDashboardCsv(rows: DashboardTaskRow[]): string {
         row.priority,
         row.isExtended ? "Extended" : "",
         row.verificationStatus === "entered_deadline"
-          ? [ENTERED_DEADLINE_TRUST_LABEL, row.enteredDeadlineReferenceNote].filter(Boolean).join(" - ")
-          : "",
+          ? [row.clientRelationship.notes, ENTERED_DEADLINE_TRUST_LABEL, row.enteredDeadlineReferenceNote]
+              .filter(Boolean)
+              .join(" - ")
+          : (row.clientRelationship.notes ?? ""),
       ].map(csvCell).join(","),
     ),
   ];
