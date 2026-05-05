@@ -45,6 +45,9 @@ into tRPC context. `routers/index.ts` registers the app router and exports
 - API responses that expose deadline tasks must carry trust state clearly:
   verified, needs review, source changed, unsupported, coverage gap, or
   entered deadline.
+- Evidence responses for deadline tasks should expose field-level task update
+  history for status, due-date fields, and task-table notes in addition to
+  date-specific event history.
 - Notice proposal APIs must expose before/after diffs and never apply workspace
   mutations until approval.
 - IRS due-date adjustment logic must treat District of Columbia legal holidays

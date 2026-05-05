@@ -37,7 +37,8 @@ packages/db/drizzle.config.ts
 - Preserve the invariant that only verified tax rules create official deadline
   tasks.
 - Store event/audit history for official due-date changes, firm target date
-  changes, task status changes, import commits, and notice proposal decisions.
+  changes, task status changes, task-table notes changes, import commits, and
+  notice proposal decisions.
 - Do not silently overwrite current due-date state without a corresponding date
   event.
 
@@ -65,6 +66,9 @@ packages/db/drizzle.config.ts
 - `deadline_date_events`: `id`, `firm_id`, `deadline_task_id`, `event_type`,
   previous/new current due-date fields, previous/new firm target fields,
   source evidence fields, nullable `audit_log_id`, actor, timestamp, notes.
+- `deadline_task_update_records`: `id`, `firm_id`, `deadline_task_id`,
+  `field_name`, previous/new JSON values, action, nullable `audit_log_id`,
+  nullable actor, timestamp.
 - `audit_logs`: `id`, `firm_id`, actor/action/entity fields, before/after JSON,
   source metadata, timestamp.
 
@@ -84,6 +88,10 @@ packages/db/drizzle.config.ts
 - `deadline_date_events` is the append-only history for official original dates,
   official extensions, official relief changes, entered-deadline adjustments, and
   firm target changes.
+- `deadline_task_update_records` is the append-only field-level history for
+  task row status, due-date fields, and task-table notes. Notes currently come
+  from `client_relationships.notes`; when client notes change, write one update
+  record for each affected deadline task.
 - `audit_logs` must be reusable by task status changes, notice proposal
   decisions, import commits, and date-event changes.
 

@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/guides/due-date-hq-project-conventions.md", "reason": "Project-wide API, DB, UI, and verification conventions for implementation."}
+{"file": ".trellis/spec/db/backend/index.md", "reason": "Database schema and migration rules for deadline-domain tables and audit/event history."}
+{"file": ".trellis/spec/api/backend/index.md", "reason": "tRPC router and API validation contracts for task mutations and evidence responses."}
+{"file": ".trellis/spec/web/frontend/index.md", "reason": "Evidence drawer and web data-fetching conventions."}
+{"file": "specs/dashboard.md", "reason": "Dashboard evidence drawer, task status update, and date history product contract."}

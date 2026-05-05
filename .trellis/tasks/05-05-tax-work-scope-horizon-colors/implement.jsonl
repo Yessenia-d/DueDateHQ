@@ -1,0 +1,5 @@
+{"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python3 .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file": ".trellis/spec/guides/due-date-hq-project-conventions.md", "reason": "Project UI and product invariants for DueDateHQ frontend work"}
+{"file": ".trellis/spec/web/frontend/index.md", "reason": "Web route and frontend UX rules for apps/web"}
+{"file": ".trellis/spec/ui/frontend/index.md", "reason": "Shared UI component and visual system constraints"}
+{"file": "specs/dashboard.md", "reason": "Dashboard horizon semantics to mirror for Tax Work tab colors"}

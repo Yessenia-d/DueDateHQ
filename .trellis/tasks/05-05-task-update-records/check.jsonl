@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/guides/due-date-hq-project-conventions.md", "reason": "Project-wide verification and product invariants."}
+{"file": ".trellis/spec/db/backend/index.md", "reason": "Database schema, firm boundary, migration, and tests checklist."}
+{"file": ".trellis/spec/api/backend/index.md", "reason": "API response and mutation verification rules."}
+{"file": ".trellis/spec/web/frontend/index.md", "reason": "Frontend evidence drawer and date formatting checks."}
+{"file": "specs/dashboard.md", "reason": "Dashboard/evidence drawer acceptance criteria."}
