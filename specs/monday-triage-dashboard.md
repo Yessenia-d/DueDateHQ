@@ -7,25 +7,28 @@ Give solo or independent CPAs serving about 80 mixed individual and small-busine
 ## User Flow
 
 1. User logs in.
-2. User lands on the default dashboard grouped into `Due this week`, `This month`, and `Long range`.
+2. User lands on the default dashboard grouped into `Overdue`, `Due this week`, `This month`, and `Long range`.
 3. Within 30 seconds of opening after login, user sees all deadlines needing action this week with countdowns in days.
-4. User reviews due today, `Due this week`, `This month`, and `Long range`.
+4. User reviews overdue items, due today, `Due this week`, `This month`, and `Long range`.
 5. User filters and sorts tasks by client relationship, filing/tax profile, state, form/obligation type, entity type, tax type, task status, and verification status.
-6. User opens evidence for questionable dates.
-7. User one-click marks a deadline `Done`, `Extended`, `Waiting on client`, or `In progress`.
-8. User optionally sets or bulk-updates firm target dates for triage.
-9. User exports the current task view for workload review.
+6. User opens evidence drawer for date history and source details.
+7. User one-click marks a deadline `Done`, `Waiting on client`, or `In progress`.
+8. User marks a deadline as extended via a date action that records the new due date.
+9. User optionally sets or bulk-updates firm target dates for triage.
+10. User exports the current task view for workload review.
 
 ## Flow Diagram
 
 ```mermaid
 flowchart TD
-  A[Dashboard] --> B[Due this week]
+  A[Dashboard] --> AA[Overdue]
+  A --> B[Due this week]
   A --> C[This month]
   A --> D[Long range]
   A --> L[Due today urgency]
-  B --> E[Open evidence drawer]
   B --> F[Update task status]
+  B --> EX[Mark extended - date action]
+  B --> E[Open evidence drawer - date history and source]
   A --> G[Fast filters by client/state/form/entity/tax/status/verification]
   A --> O[Firm target date controls]
   A --> P[Light bulk operations]
@@ -68,13 +71,17 @@ Reads:
 - `official_sources`
 - `source_check_runs`
 
-Task statuses:
+Task statuses (work-progress):
 
 - `not_started`
 - `in_progress`
 - `waiting_on_client`
-- `extended`
 - `done`
+
+Derived date states (shown as badges, not statuses):
+
+- Extended: derived from `deadline_date_events` with `official_extension` type.
+- Overdue: derived from `currentDueDate < today AND status != done`.
 
 Task row fields:
 
@@ -84,13 +91,12 @@ Task row fields:
 - Jurisdiction/state.
 - Form/obligation type.
 - Tax category.
-- Current official due date.
-- Original due date.
+- Current due date (only this date is shown; original due date and date history are in the evidence drawer).
 - Optional firm target date.
-- Days remaining.
+- Days remaining (or days overdue).
 - Status.
 - Priority.
-- Extension status when supported.
+- Extended badge when applicable.
 - Verification badge.
 
 Source types:
@@ -131,12 +137,13 @@ File In Time supports weekly task views, status updates, extension flags, startu
 
 ## Acceptance Criteria
 
-- Dashboard groups tasks into three time horizons.
-- On login, the dashboard defaults to `Due this week`, `This month`, and `Long range`.
+- Dashboard groups tasks into four sections: `Overdue`, `Due this week`, `This month`, and `Long range`.
+- On login, the dashboard defaults to `Overdue`, `Due this week`, `This month`, and `Long range`.
 - Within 30 seconds of opening after login, a solo or independent CPA serving about 80 mixed individual and small-business clients across multiple states can see all deadlines needing action this week.
 - Due today, due this week, and due this month urgency is visible in the dashboard.
 - This-week task rows show a specific countdown in days.
-- Task row shows current official due date, optional firm target date, countdown, client relationship, filing/tax profile, jurisdiction, form/obligation type, tax category, task status, priority, and verification badge.
+- Task row shows current due date, optional firm target date, countdown (or days overdue), client relationship, filing/tax profile, jurisdiction, form/obligation type, tax category, task status, priority, extended badge, and verification badge.
+- The dashboard shows only the current due date on each task row. Original due date and date change history are accessible through the evidence drawer, not displayed inline.
 - Firm target date is clearly separated from official due date and never represented as official.
 - Filters and sorting cover date horizon, client relationship, filing/tax profile, jurisdiction/state, form/obligation type, entity type, tax type, task status, and verification status.
 - Core dashboard filters return updated results in `< 1 second` for Beta-sized solo CPA workspaces.
@@ -144,9 +151,10 @@ File In Time supports weekly task views, status updates, extension flags, startu
 - Verified tasks can open evidence drawer.
 - Source changed tasks show warning.
 - User-provided tasks show not verified label.
-- Verified extension or official relief/change date events and `extended` status are visible when supported by rule evidence.
-- Evidence drawer shows current due date, original due date, firm target date, and date event history.
-- Task status can be one-click marked `Done`, `Extended`, `Waiting on client`, or `In progress`.
+- Extension state is shown as a badge derived from date events, not as a task status. A task can be extended and simultaneously have any work-progress status.
+- Evidence drawer shows current due date, original due date, firm target date, and date event history including extensions, relief changes, and user adjustments.
+- Task work-progress status can be one-click marked `Done`, `Waiting on client`, or `In progress`.
+- A separate "Mark Extended" date action records the extension with a new due date and creates a `deadline_date_event` with `official_extension` type.
 - Bulk task status update, bulk firm target date update, and current filtered view export are supported.
 - Bulk official due-date edits are not supported.
 - The full weekly triage flow is completable within 5 minutes, compared with the current 30-45 minute spreadsheet/calendar workflow.

@@ -133,19 +133,31 @@ A product surface showing obligation and rule coverage across jurisdictions, age
 
 ### Monday Triage Dashboard
 
-The default working surface for CPAs. It prioritizes `Due this week`, `This month`, and `Long range` deadline sections, with filters by client, state, entity type, tax type, task status, and verification status.
+The default working surface for CPAs. It prioritizes `Overdue`, `Due this week`, `This month`, and `Long range` deadline sections, with filters by client, state, entity type, tax type, task status, and verification status.
 
 ### Task Status
 
-The operational status of a deadline task. Beta statuses are `Not started`, `In progress`, `Waiting on client`, `Extended`, and `Done`.
+The operational work-progress status of a deadline task. Beta statuses are `Not started`, `In progress`, `Waiting on client`, and `Done`. Extension handling is a separate date concept, not a work-progress status.
 
 ### Waiting on client
 
 A task status for work blocked on client-provided information, documents, decisions, or payment. It is distinct from `In progress` and from extension/date handling.
 
-### Extended
+### Extended (date state)
 
-A task status or date-handling state indicating extension handling is active for the task. It is not the only work-progress concept and must not replace `In progress`, `Waiting on client`, or `Done`.
+A derived date state indicating the task's due date has been changed via an official extension. Extended is not a task status; it is determined from `Deadline Date Event` records with `official_extension` type. A task can be extended and simultaneously have any work-progress status such as `Waiting on client` or `In progress`.
+
+### Overdue
+
+A derived date state indicating the task's current due date has passed and the task is not done. Overdue tasks appear in a dedicated dashboard section above `Due this week`.
+
+### Due Date Rule
+
+A structured rule attached to a tax rule that defines how to calculate due dates. Beta supports fixed-date rules, quarterly rules, and extension date rules. The rule includes weekend/holiday adjustment. A pure function `calculateDueDate(rule, taxYear, fiscalYearEnd?)` interprets the rule and returns concrete dates.
+
+### Task Generation Window
+
+The time range for which deadline tasks are generated from verified tax rules. The window covers the current tax year plus the next tax year. Tasks with due dates before today are generated and marked overdue so the CPA can triage them. Tasks for prior tax years are not generated.
 
 ### Feature Progress Page
 
@@ -159,3 +171,4 @@ A product and review surface that shows which Beta capabilities are complete, pa
 - Do not treat source monitoring as automatic tax rule publication. Monitoring creates candidates; humans publish verified rules.
 - Do not treat official notice analysis as automatic workspace mutation. Notice impact proposals require CPA confirmation before changes are applied.
 - Do not imply complete verified 50-state coverage in Beta. Show supported coverage, unsupported items, needs-review states, and coverage gaps explicitly.
+- Do not treat `Extended` as a task work-progress status. Extension is a date state derived from date events; work-progress statuses are `Not started`, `In progress`, `Waiting on client`, and `Done`.

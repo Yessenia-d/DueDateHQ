@@ -28,10 +28,10 @@ DueDateHQ should not merely borrow isolated ideas from File In Time. For core CP
 | CSV import | Delimited-file preview, header handling, drag/drop mapping, review before commit, duplicate resolution | Better with source-specific client/profile adapters for TaxDome, Drake, Karbon, and QuickBooks, automatic recognition for client name/EIN/state/entity type when present or confidently inferred, non-blocking review suggestions, CPA-confirmed relationship suggestions, and duplicate handling |
 | Obligation/service setup | Services define work type, frequency, due dates, and extension dates | Map services to tax obligations and verified tax rules while separating known, verified, needs-review, unsupported, and user-provided items |
 | Task generation | Assign services to clients to create due-date tasks | Generate official tasks only from Verified rules; show unsupported or needs-review obligations without pretending they are official deadlines |
-| Monday triage | Task view can be filtered to this week | Better with first-class `Due this week`, `This month`, and `Long range` sections by default, all this-week work visible within 30 seconds after login, and a 5-minute triage target |
+| Monday triage | Task view can be filtered to this week | Better with first-class `Overdue`, `Due this week`, `This month`, and `Long range` sections by default, all this-week work visible within 30 seconds after login, and a 5-minute triage target |
 | Filters and sorting | Date, client, type, service, status, key person, and saved views | Match core filters by horizon, client, jurisdiction/state, form/obligation type, entity type, tax type, task status, and verification status; advanced saved views can wait |
-| Task status | Status codes, dates, notes, extension flag | Match simple operational status with `Not started`, `In progress`, `Waiting on client`, `Extended`, and `Done`, plus source/trust badges |
-| Extensions and date changes | Service-supported extension dates and extension state | Track current due date, original due date, optional firm target date, and date event history for official extensions, official relief/change, user-provided adjustments, and firm target changes; keep extension form printing out |
+| Task status | Status codes, dates, notes, extension flag | Match simple work-progress status with `Not started`, `In progress`, `Waiting on client`, and `Done`, plus an `Extended` badge derived from date events so extension and work status are independent |
+| Extensions and date changes | Service-supported extension dates and extension state | Track current due date, original due date, optional firm target date, and date event history for official extensions, official relief/change, user-provided adjustments, and firm target changes; dashboard shows only the current due date with date history in the evidence drawer; keep extension form printing out |
 | Recurrence/upcoming tasks | Manual rollover creates the next period's tasks | Better by generating upcoming official tasks from maintained Verified rules, with no manual rollover for official recurring deadlines |
 | Exports | Excel/task view export and printed reports | Match practical dashboard/task export for workload sharing and review; skip Crystal Reports-style builders |
 | Bulk operations | Batch status, due date, target date, extension, and notes changes | Support light bulk task status updates, firm target date updates, and current-filter export; do not support bulk official due-date edits |
@@ -81,12 +81,13 @@ As a solo or independent CPA serving about 80 mixed individual and small-busines
 Acceptance:
 
 - Persona is a solo or independent CPA serving about 80 mixed individual and small-business clients across multiple states.
-- After login, the default dashboard groups deadlines into `Due this week`, `This month`, and `Long range`.
+- After login, the default dashboard groups deadlines into `Overdue`, `Due this week`, `This month`, and `Long range`.
 - Within 30 seconds of opening after login, the CPA can see all deadlines needing action this week.
-- This-week items show a specific countdown in days.
+- This-week items show a specific countdown in days. Overdue items show days past due.
+- The dashboard shows only the current due date on each task row. Original due date and date change history are accessible through the evidence drawer.
 - Fast filters respond by client, state, form/obligation type, entity type, tax type, task status, and verification status.
 - Core dashboard filters target `< 1 second` response for Beta-sized solo CPA workspaces.
-- Each deadline supports one-click status marking for `Done`, `Extended`, `Waiting on client`, and `In progress`; `Not started` remains the default unworked state.
+- Each deadline supports one-click status marking for `Done`, `Waiting on client`, and `In progress`; `Not started` remains the default unworked state. Extension is a separate date action that records a new due date and shows an "Extended" badge.
 - Optional firm target dates help triage but are never presented as official due dates.
 - Smart priority sorting highlights the most urgent this-week work first; Beta can use deterministic rule-based priority rather than live AI.
 - The full weekly triage flow can be completed within 5 minutes, compared with the current 30-45 minute spreadsheet/calendar workflow.
@@ -105,7 +106,7 @@ Acceptance:
 - Fuzzy or missing fields receive intelligent, non-blocking suggestions and uncertain rows enter review instead of blocking the whole import.
 - Import can suggest likely relationships between individuals and businesses, but never auto-merges them; the CPA confirms.
 - Import review and final summary are grouped by filing/tax profile and problem type, with plain-language counts for ready profiles, generated verified tasks, profile review items, and coverage gaps.
-- After import, matching Verified tax rules immediately generate each ready filing/tax profile's full-year deadline calendar/tasks.
+- After import, matching Verified tax rules immediately generate each ready filing/tax profile's deadline tasks for the current tax year plus the next tax year. Tasks with due dates before today are shown as overdue.
 - Unsupported, coverage-gap, and needs-review obligations are visible but not scheduled as official confirmed deadlines.
 - Related P0 capabilities include CSV import, field mapping, calendar/task auto-generation, entity type recognition/review, and intelligent field matching.
 
@@ -291,6 +292,7 @@ The main working surface for CPAs.
 
 Sections:
 
+- `Overdue`.
 - `Due this week`.
 - `This month`.
 - `Long range`.
@@ -300,19 +302,19 @@ Each task row includes:
 - Client relationship and filing/tax profile.
 - Obligation.
 - Jurisdiction.
-- Due date.
-- Days remaining.
+- Current due date (only this date; original due date and date history are in the evidence drawer).
+- Days remaining or days overdue.
 - Task status.
-- Current official due date, original due date, and optional firm target date.
-- Extension status when supported by verified evidence.
+- Optional firm target date.
+- Extended badge when applicable (derived from date events).
 - Verification badge.
-- Source evidence action.
+- Evidence drawer action.
 
 Dashboard controls must support filters and sorting by due horizon, client relationship, filing/tax profile, jurisdiction/state, form/obligation type, entity type, tax type, task status, and verification status. Dashboard urgency surfaces should make due today, due this week, and due this month visible without adding external reminder channels in Beta. A basic dashboard/task export supports CPA workload sharing and review outside the app. Product-specific task export is not a general Beta promise; Karbon work-item export is the only plausible optional target from researched official docs, while TaxDome, Drake, and QuickBooks remain source client/profile import targets unless later official task-import schemas are confirmed.
 
 Core filters should update in `< 1 second` for Beta-sized solo CPA workspaces. The default priority sort should place this-week work first using deterministic factors such as official due date, firm target date, days remaining, verification warning state, extension state, and unfinished task status; Beta does not require live AI to satisfy smart priority sorting.
 
-Beta task statuses include `Not started`, `In progress`, `Waiting on client`, `Extended`, and `Done`. Light bulk operations support bulk task status updates, bulk firm target date updates, and bulk export of the current filtered view. Bulk official due-date edits are out of scope.
+Beta task work-progress statuses include `Not started`, `In progress`, `Waiting on client`, and `Done`. Extension is a derived date state shown as a badge, not a work-progress status; a task can be extended and simultaneously have any work-progress status. Light bulk operations support bulk task status updates, bulk firm target date updates, and bulk export of the current filtered view. Bulk official due-date edits are out of scope.
 
 ### Feature Progress Page
 
@@ -456,11 +458,11 @@ Mitigation:
 
 - A CPA can register, import or manually enter clients, and see deadline tasks.
 - A solo or independent CPA serving about 80 mixed individual and small-business clients can open the product after login and see all deadlines needing action this week within 30 seconds.
-- A CPA can complete weekly triage within 5 minutes using `Due this week`, `This month`, `Long range`, countdowns in days, one-click `Done`/`Extended`/`Waiting on client`/`In progress` status marking, fast filters, and smart deterministic priority sorting.
+- A CPA can complete weekly triage within 5 minutes using `Overdue`, `Due this week`, `This month`, `Long range`, countdowns in days, one-click `Done`/`Waiting on client`/`In progress` status marking, a mark-extended date action, fast filters, and smart deterministic priority sorting.
 - A CPA migrating from TaxDome can import 30 clients within 30 minutes at `P95 <= 30 minutes for a 30-client import`, with Drake, Karbon, and QuickBooks CSV exports also supported.
 - Import automatically recognizes client name, EIN, state, and entity type when present or confidently inferred; fuzzy or missing fields get non-blocking suggestions and review rows.
 - A CPA can understand why a verified deadline exists and where it came from.
-- After import, matching Verified rules generate full-year deadline calendar/tasks immediately; needs-review, coverage-gap, and unsupported obligations stay visible but not official confirmed deadlines.
+- After import, matching Verified rules generate deadline tasks for the current tax year plus the next tax year immediately; tasks with due dates before today are shown as overdue; needs-review, coverage-gap, and unsupported obligations stay visible but not official confirmed deadlines.
 - The product clearly marks unverified, source-changed, unsupported, and user-provided items.
 - The system design supports 24h official source/notice change detection without auto-publishing unreviewed rules or automatically mutating CPA workspace data.
 - Official Notice Monitor supports the P0 source allowlist, explainable confidence gates, in-app-only alerts, before/after diffs, CPA confirmation, proposal statuses, and audit logging.

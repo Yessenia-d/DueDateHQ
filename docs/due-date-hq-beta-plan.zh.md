@@ -35,11 +35,11 @@ DueDateHQ 维护透明税务义务与覆盖库，在 24 小时检测窗口内监
 每周申报季分诊：
 
 - Persona：服务约 80 个混合个人与小企业多州客户的 solo/independent CPA。
-- 登录后，默认 dashboard 打开 `本周到期`、`本月预警`、`长期计划`。
+- 登录后，默认 dashboard 打开 `逾期`、`本周到期`、`本月预警`、`长期计划`。
 - 登录并打开产品后 30 秒内，CPA 能看到本周所有需要行动的截止日期。
-- 本周行显示具体剩余天数倒计时。
+- 本周行显示具体剩余天数倒计时。逾期行显示已过期天数。
 - 快速核心筛选覆盖客户、州、表单/义务类型、实体类型、税种、任务状态和核验状态；Beta 规模 solo CPA workspace 的目标响应时间为 `< 1 second`。
-- 每个截止日期可一键标记为 `已完成`、`已延期`、`Waiting on client` 或 `进行中`。
+- 每个截止日期可一键标记为 `已完成`、`Waiting on client` 或 `进行中`。延期是独立的日期操作，记录新截止日期。
 - Task workflow 也支持 `Waiting on client`，但 Beta 不加入 client portal、document upload、document checklist automation、e-signature 或 direct end-client notifications。
 - 每周分诊流程可在 5 分钟内完成，对比当前 30-45 分钟的表格/日历流程。
 - 智能优先级排序是 P0，Beta 阶段可以用确定性规则优先级实现。
@@ -55,7 +55,7 @@ DueDateHQ 维护透明税务义务与覆盖库，在 24 小时检测窗口内监
 - 模糊或缺失字段获得智能、非阻塞建议，不确定行进入 review，不阻塞整个导入。
 - CSV import 可以建议个人与企业之间的潜在关系，但不能自动合并；CPA 必须确认 relationship suggestions。
 - Import review 和结果 summary 按 filing/tax profile 和 problem type 分组，而不是按每个 generated task。
-- 导入后，如果存在匹配的 Verified rules，立即为每个 ready filing/tax profile 生成全年 deadline calendar/tasks。
+- 导入后，如果存在匹配的 Verified rules，立即为每个 ready filing/tax profile 生成当前税年和下一税年的 deadline tasks。已过期的 tasks 标记为逾期。
 - Needs-review、coverage-gap 和 unsupported obligations 保持可见，但不是官方已确认截止日期。
 - 相关 P0 能力包括 CSV import、field mapping、calendar/task auto-generation、entity type auto-recognition 和 intelligent field matching。
 
@@ -76,6 +76,7 @@ Needs review、Source changed 和 Unsupported 规则必须透明展示，
 但不能被当作已确认截止日期。
 Coverage gaps 必须可见且可操作：request DueDateHQ verification、add user-provided deadline、ignore/dismiss for now。
 Firm target dates 是规划信息，不是 official due dates。
+延期是从 date events 派生的日期状态，不是工作进度状态。一个任务可以同时处于延期状态和任意工作进度状态。
 ```
 
 ## 文档

@@ -29,10 +29,10 @@ DueDateHQ 不应该只是零散借鉴 File In Time 的几个想法。对于 CPA 
 | CSV import | Delimited-file preview、header handling、drag/drop mapping、commit 前 review、duplicate resolution | 通过 TaxDome、Drake、Karbon、QuickBooks 来源专属 client/profile adapters 做得更好，在字段存在或可高置信推断时自动识别 client name/EIN/state/entity type，提供非阻塞 review suggestions、CPA-confirmed relationship suggestions，并处理 duplicates |
 | Obligation/service setup | Services 定义 work type、frequency、due dates 和 extension dates | 将 services 映射为 tax obligations 和 verified tax rules，同时区分 known、verified、needs-review、unsupported 和 user-provided items |
 | Task generation | 将 services 分配给 clients 来创建 due-date tasks | 只有 Verified rules 生成官方任务；unsupported 或 needs-review obligations 可见，但不能伪装成官方截止日期 |
-| Monday triage | Task view 可以过滤到 this week | 默认提供一等公民的 `本周到期`、`本月预警`、`长期计划` 分区，登录后 30 秒内看到所有本周工作，并以 5 分钟完成分诊为目标 |
+| Monday triage | Task view 可以过滤到 this week | 默认提供一等公民的 `逾期`、`本周到期`、`本月预警`、`长期计划` 分区，登录后 30 秒内看到所有本周工作，并以 5 分钟完成分诊为目标 |
 | Filters and sorting | Date、client、type、service、status、key person 和 saved views | 覆盖 horizon、client、jurisdiction/state、form/obligation type、entity type、tax type、task status、verification status 核心过滤；advanced saved views 可以后置 |
-| Task status | Status codes、dates、notes、extension flag | 用 `Not started`、`进行中` (`In progress`)、`Waiting on client`、`已延期` (`Extended`)、`已完成` (`Done`) 覆盖简单运营状态，并附带 source/trust badges |
-| Extensions and date changes | Service-supported extension dates 和 extension state | 跟踪 current due date、original due date、可选 firm target date，以及 official extensions、official relief/change、user-provided adjustments 和 firm target changes 的 date event history；extension form printing 不进入 Beta |
+| Task status | Status codes、dates、notes、extension flag | 用 `Not started`、`进行中` (`In progress`)、`Waiting on client`、`已完成` (`Done`) 覆盖简单工作进度状态，并附带从 date events 派生的 `Extended` badge，使延期与工作状态独立 |
+| Extensions and date changes | Service-supported extension dates 和 extension state | 跟踪 current due date、original due date、可选 firm target date，以及 official extensions、official relief/change、user-provided adjustments 和 firm target changes 的 date event history；extension form printing 不进入 Beta；dashboard 只显示 current due date，date history 在 evidence drawer 中 |
 | Recurrence/upcoming tasks | 手动 rollover 创建下一周期任务 | 由维护过的 Verified rules 生成 upcoming official tasks，official recurring deadlines 不需要手动 rollover |
 | Exports | Excel/task view export 和 printed reports | 支持实用 dashboard/task export，用于 workload sharing 和 review；不做 Crystal Reports-style builders |
 | Bulk operations | Batch status、due date、target date、extension 和 notes changes | 支持轻量 bulk task status updates、firm target date updates 和 current-filter export；不支持 bulk official due-date edits |
@@ -82,12 +82,14 @@ DueDateHQ 必须更好的地方：
 验收标准：
 
 - Persona 是服务约 80 个混合个人与小企业多州客户的 solo/independent CPA。
-- 登录后，默认 dashboard 将截止日期分为 `本周到期`、`本月预警`、`长期计划`。
+- 登录后，默认 dashboard 将截止日期分为 `逾期`、`本周到期`、`本月预警`、`长期计划`。
 - 登录并打开产品后 30 秒内，CPA 能看到本周所有需要行动的截止日期。
 - 本周项目显示具体剩余天数倒计时。
+- 逾期项目显示已过期天数。
+- Dashboard 每行任务只显示 current due date。原始到期日和日期变更记录通过 evidence drawer 查看。
 - 快速筛选支持按客户、州、表单/义务类型、实体类型、税种、任务状态和核验状态过滤。
 - 核心 dashboard 筛选在 Beta 规模 solo CPA workspace 内目标响应时间为 `< 1 second`。
-- 每个截止日期支持一键状态标记：`已完成`、`已延期`、`Waiting on client`、`进行中`；`Not started` 保留为默认未开始状态。
+- 每个截止日期支持一键状态标记：`已完成`、`Waiting on client`、`进行中`；`Not started` 保留为默认未开始状态。延期是独立的日期操作，记录新截止日期并显示 "Extended" badge。
 - 可选 firm target dates 帮助 triage，但绝不展示为 official due dates。
 - 智能优先级排序将最紧急的本周工作排在前面；Beta 阶段可以用确定性规则优先级实现，不要求实时 AI。
 - 完整每周分诊流程可在 5 分钟内完成，对比当前 30-45 分钟的表格/日历流程。
@@ -106,7 +108,7 @@ DueDateHQ 必须更好的地方：
 - 模糊或缺失字段获得智能、非阻塞建议，不确定行进入 review，而不是阻塞整个导入。
 - Import 可以建议个人与企业之间的潜在关系，但绝不自动合并；CPA 必须确认。
 - Import review 和最终 summary 按 filing/tax profile 与 problem type 分组，用平实语言展示 ready profiles、generated verified tasks、profile review items 和 coverage gaps。
-- 导入后，当存在匹配的 Verified tax rules 时，立即生成每个 ready filing/tax profile 的全年 deadline calendar/tasks。
+- 导入后，当存在匹配的 Verified tax rules 时，立即生成每个 ready filing/tax profile 当前税年和下一税年的 deadline tasks。已过期的 tasks 标记为逾期。
 - Unsupported、Coverage gap 和 Needs review 义务可见，但不会作为官方已确认截止日期被安排。
 - 相关 P0 能力包括 CSV import、field mapping、calendar/task auto-generation、entity type recognition/review 和 intelligent field matching。
 
@@ -294,6 +296,7 @@ CPA 的主要工作台。
 
 分区：
 
+- `逾期`。
 - `本周到期`。
 - `本月预警`。
 - `长期计划`。
@@ -303,19 +306,19 @@ CPA 的主要工作台。
 - Client relationship 和 filing/tax profile。
 - 义务。
 - 管辖区。
-- 到期日。
-- 剩余天数。
+- 当前到期日（只显示此日期；原始到期日和日期变更历史在 evidence drawer 中）。
+- 剩余天数或逾期天数。
 - 任务状态。
-- Current official due date、original due date 和可选 firm target date。
-- 当 verified evidence 支持时展示 extension status。
+- 可选 firm target date。
+- 适用时展示 Extended badge（从 date events 派生）。
 - 核验 badge。
-- 来源证据入口。
+- Evidence drawer 入口。
 
 Dashboard controls 必须支持按 due horizon、client relationship、filing/tax profile、jurisdiction/state、form/obligation type、entity type、tax type、task status 和 verification status 过滤/排序。Dashboard urgency surfaces 应该在 Beta 阶段先展示 due today、due this week、due this month，而不是加入外部 reminder channels。基础 dashboard/task export 支持 CPA 在系统外分享和复核 workload。Product-specific task export 不是通用 Beta 承诺；从已调研的官方文档看，Karbon work-item export 是唯一较可信的 optional target，而 TaxDome、Drake、QuickBooks 在 P0 中仍作为 source client/profile import targets，除非后续确认官方 task-import schemas。
 
 核心筛选在 Beta 规模 solo CPA workspaces 内应以 `< 1 second` 更新。默认 priority sort 应根据 official due date、firm target date、days remaining、verification warning state、extension state 和 unfinished task status 等确定性因素，将本周工作排在前面；Beta 不需要实时 AI 来满足 smart priority sorting。
 
-Beta task statuses 包含 `Not started`、`In progress`、`Waiting on client`、`Extended`、`Done`。轻量 bulk operations 支持 bulk task status updates、bulk firm target date updates 和 bulk export current filtered view。不支持 bulk official due-date edits。
+Beta 工作进度状态包含 `Not started`、`In progress`、`Waiting on client`、`Done`。延期是从 date events 派生的日期状态，显示为 badge，不是工作进度状态；一个任务可以同时处于延期状态和任意工作进度状态。轻量 bulk operations 支持 bulk task status updates、bulk firm target date updates 和 bulk export current filtered view。不支持 bulk official due-date edits。
 
 ### Feature Progress Page
 
@@ -460,11 +463,11 @@ User imports or manually enters at least 10 clients and completes one Monday tri
 
 - CPA 可以注册、导入或手动录入客户，并看到截止日期任务。
 - 服务约 80 个混合个人与小企业客户的 solo/independent CPA 登录并打开产品后，能在 30 秒内看到本周所有需要行动的截止日期。
-- CPA 可在 5 分钟内完成每周分诊，依靠 `本周到期`、`本月预警`、`长期计划`、按天倒计时、一键 `已完成`/`已延期`/`Waiting on client`/`进行中` 状态标记、快速筛选和确定性智能优先级排序。
+- CPA 可在 5 分钟内完成每周分诊，依靠 `逾期`、`本周到期`、`本月预警`、`长期计划`、按天倒计时、一键 `已完成`/`Waiting on client`/`进行中` 状态标记、延期日期操作、快速筛选和确定性智能优先级排序。
 - 从 TaxDome 迁移的 CPA 可在 30 分钟内导入 30 个客户，指标为 `P95 <= 30 minutes for a 30-client import`，同时支持 Drake、Karbon、QuickBooks CSV 导出。
 - 导入在字段存在或可高置信推断时自动识别 client name、EIN、state 和 entity type；模糊或缺失字段获得非阻塞建议并进入 review rows。
 - CPA 可以理解一个 Verified 截止日期为什么存在、来自哪里。
-- 导入后，匹配的 Verified rules 立即生成全年 deadline calendar/tasks；needs-review、coverage-gap 和 unsupported obligations 保持可见，但不是官方已确认截止日期。
+- 导入后，匹配的 Verified rules 立即生成当前税年和下一税年的 deadline tasks；已过期的 tasks 标记为逾期；needs-review、coverage-gap 和 unsupported obligations 保持可见，但不是官方已确认截止日期。
 - 产品清楚标注未核验、来源变化、暂不支持和用户手动录入项。
 - 系统设计支持 24 小时官方来源/notice 变化检测，且不会自动发布未审核规则或自动修改 CPA workspace data。
 - Official Notice Monitor 支持 P0 source allowlist、可解释 confidence gates、in-app-only alerts、before/after diffs、CPA confirmation、proposal statuses 和 audit logging。

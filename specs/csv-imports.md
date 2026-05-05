@@ -2,7 +2,7 @@
 
 ## Goal
 
-Let CPAs import client relationships and filing/tax profiles from TaxDome, Drake, Karbon, and QuickBooks CSV exports, preview rows, review field mapping, resolve likely duplicates, confirm suggested individual/business relationships, fix missing fields, and create official full-year deadline tasks only when imported profiles match Verified tax rules. The P0 migration target is a CPA completing a 30-client import within 30 minutes.
+Let CPAs import client relationships and filing/tax profiles from TaxDome, Drake, Karbon, and QuickBooks CSV exports, preview rows, review field mapping, resolve likely duplicates, confirm suggested individual/business relationships, fix missing fields, and create official current-plus-next-year deadline tasks only when imported profiles match Verified tax rules. The P0 migration target is a CPA completing a 30-client import within 30 minutes.
 
 ## User Flow
 
@@ -17,7 +17,7 @@ Let CPAs import client relationships and filing/tax profiles from TaxDome, Drake
 9. User reviews uncertain rows, duplicate candidates, and relationship suggestions.
 10. User commits import.
 11. System creates client relationships and filing/tax profiles.
-12. System generates each profile's full-year official deadline calendar/tasks only from verified tax rules.
+12. System generates each profile's current-plus-next-year official deadline calendar/tasks only from verified tax rules.
 13. User sees a profile/problem grouped import summary and can open dashboard.
 
 ## Flow Diagram
@@ -43,7 +43,7 @@ flowchart TD
   S --> I
   I --> J[Create relationships and profiles]
   J --> K[Match verified tax rules]
-  K --> L[Create full-year official deadline tasks]
+  K --> L[Create current-plus-next-year official deadline tasks]
   L --> M[Show grouped import result]
 ```
 
@@ -67,7 +67,7 @@ flowchart TD
 
 - `imports.commit`
   - Input: batch id, reviewed row corrections, duplicate resolutions, and accepted/rejected relationship suggestions.
-  - Output: ready profile count, created/updated client relationship count, updated/skipped duplicate count, created full-year deadline task count, profile review item count, needs-review obligation count, coverage-gap count, unsupported obligation count.
+  - Output: ready profile count, created/updated client relationship count, updated/skipped duplicate count, created current-plus-next-year deadline task count, profile review item count, needs-review obligation count, coverage-gap count, unsupported obligation count.
 
 ## Data Model
 
@@ -174,8 +174,10 @@ File In Time treats import as a review workflow, not a blind upload. DueDateHQ m
 - Header detection and mapping preview are visible before commit.
 - Likely duplicate clients are shown with field differences and a user-selected resolution.
 - Import commit creates client relationships and filing/tax profiles.
-- After import, matching Verified rules immediately generate each filing/tax profile's full-year deadline calendar/tasks.
+- After import, matching Verified rules immediately generate deadline tasks for the current tax year plus the next tax year. Tasks with due dates before today are generated and shown as overdue so the CPA can triage them.
 - Only verified rules generate official deadline tasks.
+- Matching uses `jurisdiction × entityType`: the system combines `["federal"] + profile.states` as jurisdictions and matches against obligations containing the profile's entity type.
+- Multi-state profiles match independently per state.
 - Needs-review, coverage-gap, and unsupported obligations remain visible but are not official confirmed deadlines.
 - Related P0 capabilities include CSV import, field mapping, calendar/task auto-generation, entity type auto-recognition, and intelligent field matching.
 - Import summary explains ready profiles, generated verified tasks, profile review items, needs-review items, coverage gaps, and unsupported obligations in plain language.

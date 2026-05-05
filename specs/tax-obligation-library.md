@@ -60,11 +60,32 @@ flowchart TD
 
 - Verified or unverified rules attached to obligations.
 - Filing/payment/extension marker.
-- Recurrence pattern when the rule is recurring.
-- Upcoming generation horizon.
-- Current due date calculation rule.
-- Original due date preservation rule.
-- Extension or relief date rule when official evidence supports date changes.
+- `dueDateRule`: structured JSON defining how to calculate due dates. See Due Date Rule Format in the technical plan.
+- Extension or relief date rule when official evidence supports date changes (stored as `extensionRule` within `dueDateRule`).
+
+Due date rule types supported in Beta:
+
+- `fixed`: a specific month and day, with optional weekend/holiday adjustment.
+- `quarterly`: per-quarter month and day, with optional `yearOffset` for Q4.
+- `extensionRule`: optional field on any rule defining the extended due date.
+
+`relative_to_fiscal_year_end` rules are deferred to P1.
+
+## Profile to Rule Matching
+
+When a filing profile is created or imported, the system matches it against verified tax rules to generate deadline tasks.
+
+1. Determine jurisdictions: `["federal"] + profile.states`.
+2. Find matching obligations where `jurisdiction` is in the profile's jurisdictions and `entityTypes` contains the profile's entity type.
+3. Find verified rules for each matched obligation.
+4. Calculate due dates using `calculateDueDate(rule.dueDateRule, taxYear)`.
+5. Create deadline tasks with a composite uniqueness check on `(filingProfileId, taxRuleId, taxYear, quarter?)`.
+
+Multi-state profiles match independently per state. Beta matches on `jurisdiction × entityType` only.
+
+## Task Generation Window
+
+Tasks are generated for the current tax year plus the next tax year. Tasks with due dates before today are generated and marked overdue. Tasks for prior tax years are not generated. On first login after a new tax year, the system generates next-year tasks if missing.
 
 ## Competitor Parity Notes
 

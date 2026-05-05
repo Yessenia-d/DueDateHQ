@@ -60,11 +60,32 @@ flowchart TD
 
 - 绑定到 obligations 的已核验或未核验规则。
 - Filing/payment/extension marker。
-- 规则 recurring 时的 recurrence pattern。
-- Upcoming generation horizon。
-- Current due date calculation rule。
-- Original due date preservation rule。
-- 官方证据支持 date changes 时的 extension 或 relief date rule。
+- `dueDateRule`：定义如何计算到期日的结构化 JSON。详见技术方案中的 Due Date Rule Format。
+- 官方证据支持 date changes 时的 extension 或 relief date rule（在 `dueDateRule` 中以 `extensionRule` 存储）。
+
+Beta 支持的到期日规则类型：
+
+- `fixed`：指定月份和日期，可选周末/节假日调整。
+- `quarterly`：按季度的月份和日期，可选 Q4 `yearOffset`。
+- `extensionRule`：任何规则上的可选字段，定义延期后的到期日。
+
+`relative_to_fiscal_year_end` 规则推迟到 P1。
+
+## Profile to Rule Matching
+
+当 filing profile 创建或导入时，系统将其与 verified tax rules 匹配以生成 deadline tasks。
+
+1. 确定管辖区：`["federal"] + profile.states`。
+2. 查找匹配的 obligations，其中 `jurisdiction` 在 profile 的管辖区列表中，且 `entityTypes` 包含 profile 的 entity type。
+3. 为每个匹配的 obligation 查找 verified rules。
+4. 使用 `calculateDueDate(rule.dueDateRule, taxYear)` 计算到期日。
+5. 使用 `(filingProfileId, taxRuleId, taxYear, quarter?)` 复合唯一性检查创建 deadline tasks。
+
+多州 profiles 按州独立匹配。Beta 仅按 `jurisdiction × entityType` 匹配。
+
+## Task Generation Window
+
+Tasks 为当前税年加下一税年生成。到期日在今天之前的 tasks 生成后标记为逾期。不生成更早税年的 tasks。新税年首次登录时，系统自动生成缺失的下一年 tasks。
 
 ## Competitor Parity Notes
 

@@ -173,7 +173,7 @@ Primary UI copy should say `Filing profile` or `Tax profile`. Internal implement
 - `originalDueDate`
 - `firmTargetDate` nullable
 - `recurrenceKey`
-- `status`: `not_started | in_progress | waiting_on_client | extended | done`
+- `status`: `not_started | in_progress | waiting_on_client | done`
 - `priority`
 - `sourceType`: `verified_rule | user_provided`
 - `userProvidedSourceNote`
@@ -310,6 +310,105 @@ Primary UI copy should say `Filing profile` or `Tax profile`. Internal implement
 - `priority`
 - `updatedAt`
 
+## Due Date Rule Format
+
+`tax_rules.dueDateRule` is a structured JSON object that defines how to calculate due dates. A pure function `calculateDueDate(rule, taxYear, fiscalYearEnd?)` interprets the rule and returns concrete dates.
+
+Beta supports three rule types:
+
+Fixed date:
+
+```jsonc
+{
+  "type": "fixed",
+  "month": 4,
+  "day": 15,
+  "adjustForWeekendHoliday": true
+}
+```
+
+Quarterly:
+
+```jsonc
+{
+  "type": "quarterly",
+  "quarters": {
+    "Q1": { "month": 4, "day": 15 },
+    "Q2": { "month": 6, "day": 15 },
+    "Q3": { "month": 9, "day": 15 },
+    "Q4": { "month": 1, "day": 15, "yearOffset": 1 }
+  },
+  "adjustForWeekendHoliday": true
+}
+```
+
+Extension date (optional field on any rule):
+
+```jsonc
+{
+  "type": "fixed",
+  "month": 4,
+  "day": 15,
+  "adjustForWeekendHoliday": true,
+  "extensionRule": {
+    "month": 10,
+    "day": 15,
+    "adjustForWeekendHoliday": true
+  }
+}
+```
+
+When `adjustForWeekendHoliday` is true, dates falling on a weekend or federal holiday shift to the next business day. Beta uses a hardcoded federal holiday list; state-level holidays are out of scope.
+
+`relative_to_fiscal_year_end` rules are deferred to P1. Most solo CPA clients are calendar-year filers.
+
+## Profile to Rule Matching
+
+When a filing profile is created or imported, the system matches it against verified tax rules to generate deadline tasks.
+
+Matching steps:
+
+1. Determine jurisdictions: `["federal"] + profile.states`.
+2. Find matching obligations: `tax_obligations WHERE jurisdiction IN (jurisdictions) AND entityTypes CONTAINS profile.entityType AND knownStatus != 'planned'`.
+3. Find verified rules: `tax_rules WHERE obligationId = matched_obligation.id AND verificationStatus = 'verified'`.
+4. For each verified rule, calculate due dates using `calculateDueDate(rule.dueDateRule, taxYear)` and create `deadline_tasks`.
+
+Constraints:
+
+- One `(filingProfileId, taxRuleId, taxYear, quarter?)` combination produces exactly one task. A composite uniqueness check prevents duplicates.
+- Multi-state profiles match independently per state. A profile with `states: ["CA", "NY"]` generates tasks for federal, CA, and NY obligations separately.
+- Beta matches on `jurisdiction × entityType` only. Fine-grained `taxCategory` filtering is deferred.
+
+Estimated scale: a typical S-corp in one state generates approximately 12 tasks per year (federal filing + extension + quarterly estimated × 4 + state equivalents). For 80 clients, expect roughly 960 tasks.
+
+## Task Generation Window
+
+The system generates tasks for the current tax year plus the next tax year.
+
+Rules:
+
+- Tasks with due dates before today are generated and shown as overdue so the CPA can triage them.
+- Tasks for tax years before the current year are not generated.
+- Quarterly rules generate tasks for all quarters within the window.
+- On first login after a new tax year begins, the system checks whether next-year tasks have been generated and creates them if missing.
+
+Example: if today is 2026-05-05, the generation window covers 2026 and 2027. A 1040 filing due 2026-04-15 is generated and marked overdue. A 1040 filing due 2027-04-15 is generated normally.
+
+## Seed Data
+
+Beta requires a minimum viable set of verified tax rules before either P0 user story can succeed. Without seed data, imported clients produce no tasks and the dashboard is empty.
+
+Minimum viable rule set:
+
+- IRS federal: 1040, 1120, 1120-S, 1065, 1041 filing and extension rules, plus quarterly estimated tax (Form 1040-ES, 1120-W).
+- California FTB: 540, 100, 100S, 565 filing and extension rules, plus quarterly estimated tax.
+
+Format: seed rules are stored as a migration or fixture file containing `tax_obligations` and `tax_rules` rows with `verificationStatus = 'verified'`, `dueDateRule` JSON, and official source URLs.
+
+Entity type coverage: `individual`, `s_corp`, `c_corp`, `partnership`, `sole_prop`.
+
+This seed set covers the two P0 states (federal + California) and the five core entity types. Additional states and obligations are added incrementally.
+
 ## API Surface
 
 All business APIs require an authenticated session.
@@ -327,7 +426,7 @@ Imports:
   - Treats TaxDome and Karbon custom fields, Drake low-confidence headers, and QuickBooks accounting-contact fields as review-first mapping inputs when tax identity, filing state, entity type, or fiscal-year meaning is uncertain.
 - `imports.commit`
   - Commits accepted rows, reviewed row corrections, duplicate resolutions, and accepted/rejected relationship suggestions.
-  - Generates full-year official deadline tasks immediately only when matching `verified` rules exist.
+  - Generates official deadline tasks for the current tax year plus the next tax year immediately only when matching `verified` rules exist. Tasks with due dates before today are marked overdue.
   - Returns a plain-language import summary grouped by filing/tax profile and problem type: ready profiles, generated verified tasks, profile review items, needs-review counts, coverage gaps, and unsupported obligation counts.
 
 Manual entry:
@@ -394,7 +493,7 @@ Progress:
 - Weekly triage is completable within 5 minutes, compared with the current 30-45 minute spreadsheet/calendar workflow.
 - A CPA migrating from TaxDome can complete a 30-client import within 30 minutes; measurable target is `P95 <= 30 minutes for a 30-client import`.
 - Import review is non-blocking at the batch level: fuzzy or missing fields route uncertain rows to review while accepted rows and duplicate resolutions can continue toward commit.
-- Deadline generation preserves the trust invariant: only `verified` tax rules create official full-year deadline tasks; needs-review, coverage-gap, and unsupported obligations stay visible but are not official confirmed deadlines.
+- Deadline generation preserves the trust invariant: only `verified` tax rules create official deadline tasks for the current tax year plus next tax year; needs-review, coverage-gap, and unsupported obligations stay visible but are not official confirmed deadlines.
 - Official Notice Monitor alerts are in-app only and never mutate workspace data until the CPA approves before/after diffs.
 
 ## Source Monitoring Architecture
@@ -515,10 +614,12 @@ Manual deadlines:
 
 Date rules:
 
-- `deadline_tasks.currentDueDate` is the current official or user-provided task date used for work planning.
+- `deadline_tasks.currentDueDate` is the current official or user-provided task date used for work planning. The dashboard shows only this date; it does not show original and current dates side by side.
 - `deadline_tasks.originalDueDate` preserves the original official due date where one exists.
 - `deadline_tasks.firmTargetDate` is optional firm planning metadata and must not be displayed as an official due date.
 - `deadline_date_events` backs the Evidence drawer and records official extensions, official relief/change, user-provided adjustments, and firm target changes.
+- Extension state is derived, not stored as a task status. A task is considered extended when `deadline_date_events` contains an `official_extension` event. The dashboard shows an "Extended" badge alongside the task's work-progress status.
+- Overdue state is derived. A task is overdue when `currentDueDate < today AND status != done`.
 
 ## Deployment Plan
 
@@ -537,7 +638,7 @@ Deployment order:
 2. Apply D1 migration.
 3. Deploy Worker API.
 4. Deploy frontend.
-5. Seed initial feature progress items and representative tax source data.
+5. Seed minimum viable verified tax rules (IRS federal + California FTB core obligations) and feature progress items.
 6. Verify external URL flows.
 
 ## Test Plan
@@ -547,8 +648,8 @@ Automated:
 - Type check.
 - Build.
 - API tests for imports, manual deadlines, verification rules, and source monitoring services.
-- Import tests covering TaxDome, Drake, Karbon, and QuickBooks CSV fixtures, auto-mapping for client name/EIN/state/entity type when present or confidently inferred, review rows for fuzzy or missing fields, and Verified-only full-year task generation.
-- Dashboard tests covering default horizon grouping, countdown in days, core filter coverage, one-click `done`/`extended`/`waiting_on_client`/`in_progress` status updates, and deterministic priority sorting.
+- Import tests covering TaxDome, Drake, Karbon, and QuickBooks CSV fixtures, auto-mapping for client name/EIN/state/entity type when present or confidently inferred, review rows for fuzzy or missing fields, Verified-only task generation within the current-plus-next-year window, and overdue task handling.
+- Dashboard tests covering default horizon grouping including overdue, countdown in days, core filter coverage, one-click `done`/`waiting_on_client`/`in_progress` status updates, mark-extended date action, and deterministic priority sorting.
 
 Manual:
 
@@ -560,7 +661,7 @@ Manual:
 - Confirm fuzzy or missing import fields produce non-blocking suggestions and do not block the whole batch.
 - Manually create client and deadline.
 - Confirm only verified rules create official tasks.
-- Confirm imported clients with matching Verified rules receive full-year deadline calendar/tasks immediately, while needs-review and unsupported obligations stay visible but not official.
+- Confirm imported clients with matching Verified rules receive deadline tasks for the current tax year plus the next tax year immediately, with past-due tasks shown as overdue, while needs-review and unsupported obligations stay visible but not official.
 - Confirm source changed rule cannot create new official task.
 - Confirm verified recurring obligations generate upcoming tasks without manual rollover.
 - Confirm dashboard opens after login with `Due this week`, `This month`, and `Long range`; this-week work is visible within 30 seconds and shows countdowns in days.
@@ -586,3 +687,5 @@ Manual:
 - Do not expose internal tax-subject terminology in primary UI copy.
 - Do not hide user-provided deadlines from dashboard, but clearly mark them.
 - Keep user-facing copy explicit about Beta data coverage.
+- Do not treat extension as a task work-progress status. Extension is a derived date state from date events.
+- Do not show original and current due dates side by side on dashboard task rows. Show only the current due date; date history belongs in the evidence drawer.

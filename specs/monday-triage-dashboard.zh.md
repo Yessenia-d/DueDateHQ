@@ -7,25 +7,28 @@
 ## User Flow
 
 1. 用户登录。
-2. 用户进入默认 dashboard，分区为 `本周到期`、`本月预警`、`长期计划`。
+2. 用户进入默认 dashboard，分区为 `逾期`、`本周到期`、`本月预警`、`长期计划`。
 3. 登录并打开产品后 30 秒内，用户看到本周所有需要行动的截止日期，并显示按天倒计时。
-4. 用户查看 due today、`本周到期`、`本月预警`、`长期计划`。
+4. 用户查看逾期项目、due today、`本周到期`、`本月预警`、`长期计划`。
 5. 用户按 client relationship、filing/tax profile、州、表单/义务类型、实体类型、税种、任务状态和核验状态筛选并排序任务。
 6. 用户为可疑日期打开 evidence。
-7. 用户一键将截止日期标记为 `已完成`、`已延期`、`Waiting on client` 或 `进行中`。
-8. 用户可选设置或批量更新 firm target dates 用于 triage。
-9. 用户导出当前 task view 进行 workload review。
+7. 用户一键将截止日期标记为 `已完成`、`Waiting on client` 或 `进行中`。
+8. 用户通过日期操作将截止日期标记为已延期，记录新到期日。
+9. 用户可选设置或批量更新 firm target dates 用于 triage。
+10. 用户导出当前 task view 进行 workload review。
 
 ## Flow Diagram
 
 ```mermaid
 flowchart TD
-  A[Dashboard] --> B[本周到期]
+  A[Dashboard] --> AA[逾期]
+  A --> B[本周到期]
   A --> C[本月预警]
   A --> D[长期计划]
   A --> L[今日到期 urgency]
-  B --> E[Open evidence drawer]
   B --> F[Update task status]
+  B --> EX[Mark extended - 日期操作]
+  B --> E[Open evidence drawer - date history and source]
   A --> G[Fast filters by client/state/form/entity/tax/status/verification]
   A --> O[Firm target date controls]
   A --> P[Light bulk operations]
@@ -68,13 +71,17 @@ flowchart TD
 - `official_sources`
 - `source_check_runs`
 
-Task statuses：
+Task statuses（工作进度）：
 
 - `not_started`
 - `in_progress`
 - `waiting_on_client`
-- `extended`
 - `done`
+
+派生日期状态（显示为 badge，不是 status）：
+
+- Extended：从 `deadline_date_events` 中 `official_extension` 类型派生。
+- 逾期：从 `currentDueDate < today AND status != done` 派生。
 
 Task row fields：
 
@@ -84,13 +91,12 @@ Task row fields：
 - Jurisdiction/state。
 - Form/obligation type。
 - Tax category。
-- Current official due date。
-- Original due date。
+- 当前到期日（只显示此日期；原始到期日和日期变更历史在 evidence drawer 中）。
 - Optional firm target date。
-- Days remaining。
+- 剩余天数（或逾期天数）。
 - Status。
 - Priority。
-- 支持时显示 extension status。
+- 适用时展示 Extended badge。
 - Verification badge。
 
 Source types：
@@ -131,12 +137,13 @@ File In Time 支持 weekly task views、status updates、extension flags、start
 
 ## Acceptance Criteria
 
-- Dashboard 将任务分为三个时间区间。
-- 登录后，dashboard 默认分区为 `本周到期`、`本月预警`、`长期计划`。
+- Dashboard 将任务分为四个区间：`逾期`、`本周到期`、`本月预警`、`长期计划`。
+- 登录后，dashboard 默认分区为 `逾期`、`本周到期`、`本月预警`、`长期计划`。
 - 登录并打开产品后 30 秒内，服务约 80 个混合个人与小企业多州客户的 solo/independent CPA 能看到本周所有需要行动的截止日期。
 - Dashboard 内可见 due today、due this week、due this month urgency。
 - 本周 task row 显示具体剩余天数倒计时。
-- Task row 显示 current official due date、可选 firm target date、countdown、client relationship、filing/tax profile、jurisdiction、form/obligation type、tax category、task status、priority、verification badge。
+- Task row 显示 current due date、可选 firm target date、countdown（或逾期天数）、client relationship、filing/tax profile、jurisdiction、form/obligation type、tax category、task status、priority、extended badge、verification badge。
+- Dashboard 每行只显示当前到期日。原始到期日和日期变更历史通过 evidence drawer 访问，不在行内显示。
 - Firm target date 与 official due date 明确分离，绝不作为 official 展示。
 - Filters 和 sorting 覆盖 date horizon、client relationship、filing/tax profile、jurisdiction/state、form/obligation type、entity type、tax type、task status 和 verification status。
 - 核心 dashboard filters 在 Beta 规模 solo CPA workspaces 内返回更新结果的目标时间为 `< 1 second`。
@@ -144,9 +151,10 @@ File In Time 支持 weekly task views、status updates、extension flags、start
 - Verified tasks 可以打开 evidence drawer。
 - Source changed tasks 显示 warning。
 - User-provided tasks 显示 not verified label。
-- Rule evidence 支持时，verified extension 或 official relief/change date events 和 `extended` status 可见。
-- Evidence drawer 显示 current due date、original due date、firm target date 和 date event history。
-- Task status 可以一键标记为 `已完成`、`已延期`、`Waiting on client` 或 `进行中`。
+- Extension 状态显示为从 date events 派生的 badge，不是 task status。一个 task 可以同时处于 extended 状态和任意工作进度状态。
+- Evidence drawer 显示 current due date、original due date、firm target date 和 date event history，包括 extensions、relief changes 和 user adjustments。
+- Task 工作进度状态可以一键标记为 `已完成`、`Waiting on client` 或 `进行中`。
+- 单独的 "Mark Extended" 日期操作记录延期及新到期日，并创建 `deadline_date_event`（`official_extension` 类型）。
 - 支持 bulk task status update、bulk firm target date update 和 current filtered view export。
 - 不支持 bulk official due-date edits。
 - 完整每周分诊流程可在 5 分钟内完成，对比当前 30-45 分钟的表格/日历流程。

@@ -2,7 +2,7 @@
 
 ## Goal
 
-让 CPA 从 TaxDome、Drake、Karbon、QuickBooks CSV 导出中导入 client relationships 和 filing/tax profiles，preview rows、review 字段映射、处理 likely duplicates、确认个人/企业 relationship suggestions、修正缺失字段，并且只在导入 profiles 匹配 Verified tax rules 时创建官方全年 deadline tasks。P0 迁移目标是 CPA 在 30 分钟内完成 30-client import。
+让 CPA 从 TaxDome、Drake、Karbon、QuickBooks CSV 导出中导入 client relationships 和 filing/tax profiles，preview rows、review 字段映射、处理 likely duplicates、确认个人/企业 relationship suggestions、修正缺失字段，并且只在导入 profiles 匹配 Verified tax rules 时创建官方当前税年加下一税年 deadline tasks。P0 迁移目标是 CPA 在 30 分钟内完成 30-client import。
 
 ## User Flow
 
@@ -17,7 +17,7 @@
 9. 用户 review 不确定行、duplicate candidates 和 relationship suggestions。
 10. 用户提交导入。
 11. 系统创建 client relationships 和 filing/tax profiles。
-12. 系统只根据 verified tax rules 创建每个 profile 的全年官方 deadline calendar/tasks。
+12. 系统只根据 verified tax rules 创建每个 profile 的当前税年加下一税年的官方 deadline tasks。
 13. 用户看到按 profile/problem 分组的导入摘要并可打开 dashboard。
 
 ## Flow Diagram
@@ -43,7 +43,7 @@ flowchart TD
   S --> I
   I --> J[Create relationships and profiles]
   J --> K[Match verified tax rules]
-  K --> L[Create full-year official deadline tasks]
+  K --> L[Create current+next year deadline tasks]
   L --> M[Show grouped import result]
 ```
 
@@ -67,7 +67,7 @@ flowchart TD
 
 - `imports.commit`
   - 输入：batch id、已修正行、duplicate resolutions，以及 accepted/rejected relationship suggestions。
-  - 输出：ready profile count、created/updated client relationship count、updated/skipped duplicate count、创建全年 deadline task 数、profile review item count、needs-review 义务数、coverage-gap 数、unsupported 义务数。
+  - 输出：ready profile count、created/updated client relationship count、updated/skipped duplicate count、当前税年加下一税年 deadline task 数、profile review item count、needs-review 义务数、coverage-gap 数、unsupported 义务数。
 
 ## Data Model
 
@@ -174,8 +174,10 @@ File In Time 把 import 当作 review workflow，而不是盲目 upload。DueDat
 - Header detection 和 mapping preview 在 commit 前可见。
 - Likely duplicate clients 展示 field differences，并由用户选择处理方式。
 - Import commit 创建 client relationships 和 filing/tax profiles。
-- 导入后，匹配的 Verified rules 立即生成每个 filing/tax profile 的全年 deadline calendar/tasks。
+- 导入后，匹配的 Verified rules 立即生成每个 filing/tax profile 当前税年加下一税年的 deadline tasks。已过期 tasks 标记为逾期。
 - 只有 verified rules 生成官方 deadline tasks。
+- 匹配使用 `jurisdiction × entityType`：系统将 `["federal"] + profile.states` 作为管辖区列表，与包含 profile entity type 的义务匹配。
+- 多州 profiles 按州独立匹配。
 - Needs-review、coverage-gap 和 unsupported obligations 保持可见，但不是官方已确认截止日期。
 - 相关 P0 能力包括 CSV import、field mapping、calendar/task auto-generation、entity type auto-recognition 和 intelligent field matching。
 - 导入摘要用平实语言解释 ready profiles、generated verified tasks、profile review items、needs-review items、coverage gaps 和 unsupported obligations。

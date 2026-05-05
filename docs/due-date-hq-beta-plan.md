@@ -34,11 +34,11 @@ Competitor framing: DueDateHQ Beta should reach parity or better with the useful
 Weekly filing-season triage:
 
 - Persona: solo or independent CPA with about 80 mixed individual and small-business clients across multiple states.
-- On login, the default dashboard opens to `Due this week`, `This month`, and `Long range`.
+- On login, the default dashboard opens to `Overdue`, `Due this week`, `This month`, and `Long range`.
 - Within 30 seconds of opening after login, the CPA can see every deadline needing action this week.
-- This-week rows show a specific countdown in days.
+- This-week rows show a specific countdown in days. Overdue rows show days past due.
 - Fast core filters cover client, state, form/obligation type, entity type, tax type, task status, and verification status, with a `< 1 second` response target for Beta-sized solo CPA workspaces.
-- Each deadline can be one-click marked `Done`, `Extended`, `Waiting on client`, or `In progress`.
+- Each deadline can be one-click marked `Done`, `Waiting on client`, or `In progress`. Extension is a separate date action that records a new due date.
 - Task workflow also supports `Waiting on client`, without adding a client portal, document upload, document checklist automation, e-signature, or direct end-client notifications in Beta.
 - The weekly triage flow is completable within 5 minutes versus the current 30-45 minute spreadsheet/calendar workflow.
 - Smart priority sorting is P0 and may be deterministic rule-based priority in Beta.
@@ -54,7 +54,7 @@ TaxDome/import 30 clients:
 - Fuzzy or missing fields receive intelligent, non-blocking suggestions and uncertain rows go to review without blocking the full import.
 - CSV import can suggest possible relationships between individuals and businesses, but must not auto-merge them; the CPA confirms relationship suggestions.
 - Import review and result summaries are grouped by filing/tax profile and problem type, not by every generated task.
-- After import, each ready filing/tax profile's full-year deadline calendar/tasks are generated immediately when matching Verified rules exist.
+- After import, each ready filing/tax profile's deadline tasks for the current tax year plus the next tax year are generated immediately when matching Verified rules exist. Tasks with due dates before today are shown as overdue.
 - Needs-review, coverage-gap, and unsupported obligations stay visible but are not official confirmed deadlines.
 - Related P0 capabilities include CSV import, field mapping, calendar/task auto-generation, entity type auto-recognition, and intelligent field matching.
 
@@ -66,6 +66,7 @@ User-provided deadlines can appear in the user's workspace, but must be marked a
 Needs review, Source changed, and Unsupported rules must be transparent but cannot be treated as confirmed deadlines.
 Coverage gaps must be visible and actionable: request DueDateHQ verification, add a user-provided deadline, or ignore/dismiss for now.
 Firm target dates are planning metadata, not official due dates.
+Extension is a date state derived from date events, not a work-progress status. A task can be extended and have any work-progress status simultaneously.
 ```
 
 ## Documents

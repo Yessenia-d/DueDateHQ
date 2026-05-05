@@ -70,6 +70,8 @@ Manual deadlines 使用 `deadline_tasks.sourceType = user_provided`，不是 tax
 
 Unsupported、needs-review、source-changed、manual 和 user-provided items 必须对用户透明，但不能被呈现为 verified official deadlines。
 
+延期处理与核验状态和任务工作进度状态分离。延期是从 `deadline_date_events` 中 `official_extension` 类型派生的日期状态。任务的工作进度状态（`not_started`、`in_progress`、`waiting_on_client`、`done`）与到期日是否被延期无关。
+
 Firm target dates 不属于 official rule verification。它们可以出现在 Evidence 中作为规划上下文，但绝不能和 official due dates 混淆。
 
 ## Status Rules

@@ -70,6 +70,8 @@ Manual deadlines use `deadline_tasks.sourceType = user_provided` and are not tax
 
 Unsupported, needs-review, source-changed, manual, and user-provided items must remain transparent to the user, but they must not be presented as verified official deadlines.
 
+Extension handling is separate from verification status and task work-progress status. Extension is a derived date state from `deadline_date_events` with `official_extension` type. A task's work-progress status (`not_started`, `in_progress`, `waiting_on_client`, `done`) is independent of whether its due date has been extended.
+
 Firm target dates are not part of official rule verification. They can appear in Evidence for planning context, but must never be confused with official due dates.
 
 ## Status Rules

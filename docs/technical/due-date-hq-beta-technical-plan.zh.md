@@ -173,7 +173,7 @@ Client relationship -> Filing/Tax profile -> Deadline task
 - `originalDueDate`
 - `firmTargetDate` nullable
 - `recurrenceKey`
-- `status`: `not_started | in_progress | waiting_on_client | extended | done`
+- `status`: `not_started | in_progress | waiting_on_client | done`
 - `priority`
 - `sourceType`: `verified_rule | user_provided`
 - `userProvidedSourceNote`
@@ -310,6 +310,105 @@ Client relationship -> Filing/Tax profile -> Deadline task
 - `priority`
 - `updatedAt`
 
+## 到期日规则格式
+
+`tax_rules.dueDateRule` 是结构化 JSON 对象，定义如何计算到期日。纯函数 `calculateDueDate(rule, taxYear, fiscalYearEnd?)` 解释规则并返回具体日期。
+
+Beta 支持三种规则类型：
+
+固定日期：
+
+```jsonc
+{
+  "type": "fixed",
+  "month": 4,
+  "day": 15,
+  "adjustForWeekendHoliday": true
+}
+```
+
+季度：
+
+```jsonc
+{
+  "type": "quarterly",
+  "quarters": {
+    "Q1": { "month": 4, "day": 15 },
+    "Q2": { "month": 6, "day": 15 },
+    "Q3": { "month": 9, "day": 15 },
+    "Q4": { "month": 1, "day": 15, "yearOffset": 1 }
+  },
+  "adjustForWeekendHoliday": true
+}
+```
+
+延期日期（任何规则的可选字段）：
+
+```jsonc
+{
+  "type": "fixed",
+  "month": 4,
+  "day": 15,
+  "adjustForWeekendHoliday": true,
+  "extensionRule": {
+    "month": 10,
+    "day": 15,
+    "adjustForWeekendHoliday": true
+  }
+}
+```
+
+当 `adjustForWeekendHoliday` 为 true 时，落在周末或联邦假日的日期顺延到下一个工作日。Beta 使用硬编码联邦假日列表；州级假日不在范围内。
+
+`relative_to_fiscal_year_end` 规则推迟到 P1。大多数 solo CPA 客户是 calendar year filer。
+
+## Profile 到 Rule 的匹配逻辑
+
+当 filing profile 被创建或导入时，系统将其与 verified tax rules 匹配以生成 deadline tasks。
+
+匹配步骤：
+
+1. 确定管辖区列表：`["federal"] + profile.states`。
+2. 查找匹配义务：`tax_obligations WHERE jurisdiction IN (jurisdictions) AND entityTypes CONTAINS profile.entityType AND knownStatus != 'planned'`。
+3. 查找 verified rules：`tax_rules WHERE obligationId = matched_obligation.id AND verificationStatus = 'verified'`。
+4. 对每个 verified rule，使用 `calculateDueDate(rule.dueDateRule, taxYear)` 计算到期日并创建 `deadline_tasks`。
+
+约束：
+
+- 一个 `(filingProfileId, taxRuleId, taxYear, quarter?)` 组合只生成一个 task。联合唯一检查防止重复。
+- 多州 profiles 按州独立匹配。`states: ["CA", "NY"]` 的 profile 分别匹配 federal、CA 和 NY 的义务。
+- Beta 只按 `jurisdiction × entityType` 匹配。细粒度 `taxCategory` 筛选推迟。
+
+预估规模：一个典型单州 S-corp 每年约生成 12 个 tasks（联邦申报 + 延期 + 季度估算税 × 4 + 州对应项）。80 个客户约 960 个 tasks。
+
+## 任务生成窗口
+
+系统为当前税年加下一税年生成 tasks。
+
+规则：
+
+- 已过期的 tasks（到期日早于今天）仍然生成，并标记为逾期，以便 CPA 分诊。
+- 不生成当前税年之前的 tasks。
+- 季度规则在窗口内为所有季度生成 tasks。
+- 新税年首次登录时，系统检查下一税年 tasks 是否已生成，如缺失则创建。
+
+示例：如果今天是 2026-05-05，生成窗口覆盖 2026 和 2027。1040 申报到期日 2026-04-15 会生成并标记为逾期。1040 申报到期日 2027-04-15 正常生成。
+
+## 种子数据
+
+Beta 需要一组最小可用的 verified tax rules，否则两个 P0 用户故事都无法成功。没有种子数据，导入的客户不会产生任务，dashboard 将是空的。
+
+最小可用规则集：
+
+- IRS 联邦：1040、1120、1120-S、1065、1041 申报和延期规则，加上季度估算税（Form 1040-ES、1120-W）。
+- California FTB：540、100、100S、565 申报和延期规则，加上季度估算税。
+
+格式：种子规则以 migration 或 fixture 文件存储，包含 `tax_obligations` 和 `tax_rules` 行，`verificationStatus = 'verified'`、`dueDateRule` JSON 和官方来源 URL。
+
+实体类型覆盖：`individual`、`s_corp`、`c_corp`、`partnership`、`sole_prop`。
+
+此种子集覆盖两个 P0 州（联邦 + California）和五种核心实体类型。其他州和义务增量添加。
+
 ## API 表面
 
 所有业务 API 都需要认证 session。
@@ -327,7 +426,7 @@ Imports：
   - 当 tax identity、filing state、entity type 或 fiscal-year 含义不确定时，将 TaxDome/Karbon custom fields、Drake low-confidence headers 和 QuickBooks accounting-contact fields 作为 review-first mapping inputs 处理。
 - `imports.commit`
   - 提交 accepted rows、已修正行、duplicate resolutions，以及 accepted/rejected relationship suggestions。
-  - 仅当存在匹配的 `verified` rules 时，立即生成全年官方 deadline tasks。
+  - 仅当存在匹配的 `verified` rules 时，立即生成当前税年加下一税年的官方 deadline tasks。已过期 tasks 标记为逾期。
   - 返回按 filing/tax profile 和 problem type 分组的平实 import summary：ready profiles、generated verified tasks、profile review items、needs-review counts、coverage gaps 和 unsupported obligation counts。
 
 Manual entry：
@@ -348,7 +447,9 @@ Dashboard：
 - `dashboard.bulkExportCurrentFilteredView`
   - 对当前筛选结果使用同一 generic task-view CSV contract。
 - `tasks.updateStatus`
-  - 支持一键标记 `done`、`extended`、`waiting_on_client` 和 `in_progress`。
+  - 支持一键标记 `done`、`waiting_on_client` 和 `in_progress`。
+- `tasks.markExtended`
+  - 记录延期日期操作，创建 `deadline_date_event` with `official_extension` type，更新 `currentDueDate`。
 - `tasks.bulkUpdateStatus`
 - `tasks.updateFirmTargetDate`
 - `tasks.bulkUpdateFirmTargetDate`
@@ -394,7 +495,7 @@ Progress：
 - 每周分诊可在 5 分钟内完成，对比当前 30-45 分钟的表格/日历流程。
 - 从 TaxDome 迁移的 CPA 可在 30 分钟内完成 30-client import；可衡量目标是 `P95 <= 30 minutes for a 30-client import`。
 - Import review 在 batch 层面非阻塞：模糊或缺失字段将不确定行送入 review，同时 accepted rows 和 duplicate resolutions 可以继续走向 commit。
-- Deadline generation 保持信任不变量：只有 `verified` tax rules 创建官方全年 deadline tasks；needs-review、coverage-gap 和 unsupported obligations 保持可见，但不是官方已确认截止日期。
+- Deadline generation 保持信任不变量：只有 `verified` tax rules 创建当前税年加下一税年的官方 deadline tasks；needs-review、coverage-gap 和 unsupported obligations 保持可见，但不是官方已确认截止日期。
 - Official Notice Monitor alerts 只在产品内，并且在 CPA approve before/after diffs 前不得修改 workspace data。
 
 ## 来源监听架构
@@ -517,10 +618,12 @@ P0 官方来源 allowlist 和范围：
 
 日期规则：
 
-- `deadline_tasks.currentDueDate` 是用于工作规划的当前官方或 user-provided task date。
+- `deadline_tasks.currentDueDate` 是用于工作规划的当前官方或 user-provided task date。Dashboard 只显示此日期；不同时展示 original 和 current 两个日期。
 - `deadline_tasks.originalDueDate` 保存原始 official due date（如果存在）。
 - `deadline_tasks.firmTargetDate` 是可选 firm planning metadata，不得展示为 official due date。
 - `deadline_date_events` 支撑 Evidence drawer，记录 official extensions、official relief/change、user-provided adjustments 和 firm target changes。
+- 延期状态是派生值，不是 task status 字段。当 `deadline_date_events` 中存在 `official_extension` 类型事件时，任务被视为已延期。Dashboard 显示 "Extended" badge 附在工作进度状态旁边。
+- 逾期状态是派生值。当 `currentDueDate < today AND status != done` 时，任务为逾期。
 
 ## 部署计划
 
@@ -539,7 +642,7 @@ P0 官方来源 allowlist 和范围：
 2. 应用 D1 migration。
 3. 部署 Worker API。
 4. 部署前端。
-5. Seed 初始 feature progress items 和代表性税务来源数据。
+5. Seed 最小可用 verified tax rules（IRS 联邦 + California FTB 核心义务）和 feature progress items。
 6. 验证外部 URL 流程。
 
 ## 测试计划
@@ -549,8 +652,8 @@ P0 官方来源 allowlist 和范围：
 - 类型检查。
 - 构建。
 - API tests：imports、manual deadlines、verification rules、source monitoring services。
-- Import tests 覆盖 TaxDome、Drake、Karbon、QuickBooks CSV fixtures，字段存在或可高置信推断时的 client name/EIN/state/entity type 自动映射，模糊或缺失字段 review rows，以及 Verified-only 全年 task generation。
-- Dashboard tests 覆盖默认时间分组、按天倒计时、核心筛选范围、一键 `done`/`extended`/`waiting_on_client`/`in_progress` 状态更新，以及确定性 priority sorting。
+- Import tests 覆盖 TaxDome、Drake、Karbon、QuickBooks CSV fixtures，字段存在或可高置信推断时的 client name/EIN/state/entity type 自动映射，模糊或缺失字段 review rows，以及 Verified-only 当前税年加下一税年窗口内的 task generation 和逾期 task 处理。
+- Dashboard tests 覆盖默认时间分组（含逾期）、按天倒计时、核心筛选范围、一键 `done`/`waiting_on_client`/`in_progress` 状态更新、mark-extended 日期操作，以及确定性 priority sorting。
 
 手动：
 
@@ -562,10 +665,10 @@ P0 官方来源 allowlist 和范围：
 - 确认模糊或缺失 import fields 会产生非阻塞建议，并且不会阻塞整个 batch。
 - 手动创建客户和截止日期。
 - 确认只有 verified rules 创建官方任务。
-- 确认有匹配 Verified rules 的导入客户会立即获得全年 deadline calendar/tasks，同时 needs-review 和 unsupported obligations 保持可见但不是官方任务。
+- 确认有匹配 Verified rules 的导入客户会立即获得当前税年加下一税年的 deadline tasks，已过期 tasks 标记为逾期，同时 needs-review 和 unsupported obligations 保持可见但不是官方任务。
 - 确认 source changed rule 不会创建新的官方任务。
 - 确认 verified recurring obligations 不需要 manual rollover 就能生成 upcoming tasks。
-- 确认 dashboard 登录后默认打开 `本周到期`、`本月预警`、`长期计划`；本周工作在 30 秒内可见，并显示按天倒计时。
+- 确认 dashboard 登录后默认打开 `逾期`、`本周到期`、`本月预警`、`长期计划`；本周工作在 30 秒内可见，并显示按天倒计时。
 - 确认 dashboard filters/sorting、extension status、urgency surfaces、smart priority sorting 和 export 可用。
 - 确认 task statuses 包含 `waiting_on_client`。
 - 确认可选 firm target dates 与 official due dates 视觉区分，并且可 bulk update。
@@ -587,4 +690,6 @@ P0 官方来源 allowlist 和范围：
 - 不混淆 firm target dates 和 official due dates。
 - 不在主 UI 暴露内部 tax-subject terminology。
 - 不把 user-provided deadlines 从 dashboard 隐藏，但必须明确标注。
+- 不把延期当作 task 工作进度状态。延期是从 date events 派生的日期状态。
+- 不在 dashboard task row 上同时展示 original 和 current 两个到期日。只显示 current due date；日期变更历史在 evidence drawer 中。
 - 用户文案必须明确说明 Beta 数据覆盖状态。
