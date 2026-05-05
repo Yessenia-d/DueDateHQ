@@ -297,7 +297,7 @@ function TaxWorkComponent() {
   return (
     <main className="h-full min-h-0 overflow-hidden bg-background text-foreground">
       <div className="mx-auto flex h-full min-h-0 max-w-[1440px] flex-col gap-4 px-5 py-5">
-        <section className="grid gap-4 pb-1 lg:grid-cols-[1fr_auto] lg:items-end">
+        <section className="pb-1">
           <div className="min-w-0">
             <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
               <ClipboardList className="size-3.5" />
@@ -311,20 +311,6 @@ function TaxWorkComponent() {
               the scope, and clear one client's deadline queue without leaving context.
             </p>
           </div>
-          {selectedClientId ? (
-            <a
-              href={`/import?clientIds=${encodeURIComponent(selectedClientId)}`}
-              className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg bg-primary px-2.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <FileUp className="size-3.5" />
-              Import tax info
-            </a>
-          ) : (
-            <Button type="button" disabled>
-              <FileUp className="size-3.5" />
-              Import tax info
-            </Button>
-          )}
         </section>
 
         {clients.data.clients.length === 0 ? (
@@ -399,8 +385,8 @@ function TaxWorkComponent() {
                 <div className="flex h-full min-h-0 min-w-0 flex-col gap-4">
                   <section className="min-w-0 shrink-0 overflow-hidden rounded-lg border border-border/80 bg-card">
                     <div className="min-w-0 px-4 py-3">
-                      <div className="grid justify-start gap-4 xl:grid-cols-[minmax(420px,520px)_minmax(660px,820px)]">
-                        <div className="min-w-0 max-w-[520px]">
+                      <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] xl:items-start">
+                        <div className="min-w-0">
                           <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
                             <Building2 className="size-3.5" />
                             Client relationship
@@ -432,13 +418,6 @@ function TaxWorkComponent() {
                               </StatusBadge>
                             ) : null}
                           </div>
-                          <a
-                            href={`/import?clientIds=${encodeURIComponent(selectedClient.id)}`}
-                            className="mt-3 inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-border bg-background px-2.5 text-xs font-medium text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                          >
-                            <FileUp className="size-3.5" />
-                            Import for this client
-                          </a>
                         </div>
                         <AnnualDeadlineCalendarCard clientId={selectedClient.id} />
                       </div>
@@ -594,12 +573,29 @@ function TaxWorkComponent() {
                     </div>
                   </section>
 
-                  <section className="flex min-h-0 min-w-0 flex-1 flex-col gap-1 overflow-hidden">
-                    <BulkTaskActions
-                      selectedTaskIds={selectedTaskIds}
-                      taskStatuses={dashboard.data.filterOptions.taskStatuses}
-                      onClearSelection={() => setSelectedTaskIds(new Set())}
-                    />
+                  <section className="flex min-h-0 min-w-0 flex-1 flex-col gap-2 overflow-hidden">
+                    <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="min-w-0">
+                        <div className="text-sm font-semibold text-foreground">Task work queue</div>
+                        <div className="mt-0.5 text-xs text-muted-foreground">
+                          Review and update deadline tasks for {selectedClient.displayName}.
+                        </div>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <BulkTaskActions
+                          selectedTaskIds={selectedTaskIds}
+                          taskStatuses={dashboard.data.filterOptions.taskStatuses}
+                          onClearSelection={() => setSelectedTaskIds(new Set())}
+                        />
+                        <a
+                          href={`/import?clientIds=${encodeURIComponent(selectedClient.id)}`}
+                          className="inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-primary px-2.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                          <FileUp className="size-3.5" />
+                          Import tax info
+                        </a>
+                      </div>
+                    </div>
                     <TaskTable
                       section={activeSection}
                       selectedTaskIds={selectedTaskIds}
@@ -749,7 +745,7 @@ function AnnualDeadlineCalendarCard({ clientId }: { clientId: string }) {
 
   if (calendar.isPending) {
     return (
-      <div className="border-t border-border pt-3 xl:border-l xl:border-t-0 xl:pl-4 xl:pt-0">
+      <div className="min-w-0 border-t border-border pt-3 xl:border-l xl:border-t-0 xl:pl-4 xl:pt-0">
         <div className="h-36 animate-pulse rounded-lg bg-muted/40" />
       </div>
     );
@@ -757,7 +753,7 @@ function AnnualDeadlineCalendarCard({ clientId }: { clientId: string }) {
 
   if (calendar.isError) {
     return (
-      <div className="border-t border-border pt-3 xl:border-l xl:border-t-0 xl:pl-4 xl:pt-0">
+      <div className="min-w-0 border-t border-border pt-3 xl:border-l xl:border-t-0 xl:pl-4 xl:pt-0">
         <div className="rounded-md border border-ddhq-risk/30 bg-ddhq-risk-soft px-3 py-2 text-xs text-ddhq-risk">
           Annual deadline calendar could not be loaded.
         </div>
@@ -771,8 +767,8 @@ function AnnualDeadlineCalendarCard({ clientId }: { clientId: string }) {
   const selectedMonthDeadlines = selectedMonthBucket?.deadlines ?? [];
 
   return (
-    <div className="min-w-0 max-w-[820px] border-t border-border pt-3 xl:border-l xl:border-t-0 xl:pl-4 xl:pt-0">
-      <div className="flex items-start justify-between gap-3">
+    <div className="min-w-0 border-t border-border pt-3 xl:border-l xl:border-t-0 xl:pl-4 xl:pt-0">
+      <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
             <CalendarDays className="size-3.5" />
@@ -786,7 +782,7 @@ function AnnualDeadlineCalendarCard({ clientId }: { clientId: string }) {
           value={String(calendarYear)}
           onValueChange={(value) => handleCalendarYearChange(Number(value ?? currentYear))}
         >
-          <SelectTrigger className="h-7 rounded-lg bg-background px-2">
+          <SelectTrigger className="h-7 w-20 shrink-0 rounded-lg bg-background px-2">
             <SelectValue />
           </SelectTrigger>
           <SelectContent className="rounded-lg">
@@ -799,7 +795,7 @@ function AnnualDeadlineCalendarCard({ clientId }: { clientId: string }) {
         </Select>
       </div>
 
-      <div className="mt-3 grid gap-3 md:grid-cols-[228px_minmax(0,1fr)] md:items-stretch">
+      <div className="mt-3 grid gap-3 lg:grid-cols-[minmax(168px,228px)_minmax(0,1fr)] lg:items-stretch">
         <div className="grid h-[246px] grid-cols-3 grid-rows-4 gap-1.5">
           {data.months.map((month) => (
             <button

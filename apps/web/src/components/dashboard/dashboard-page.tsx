@@ -398,17 +398,25 @@ export function DashboardPage() {
                 </span>
               ) : null}
             </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-8 w-32 rounded-lg"
-              disabled={isBusy}
-              onClick={() => exportCurrentView.mutate({ ...filters, horizon: activeHorizon })}
-            >
-              <Download className="size-3.5" />
-              Export view
-            </Button>
+            <div className="flex shrink-0 items-center gap-2">
+              <BulkTaskActions
+                disabled={isBusy}
+                selectedTaskIds={selectedTaskIds}
+                taskStatuses={data.filterOptions.taskStatuses}
+                onClearSelection={() => setSelectedTaskIds(new Set())}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8 w-32 rounded-lg"
+                disabled={isBusy}
+                onClick={() => exportCurrentView.mutate({ ...filters, horizon: activeHorizon })}
+              >
+                <Download className="size-3.5" />
+                Export view
+              </Button>
+            </div>
           </div>
 
           {showFilters ? (
@@ -509,12 +517,6 @@ export function DashboardPage() {
 
         {/* Task sections */}
         <section className="flex min-h-0 flex-1 flex-col gap-1">
-          <BulkTaskActions
-            disabled={isBusy}
-            selectedTaskIds={selectedTaskIds}
-            taskStatuses={data.filterOptions.taskStatuses}
-            onClearSelection={() => setSelectedTaskIds(new Set())}
-          />
           <TaskTable
             section={activeSection}
             selectedTaskIds={selectedTaskIds}
