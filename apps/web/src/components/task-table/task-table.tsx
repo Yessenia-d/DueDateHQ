@@ -273,9 +273,9 @@ export function TaskTable({
   }, [section.tasks]);
 
   return (
-    <div className="overflow-hidden rounded-lg border border-border/80 bg-card">
+    <div className="min-h-0 flex-1 overflow-auto rounded-lg border border-border/80 bg-card">
       {section.tasks.length === 0 ? (
-        <div className="px-3 py-8 text-center text-sm text-muted-foreground">
+        <div className="grid h-full min-h-60 place-items-center px-3 py-8 text-center text-sm text-muted-foreground">
           No tasks in this horizon.
         </div>
       ) : (

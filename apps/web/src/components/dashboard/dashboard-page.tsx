@@ -245,8 +245,8 @@ export function DashboardPage() {
   const data = dashboard.data;
 
   return (
-    <main className="min-h-0 overflow-auto bg-background text-foreground">
-      <div className="mx-auto flex max-w-[1440px] flex-col gap-4 px-5 py-5">
+    <main className="h-full min-h-0 overflow-hidden bg-background text-foreground">
+      <div className="mx-auto flex h-full min-h-0 w-full max-w-[1440px] flex-col gap-4 px-5 py-5">
         {/* Page header */}
         <section className="pb-1">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -419,7 +419,7 @@ export function DashboardPage() {
         </section>
 
         {/* Task sections */}
-        <section className="grid gap-1">
+        <section className="flex min-h-0 flex-1 flex-col gap-1">
           <BulkTaskActions
             disabled={isBusy}
             selectedTaskIds={selectedTaskIds}
