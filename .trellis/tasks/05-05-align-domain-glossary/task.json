@@ -3,7 +3,7 @@
   "name": "align-domain-glossary",
   "title": "Align DueDateHQ domain glossary",
   "description": "Update project domain vocabulary so implementation agents use the latest mixed CPA book and filing profile terms.",
-  "status": "planning",
+  "status": "in_progress",
   "dev_type": null,
   "scope": null,
   "package": "server",
