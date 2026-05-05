@@ -10,6 +10,8 @@ Product principle:
 24h detect, not blindly auto-verify.
 ```
 
+This is a DueDateHQ differentiator from File In Time-style bundled due-date data. The system monitors sources, marks affected rules `Source changed`, records versions, and requires a reviewer before a changed rule can become `Verified` again.
+
 ## User Flow
 
 1. System stores official sources for IRS, state tax agencies, Comptrollers, and Secretaries of State.
@@ -132,6 +134,7 @@ flowchart LR
 - Approval publishes a new `tax_rule_version`.
 - Approval restores rule status to `Verified`.
 - No unreviewed source change can publish a verified rule.
+- Source last checked, source last changed, and rule version are visible wherever official task evidence is shown.
 
 ## Out of Scope
 

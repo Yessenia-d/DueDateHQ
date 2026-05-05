@@ -2,3 +2,4 @@
 {"file":"docs/product/due-date-hq-product-plan.md","reason":"Verify product requirements and trust model completeness"}
 {"file":"docs/technical/due-date-hq-beta-technical-plan.md","reason":"Verify technical design maps to product requirements"}
 {"file":"specs/README.md","reason":"Verify all feature specs are listed and follow SDD structure"}
+{"file":".trellis/tasks/05-05-due-date-hq-docs-specs/research/file-in-time-competitor-research.md","reason":"Verify product/spec changes account for competitor-informed feature decisions"}

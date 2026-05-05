@@ -2,7 +2,7 @@
 
 ## Goal
 
-Let CPAs import clients from TaxDome, Drake, Karbon, and QuickBooks CSV exports, review field mapping, fix missing fields, and generate verified deadline tasks.
+Let CPAs import clients from TaxDome, Drake, Karbon, and QuickBooks CSV exports, preview rows, review field mapping, resolve likely duplicates, fix missing fields, and create official deadline tasks only when imported clients match Verified tax rules.
 
 ## User Flow
 
@@ -10,11 +10,12 @@ Let CPAs import clients from TaxDome, Drake, Karbon, and QuickBooks CSV exports,
 2. User selects source system.
 3. User uploads CSV.
 4. System previews field mapping.
-5. User reviews uncertain rows.
-6. User commits import.
-7. System creates clients.
-8. System generates official deadline tasks only from verified tax rules.
-9. User sees import summary and can open dashboard.
+5. System detects headers, validation issues, and likely duplicate clients.
+6. User reviews uncertain rows and duplicate candidates.
+7. User commits import.
+8. System creates clients.
+9. System generates official deadline tasks only from verified tax rules.
+10. User sees import summary and can open dashboard.
 
 ## Flow Diagram
 
@@ -22,11 +23,16 @@ Let CPAs import clients from TaxDome, Drake, Karbon, and QuickBooks CSV exports,
 flowchart TD
   A[Select source] --> B[Upload CSV]
   B --> C[Parse with source adapter]
-  C --> D[Map to canonical client shape]
-  D --> E{Missing required fields?}
-  E -- Yes --> F[Review queue]
+  C --> D[Detect headers and map columns]
+  D --> E[Preview canonical client shape]
+  E --> N{Likely duplicate?}
+  N -- Yes --> O[Duplicate review]
+  N -- No --> P[Validation review]
+  O --> P
+  P --> Q{Missing required fields?}
+  Q -- Yes --> F[Review queue]
   F --> G[User fixes fields]
-  E -- No --> H[Preview summary]
+  Q -- No --> H[Preview summary]
   G --> H
   H --> I[Commit import]
   I --> J[Create clients]
@@ -40,7 +46,9 @@ flowchart TD
 - `/import`
   - Source selection.
   - File upload.
+  - Header detection.
   - Mapping preview.
+  - Duplicate review.
   - Row review.
   - Commit summary.
 
@@ -48,11 +56,11 @@ flowchart TD
 
 - `imports.preview`
   - Input: source system, CSV file or text.
-  - Output: batch id, column mapping, accepted rows, review rows, validation messages.
+  - Output: batch id, header detection result, column mapping, accepted rows, review rows, duplicate candidates, validation messages.
 
 - `imports.commit`
-  - Input: batch id and reviewed row corrections.
-  - Output: created client count, created deadline task count, needs-review obligation count, unsupported obligation count.
+  - Input: batch id, reviewed row corrections, and duplicate resolutions.
+  - Output: created client count, updated/skipped duplicate count, created deadline task count, needs-review obligation count, unsupported obligation count.
 
 ## Data Model
 
@@ -63,6 +71,9 @@ flowchart TD
 - Total rows.
 - Accepted rows.
 - Review rows.
+- Duplicate rows.
+- Header detected.
+- Adapter version.
 
 `clients`
 
@@ -82,6 +93,18 @@ Canonical client shape:
 - Source system.
 - Source row id.
 
+Duplicate candidate shape:
+
+- Incoming row id.
+- Existing client id.
+- Matched fields.
+- Differing fields.
+- Suggested action: create, update existing, or skip.
+
+## Competitor Parity Notes
+
+File In Time treats import as a review workflow, not a blind upload. DueDateHQ must match preview, mapping, header handling, review before commit, and duplicate resolution. DueDateHQ should be better by using source-specific adapters that start from known TaxDome, Drake, Karbon, and QuickBooks exports instead of making every user map a generic delimited file from scratch.
+
 ## Acceptance Criteria
 
 - TaxDome adapter supports representative TaxDome client export fields.
@@ -89,6 +112,8 @@ Canonical client shape:
 - Karbon adapter supports representative Karbon contact export fields.
 - QuickBooks adapter supports representative QuickBooks customer export fields.
 - Missing required fields are reviewable, not silently dropped.
+- Header detection and mapping preview are visible before commit.
+- Likely duplicate clients are shown with field differences and a user-selected resolution.
 - Import commit creates clients.
 - Only verified rules generate official deadline tasks.
 - Import summary explains generated, needs-review, and unsupported obligations.
@@ -98,3 +123,4 @@ Canonical client shape:
 - Perfect compatibility with every historical export variant.
 - Direct API integrations with source products.
 - Storing raw CSV files permanently.
+- Mail merge, labels, or client export formats unrelated to deadline onboarding.

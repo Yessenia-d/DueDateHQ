@@ -4,6 +4,8 @@
 
 向用户展示 DueDateHQ 知道哪些州、税种和义务，哪些规则已核验，以及哪些来源正在被监听。
 
+这是相比 File In Time-style bundled service lists 的透明度改进。用户应该直接看到 coverage gaps、source monitoring 和 verification status，而不是默认认为每个 known obligation 都可以安全安排。
+
 ## User Flow
 
 1. 用户打开 `/coverage`。
@@ -69,6 +71,7 @@ flowchart TD
 - Source changed cells 显示 warning。
 - Unsupported cells 不暗示已支持安排。
 - 存在官方来源时显示 monitor status。
+- Needs-review 和 unsupported entries 可见，但不能被呈现为 verified official deadlines。
 
 ## Out of Scope
 

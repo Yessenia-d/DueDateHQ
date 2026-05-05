@@ -2,3 +2,4 @@
 {"file":"docs/product/due-date-hq-product-plan.md","reason":"Product requirements, scope, GTM, and verification principles"}
 {"file":"docs/technical/due-date-hq-beta-technical-plan.md","reason":"Technical architecture, data model, APIs, and deployment plan"}
 {"file":"specs/README.md","reason":"SDD process and spec index"}
+{"file":".trellis/tasks/05-05-due-date-hq-docs-specs/research/file-in-time-competitor-research.md","reason":"Competitor workflow analysis and feature recommendations to inform product/spec updates"}

@@ -4,6 +4,8 @@
 
 Show users which states, tax categories, and obligations DueDateHQ knows about, which rules are verified, and which sources are monitored.
 
+This is a transparency improvement over File In Time-style bundled service lists. Users should see coverage gaps, source monitoring, and verification status directly instead of assuming every known obligation is schedulable.
+
 ## User Flow
 
 1. User opens `/coverage`.
@@ -69,6 +71,7 @@ Display fields:
 - Source changed cells show warning.
 - Unsupported cells do not imply scheduling support.
 - Monitor status is visible when an official source exists.
+- Needs-review and unsupported entries are visible without being presented as verified official deadlines.
 
 ## Out of Scope
 

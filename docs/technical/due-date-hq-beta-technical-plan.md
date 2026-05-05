@@ -13,6 +13,8 @@ DueDateHQ uses the existing Better-T-Stack structure:
 
 The technical goal is to implement a real Beta product while preserving a strict distinction between verified official rules, user-provided deadlines, and unverified obligations.
 
+Technical parity target: implement the useful File In Time workflow baseline as a cloud product, not as a desktop clone. The system should support client setup, source-specific CSV import preview/mapping/review/duplicate handling, obligation-driven task generation, Monday triage, filters/sorting, task status, extension handling, verified recurrence/upcoming tasks, dashboard/task exports, and in-product urgency surfaces. It should deliberately omit local database administration, backup/restore UI, Crystal Reports-style reporting, mail merge/labels, extension form printing, arbitrary field renaming, network-user maintenance, detailed rights matrices, and external email/SMS/calendar reminders unless later prioritized.
+
 ## System Boundaries
 
 In scope:
@@ -27,6 +29,7 @@ In scope:
 - Coverage matrix.
 - Monday triage dashboard.
 - Feature progress page.
+- Dashboard/task export for operational review.
 
 Out of scope:
 
@@ -35,6 +38,7 @@ Out of scope:
 - MFA, OAuth, password reset, email verification.
 - Automatic AI publishing of tax rules.
 - Full county/city/industry-specific automation.
+- Desktop database management, backup/restore UI, Crystal Reports-style reports, mail merge/labels, extension form printing, arbitrary field renaming, network-user maintenance, detailed rights matrices, and external email/SMS/calendar reminders.
 
 ## Data Model
 
@@ -61,6 +65,7 @@ Better Auth owns its required tables. Business tables reference the authenticate
 - `states`
 - `county`
 - `fiscalYearType`
+- `notes`
 - `sourceSystem`
 - `createdVia`: `csv_import | manual`
 - `createdAt`
@@ -75,6 +80,9 @@ Better Auth owns its required tables. Business tables reference the authenticate
 - `totalRows`
 - `acceptedRows`
 - `reviewRows`
+- `duplicateRows`
+- `headerDetected`
+- `adapterVersion`
 - `createdAt`
 
 `tax_obligations`
@@ -114,11 +122,14 @@ Better Auth owns its required tables. Business tables reference the authenticate
 - `id`
 - `firmId`
 - `clientId`
-- `taxRuleId`
+- `taxRuleId` nullable; required only when `sourceType = verified_rule`
 - `title`
 - `jurisdiction`
 - `taxCategory`
 - `dueDate`
+- `originalDueDate`
+- `extensionDueDate`
+- `recurrenceKey`
 - `status`: `not_started | in_progress | extended | done`
 - `priority`
 - `sourceType`: `verified_rule | user_provided`
@@ -228,6 +239,7 @@ Manual entry:
 Dashboard:
 
 - `dashboard.summary`
+- `dashboard.export`
 - `tasks.updateStatus`
 - `tasks.getEvidence`
 
@@ -312,7 +324,7 @@ flowchart LR
 
 `/`
 
-- Monday triage dashboard.
+- Monday triage dashboard with urgency sections, filters/sorting, task status updates, extension visibility, evidence access, and export.
 
 `/coverage`
 
@@ -375,9 +387,12 @@ Manual:
 
 - Register and log in.
 - Import representative CSV from each source.
+- Confirm import preview detects headers, mapping, review rows, and likely duplicates before commit.
 - Manually create client and deadline.
 - Confirm only verified rules create official tasks.
 - Confirm source changed rule cannot create new official task.
+- Confirm verified recurring obligations generate upcoming tasks without manual rollover.
+- Confirm dashboard filters/sorting, extension status, urgency surfaces, and export work.
 - Confirm coverage matrix shows monitor status.
 - Confirm evidence drawer shows last checked, last changed, and rule versions.
 - Confirm verification queue approval publishes a new version.

@@ -19,6 +19,42 @@ Know what is due, why it is due, and whether the source is verified.
 知道什么到期、为什么到期，以及来源是否已核验。
 ```
 
+## 竞品 Parity 与 Better 目标
+
+DueDateHQ 不应该只是零散借鉴 File In Time 的几个想法。对于 CPA due-date operations 的核心流程，Beta 规划目标是在税务专业人士已经理解的工作流上做到 parity 或更好，然后用 verified source evidence、source monitoring、rule versioning 和 cloud workflow 做出改进。
+
+| Workflow area | File In Time baseline | DueDateHQ Beta direction |
+|---|---|---|
+| Client setup | Client records 包含税务相关字段、notes、client/entity type、jurisdiction context，并支持 manual/import paths | 覆盖安排截止日期所需的实用 tax profile fields，保留 notes，但避免桌面软件式任意 custom-field 膨胀 |
+| CSV import | Delimited-file preview、header handling、drag/drop mapping、commit 前 review、duplicate resolution | 通过 TaxDome、Drake、Karbon、QuickBooks 来源专属 adapters 做得更好，并明确支持 mapping review 和 duplicate handling |
+| Obligation/service setup | Services 定义 work type、frequency、due dates 和 extension dates | 将 services 映射为 tax obligations 和 verified tax rules，同时区分 known、verified、needs-review、unsupported 和 user-provided items |
+| Task generation | 将 services 分配给 clients 来创建 due-date tasks | 只有 Verified rules 生成官方任务；unsupported 或 needs-review obligations 可见，但不能伪装成官方截止日期 |
+| Monday triage | Task view 可以过滤到 this week | 默认提供一等公民的 `Due this week`、`This month`、`Long range` 分区 |
+| Filters and sorting | Date、client、type、service、status、key person 和 saved views | 覆盖 horizon、client、jurisdiction/state、entity type、tax type、task status、verification status 核心过滤；advanced saved views 可以后置 |
+| Task status | Status codes、dates、notes、extension flag | 用 `Not started`、`In progress`、`Extended`、`Done` 覆盖简单运营状态，并附带 source/trust badges |
+| Extensions | Service-supported extension dates 和 extension state | 当官方规则证据支持时显示 extension status 和 verified extension due dates；extension form printing 不进入 Beta |
+| Recurrence/upcoming tasks | 手动 rollover 创建下一周期任务 | 由维护过的 Verified rules 生成 upcoming official tasks，official recurring deadlines 不需要手动 rollover |
+| Exports | Excel/task view export 和 printed reports | 支持实用 dashboard/task export，用于 workload sharing 和 review；不做 Crystal Reports-style builders |
+| Reminders/urgency | Startup reminder 和 due today/this week/month 的 calendar counts | 先做 dashboard 内 due today、this week、this month urgency surfaces；外部 email/SMS/calendar reminders 后置 |
+| Admin/settings | Desktop database tools、backups、network users、rights、display options | 云端数据库操作不暴露给用户，Beta settings 只保留 account/workflow clarity |
+
+DueDateHQ 必须更好的地方：
+
+- 官方任务展示 source evidence、verification status、source last checked/changed times 和 rule version。
+- Source monitoring 会创建透明的 `Source changed` review 工作，而不是静默信任过期 bundled dates。
+- Rule publishing 需要人工批准后才能成为 `Verified`。
+- Source-specific CSV adapters 比通用 delimited-file importer 减少手工 mapping。
+- Official recurring deadlines 来自维护过的规则，而不是用户手动 rollover。
+- Unsupported、needs-review、source-changed 和 user-provided items 可见，但不能被表现为 verified official deadlines。
+- 用户不需要管理 desktop installs、shared database files、check/optimize tools 或 backup/restore screens。
+
+桌面时代功能在 Beta 阶段排除，只有后续明确重新排序时才重新评估：
+
+- Local database administration、multiple database files、backup/restore UI 和 network workstation maintenance。
+- Crystal Reports-style reports、mail merge、labels 和 extension form printing。
+- Arbitrary field renaming、广泛 custom task fields、detailed rights matrices、employee network-user maintenance 和 supervisor messaging。
+- Email、SMS、calendar reminders，直到产品内 urgency surfaces 被验证。
+
 ## 目标用户
 
 主要 ICP：
@@ -55,7 +91,7 @@ Know what is due, why it is due, and whether the source is verified.
 验收标准：
 
 - 存在四类 CSV 来源 adapter。
-- 提交前展示字段映射。
+- 提交前展示 header handling、字段映射、duplicate candidates 和 import preview。
 - 缺失或不确定字段进入 review 步骤。
 - 导入后只有 Verified 税务规则会生成官方任务。
 - Unsupported 和 Needs review 义务可见，但不会作为已确认截止日期被安排。
@@ -98,6 +134,8 @@ Beta 用户使用邮箱和密码注册登录。因为 CSV 和客户截止日期�
 - 手动录入，用于新增客户、边界情况和快速补充。
 
 CSV 导入支持 TaxDome、Drake、Karbon、QuickBooks，通过来源专属 adapter 归一化为统一客户结构。
+
+导入工作流应该达到或超过 File In Time 的实用导入流程：preview rows、detect headers、map columns、标记缺失或不确定数据、commit 前展示 likely duplicates，并汇总 created clients、generated tasks、needs-review obligations 和 unsupported obligations。
 
 ### Tax Obligation Library
 
@@ -217,8 +255,11 @@ CPA 的主要工作台。
 - 到期日。
 - 剩余天数。
 - 任务状态。
+- 当 verified evidence 支持时展示 extension status 和 extension due date。
 - 核验 badge。
 - 来源证据入口。
+
+Dashboard controls 必须支持按 due horizon、client、jurisdiction/state、entity type、tax type、task status 和 verification status 过滤/排序。Dashboard urgency surfaces 应该在 Beta 阶段先展示 due today、due this week、due this month，而不是加入外部 reminder channels。基础 dashboard/task export 支持 CPA 在系统外分享和复核 workload。
 
 ### Feature Progress Page
 
@@ -362,4 +403,5 @@ User imports or manually enters at least 10 clients and completes one Monday tri
 - CPA 可以理解一个 Verified 截止日期为什么存在、来自哪里。
 - 产品清楚标注未核验、来源变化、暂不支持和用户手动录入项。
 - 系统设计支持 24 小时官方来源变化检测，且不会自动发布未审核规则。
+- 产品覆盖 File In Time 核心工作流 parity 或更好：client setup、import、obligation setup、task generation、triage、filters、status、extensions、recurrence、exports、urgency、admin/settings boundaries。
 - 产品有明确的前 20 个 Beta 用户 GTM 动作。

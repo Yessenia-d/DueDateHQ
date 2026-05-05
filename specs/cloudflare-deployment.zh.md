@@ -4,6 +4,8 @@
 
 使用当前 Cloudflare 技术栈，将 DueDateHQ 部署为外部可访问的 Beta 产品。
 
+Cloud deployment 是 DueDateHQ 的竞品改进之一。用户不应该为了运行核心 due-date 工作流而管理 local installs、mapped drives、shared database files、database optimization、manual backups 或 restore screens。
+
 ## User Flow
 
 1. 工程师应用数据库迁移。
@@ -50,9 +52,11 @@ flowchart TD
 - D1 migrations 已应用。
 - Auth 和核心流程在部署环境可用。
 - 除非明确改变，否则 Cloudflare 账号确认为 `Yessenia@dify.ai's Account`。
+- Cloud database operations 保持为内部平台职责，而不是 user-facing Beta settings。
 
 ## Out of Scope
 
 - 自定义域名。
 - 生产级 incident monitoring。
 - 多环境 promotion pipeline。
+- User-facing local database administration、backup/restore UI、check/optimize tools 或 network workstation setup。

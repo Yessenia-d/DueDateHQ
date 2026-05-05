@@ -11,6 +11,8 @@
 24 小时内发现变化，但不盲目自动核验。
 ```
 
+这是 DueDateHQ 相比 File In Time-style bundled due-date data 的差异点。系统监听 sources，将受影响 rules 标记为 `Source changed`，记录 versions，并要求 reviewer 批准后 changed rule 才能再次成为 `Verified`。
+
 ## User Flow
 
 1. 系统保存 IRS、州税务局、Comptroller、Secretary of State 等官方来源。
@@ -133,6 +135,7 @@ flowchart LR
 - Approval 发布新的 `tax_rule_version`。
 - Approval 恢复 rule status 为 `Verified`。
 - 未审核的 source change 不能发布 verified rule。
+- Source last checked、source last changed 和 rule version 必须在 official task evidence 出现的地方可见。
 
 ## Out of Scope
 

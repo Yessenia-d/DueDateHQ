@@ -18,6 +18,42 @@ Product promise:
 Know what is due, why it is due, and whether the source is verified.
 ```
 
+## Competitor Parity and Better Target
+
+DueDateHQ should not merely borrow isolated ideas from File In Time. For core CPA due-date operations, Beta planning targets parity or better with the workflows tax professionals already understand, then improves them with verified source evidence, source monitoring, rule versioning, and a cloud workflow.
+
+| Workflow area | File In Time baseline | DueDateHQ Beta direction |
+|---|---|---|
+| Client setup | Client records with tax-relevant fields, notes, client/entity type, jurisdiction context, and manual/import paths | Match the practical tax profile fields needed for scheduling, keep notes, and avoid arbitrary desktop custom-field sprawl |
+| CSV import | Delimited-file preview, header handling, drag/drop mapping, review before commit, duplicate resolution | Better with source-specific adapters for TaxDome, Drake, Karbon, and QuickBooks, plus explicit mapping review and duplicate handling |
+| Obligation/service setup | Services define work type, frequency, due dates, and extension dates | Map services to tax obligations and verified tax rules while separating known, verified, needs-review, unsupported, and user-provided items |
+| Task generation | Assign services to clients to create due-date tasks | Generate official tasks only from Verified rules; show unsupported or needs-review obligations without pretending they are official deadlines |
+| Monday triage | Task view can be filtered to this week | Better with first-class `Due this week`, `This month`, and `Long range` sections by default |
+| Filters and sorting | Date, client, type, service, status, key person, and saved views | Match core filters by horizon, client, jurisdiction/state, entity type, tax type, task status, and verification status; advanced saved views can wait |
+| Task status | Status codes, dates, notes, extension flag | Match simple operational status with `Not started`, `In progress`, `Extended`, and `Done`, plus source/trust badges |
+| Extensions | Service-supported extension dates and extension state | Support extension status and verified extension due dates when official rule evidence supports them; keep extension form printing out |
+| Recurrence/upcoming tasks | Manual rollover creates the next period's tasks | Better by generating upcoming official tasks from maintained Verified rules, with no manual rollover for official recurring deadlines |
+| Exports | Excel/task view export and printed reports | Match practical dashboard/task export for workload sharing and review; skip Crystal Reports-style builders |
+| Reminders/urgency | Startup reminder and calendar counts for due today/this week/month | Start with in-dashboard urgency surfaces for due today, this week, and this month; external email/SMS/calendar reminders are later-stage |
+| Admin/settings | Desktop database tools, backups, network users, rights, display options | Better by hiding cloud database operations from users and limiting Beta settings to account/workflow clarity |
+
+Where DueDateHQ must be better:
+
+- Official tasks show source evidence, verification status, source last checked/changed times, and rule version.
+- Source monitoring creates transparent `Source changed` review work instead of silently trusting stale bundled dates.
+- Rule publishing requires human approval before a rule becomes `Verified`.
+- Source-specific CSV adapters reduce manual mapping compared with a generic delimited-file importer.
+- Official recurring deadlines come from maintained rules, not user-run rollover.
+- Unsupported, needs-review, source-changed, and user-provided items are visible without being represented as verified official deadlines.
+- Users do not manage desktop installs, shared database files, check/optimize tools, or backup/restore screens.
+
+Desktop-era features intentionally excluded from Beta and only revisited later if explicitly reprioritized:
+
+- Local database administration, multiple database files, backup/restore UI, and network workstation maintenance.
+- Crystal Reports-style reports, mail merge, labels, and extension form printing.
+- Arbitrary field renaming, broad custom task fields, detailed rights matrices, employee network-user maintenance, and supervisor messaging.
+- Email, SMS, and calendar reminders until the in-product urgency surfaces are validated.
+
 ## Target User
 
 Primary ICP:
@@ -54,7 +90,7 @@ As a CPA moving from TaxDome, Drake, Karbon, or QuickBooks, I want to import cli
 Acceptance:
 
 - Four CSV source adapters exist.
-- Field mapping is shown before commit.
+- Header handling, field mapping, duplicate candidates, and import preview are shown before commit.
 - Missing or uncertain fields enter a review step.
 - Verified tax rules generate official tasks after import.
 - Unsupported and needs-review obligations are visible but not scheduled as confirmed deadlines.
@@ -97,6 +133,8 @@ Two entry points:
 - Manual entry for new clients, edge cases, and quick additions.
 
 CSV import supports TaxDome, Drake, Karbon, and QuickBooks through source-specific adapters that normalize records into a shared client shape.
+
+The import workflow should meet or exceed File In Time's practical import flow: preview rows, detect headers, map columns, flag missing or uncertain data, surface likely duplicates before commit, and summarize created clients, generated tasks, needs-review obligations, and unsupported obligations.
 
 ### Tax Obligation Library
 
@@ -214,8 +252,11 @@ Each task row includes:
 - Due date.
 - Days remaining.
 - Task status.
+- Extension status and extension due date when supported by verified evidence.
 - Verification badge.
 - Source evidence action.
+
+Dashboard controls must support filters and sorting by due horizon, client, jurisdiction/state, entity type, tax type, task status, and verification status. Dashboard urgency surfaces should make due today, due this week, and due this month visible without adding external reminder channels in Beta. A basic dashboard/task export supports CPA workload sharing and review outside the app.
 
 ### Feature Progress Page
 
@@ -358,4 +399,5 @@ Mitigation:
 - A CPA can understand why a verified deadline exists and where it came from.
 - The product clearly marks unverified, source-changed, unsupported, and user-provided items.
 - The system design supports 24h official source change detection without auto-publishing unreviewed rules.
+- The product covers File In Time core workflow parity or better for client setup, import, obligation setup, task generation, triage, filters, status, extensions, recurrence, exports, urgency, and admin/settings boundaries.
 - The product has a clear GTM motion for the first 20 Beta users.

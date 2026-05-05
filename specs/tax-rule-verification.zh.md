@@ -4,6 +4,8 @@
 
 定义税务规则核验状态系统，控制某条税务规则是否能生成官方 deadline task，并帮助用户理解规则可信度。
 
+这是 DueDateHQ 相比 File In Time 的核心改进：任务日期不是因为存在于 bundled service table 中就可信，而是只有在官方来源、计算逻辑、审核动作和规则版本都可见时才可信。
+
 ## User Flow
 
 1. 用户看到一个 deadline 或 coverage entry。
@@ -62,6 +64,8 @@ Evidence fields：
 
 Manual deadlines 使用 `deadline_tasks.sourceType = user_provided`，不是 tax rule verification status。
 
+Unsupported、needs-review、source-changed、manual 和 user-provided items 必须对用户透明，但不能被呈现为 verified official deadlines。
+
 ## Status Rules
 
 `Verified` 要求：
@@ -96,6 +100,8 @@ Manual deadlines 使用 `deadline_tasks.sourceType = user_provided`，不是 tax
 - `source_changed` rules 不生成新的官方任务。
 - `unsupported` obligations 只显示在 coverage。
 - Evidence drawer 可以解释状态和来源链路。
+- Evidence drawer 为 official tasks 展示 rule versioning 和 source last checked/changed timestamps。
+- Manual 或 user-provided deadlines 必须在 verification status taxonomy 之外明确标记。
 
 ## Out of Scope
 

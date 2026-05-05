@@ -4,6 +4,8 @@
 
 Deploy DueDateHQ as an externally accessible Beta product using the existing Cloudflare-oriented stack.
 
+The cloud deployment is part of DueDateHQ's competitor improvement. Users should not manage local installs, mapped drives, shared database files, database optimization, manual backups, or restore screens to operate core due-date workflows.
+
 ## User Flow
 
 1. Engineer applies database migrations.
@@ -50,9 +52,11 @@ Deployment requires D1 tables for all implemented features.
 - D1 migrations are applied.
 - Auth and core flows work in deployed environment.
 - Cloudflare account is confirmed as `Yessenia@dify.ai's Account` unless explicitly changed.
+- Cloud database operations remain internal platform responsibilities, not user-facing Beta settings.
 
 ## Out of Scope
 
 - Custom domain.
 - Production incident monitoring.
 - Multi-environment promotion pipeline.
+- User-facing local database administration, backup/restore UI, check/optimize tools, or network workstation setup.

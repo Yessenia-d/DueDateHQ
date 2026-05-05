@@ -47,6 +47,12 @@ flowchart TD
 
 业务 tRPC procedures 必须要求有效 session。
 
+Admin/settings boundary：
+
+- Beta 支持 account/session 访问用户自己的 workspace。
+- Beta 不暴露桌面时代的 network user maintenance、supervisor messaging、forced logoff 或 detailed rights matrices。
+- Organization roles 和 team permissions 属于 later-stage，不能被部分实现成 File In Time-style employee rights。
+
 ## Data Model
 
 Better Auth 管理认证表。
@@ -71,3 +77,5 @@ Better Auth 管理认证表。
 - 密码重置。
 - 邮箱验证。
 - 组织和团队邀请。
+- Network-user maintenance。
+- Detailed rights matrix。

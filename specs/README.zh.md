@@ -53,3 +53,20 @@ but must be marked as not verified by DueDateHQ.
 用户手动录入的截止日期可以显示为用户任务，
 但必须标记为未经 DueDateHQ 核验。
 ```
+
+## 竞品 Parity Baseline
+
+Feature specs 必须保留 DueDateHQ 的信任模型，同时在 File In Time 有价值的核心工作流上做到 parity 或更好：
+
+- Client setup：包含税务相关 profile fields、notes、entity type、jurisdiction context，并支持 import/manual entry paths。
+- CSV import：包含 preview、header handling、field mapping、row review、duplicate handling 和 commit summary。
+- Obligation/service setup：可以生成任务，同时区分 known obligations、Verified rules、Needs review、Source changed、Unsupported 和 user-provided deadlines。
+- Task generation：只有 Verified rules 可以生成 official system deadlines。
+- Monday triage：包含 due today/this week/this month urgency、filters/sorting、task status、extension status 和 evidence/trust badges。
+- Recurrence/upcoming tasks：来自维护过的 Verified rules，official recurring deadlines 不需要 manual rollover。
+- 基础 dashboard/task exports，用于 workload sharing 和 review。
+- Admin/settings boundaries：避免 desktop database administration 和 option sprawl。
+
+DueDateHQ 应通过 source evidence、verification status、source monitoring、rule versioning、cloud workflow、source-specific CSV adapters 和透明 coverage gaps 强于 File In Time。
+
+Beta 阶段排除这些桌面时代功能；只有后续明确重新排序时才重新评估：local DB admin、backup/restore UI、Crystal Reports-style reports、mail merge/labels、extension form printing、arbitrary field renaming、network-user maintenance、detailed rights matrices，以及 email/SMS/calendar reminders。

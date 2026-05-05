@@ -4,6 +4,8 @@
 
 Define the verification status system that controls whether a tax rule can generate official deadline tasks and how users understand rule trust.
 
+This is a core DueDateHQ improvement over File In Time: task dates are not trusted because they exist in a bundled service table. They are trusted only when the official source, calculation, reviewer action, and rule version are visible.
+
 ## User Flow
 
 1. User sees a deadline or coverage entry.
@@ -62,6 +64,8 @@ Evidence fields:
 
 Manual deadlines use `deadline_tasks.sourceType = user_provided` and are not tax rule verification statuses.
 
+Unsupported, needs-review, source-changed, manual, and user-provided items must remain transparent to the user, but they must not be presented as verified official deadlines.
+
 ## Status Rules
 
 `Verified` requires:
@@ -96,6 +100,8 @@ Manual deadlines use `deadline_tasks.sourceType = user_provided` and are not tax
 - `source_changed` rules do not generate new official tasks.
 - `unsupported` obligations only appear in coverage.
 - Evidence drawer can explain status and source lineage.
+- Evidence drawer shows rule versioning and source last checked/changed timestamps for official tasks.
+- Manual or user-provided deadlines are clearly marked outside the verification status taxonomy.
 
 ## Out of Scope
 

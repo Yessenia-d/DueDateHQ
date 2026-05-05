@@ -13,6 +13,8 @@ Traceable tax deadlines, not black-box dates.
 
 DueDateHQ 维护 50 州税务义务库，在 24 小时检测窗口内监听官方来源变化，并清晰区分已核验系统规则、未核验规则、用户手动录入日期和暂不支持义务。
 
+竞品定位：DueDateHQ Beta 要在 File In Time 有价值的核心工作流上做到 parity 或更好，同时用云端工作流和已核验来源信任模型替代桌面时代的数据库、rollover 和报表负担。Parity 意味着 CPA 可以设置客户、导入文件、生成和分诊截止日期工作、筛选/排序任务、处理延期、导出工作量视图，并在产品内看到紧急程度，而不必退回表格。Better 意味着官方任务必须带有来源证据、核验状态、来源监听、规则版本，并且 verified recurring deadlines 不需要手动 rollover。
+
 ## 当前交付目标
 
 - 构建真实 Beta 产品，而不是纯前端 Demo。
@@ -24,6 +26,7 @@ DueDateHQ 维护 50 州税务义务库，在 24 小时检测窗口内监听官�
 - 增加客户和自定义截止日期的手动录入。
 - 增加官方来源监听和税务规则核验队列。
 - 增加功能完成进度页，让产品、工程和评审者看到完成状态。
+- 覆盖 File In Time 有价值的 due-date 核心工作流，并做到 parity 或更好：client setup、CSV import review、obligation/service setup、task generation、weekly triage、filters/sorting、task status、extension handling、recurrence/upcoming tasks、exports、urgency surfaces，以及 admin/settings boundaries。
 
 ## 核心产品规则
 
@@ -74,6 +77,8 @@ Needs review、Source changed 和 Unsupported 规则必须透明展示，
 - 官方来源监听设计和 API 表面。
 - 税务规则核验队列。
 - Cloudflare 部署计划。
+- 带 preview、mapping、review、duplicate handling 的来源专属 CSV adapters。
+- Dashboard/task exports，以及 due today、this week、this month 的产品内 urgency surfaces。
 
 Beta 阶段不做：
 
@@ -82,6 +87,8 @@ Beta 阶段不做：
 - 未经核验的规则自动发布。
 - 完整城市/县/行业级税务自动化。
 - 未经人工审核的实时 AI 公告解释。
+- 桌面时代 File In Time 功能：local database administration、backup/restore UI、Crystal Reports-style reports、mail merge/labels、extension form printing、arbitrary field renaming、network-user maintenance 和 detailed rights matrices。
+- Email、SMS、calendar reminders，除非后续用户发现明确将它们排到产品内 urgency surfaces 之前。
 
 ## GTM 摘要
 

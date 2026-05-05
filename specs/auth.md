@@ -47,6 +47,12 @@ Use Better Auth handlers for:
 
 Business tRPC procedures must require a valid session.
 
+Admin/settings boundary:
+
+- Beta supports account/session access to a user's own workspace.
+- Beta does not expose desktop-era network user maintenance, supervisor messaging, forced logoff, or detailed rights matrices.
+- Organization roles and team permissions are later-stage and must not be partially represented as File In Time-style employee rights.
+
 ## Data Model
 
 Better Auth owns auth tables.
@@ -71,3 +77,5 @@ Business tables reference:
 - Password reset.
 - Email verification.
 - Organizations and team invitations.
+- Network-user maintenance.
+- Detailed rights matrix.

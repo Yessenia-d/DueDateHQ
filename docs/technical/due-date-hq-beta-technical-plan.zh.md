@@ -13,6 +13,8 @@ DueDateHQ 使用当前 Better-T-Stack 结构：
 
 技术目标是实现真实 Beta 产品，同时严格区分已核验官方规则、用户手动录入截止日期和未核验义务。
 
+技术 parity 目标：把 File In Time 有价值的工作流 baseline 实现为云端产品，而不是桌面软件复刻。系统应支持 client setup、source-specific CSV import preview/mapping/review/duplicate handling、obligation-driven task generation、Monday triage、filters/sorting、task status、extension handling、verified recurrence/upcoming tasks、dashboard/task exports 和产品内 urgency surfaces。除非后续明确优先，否则应主动排除 local database administration、backup/restore UI、Crystal Reports-style reporting、mail merge/labels、extension form printing、arbitrary field renaming、network-user maintenance、detailed rights matrices 和外部 email/SMS/calendar reminders。
+
 ## 系统边界
 
 范围内：
@@ -27,6 +29,7 @@ DueDateHQ 使用当前 Better-T-Stack 结构：
 - 覆盖矩阵。
 - Monday triage dashboard。
 - 功能进度页。
+- 用于运营复核的 dashboard/task export。
 
 范围外：
 
@@ -35,6 +38,7 @@ DueDateHQ 使用当前 Better-T-Stack 结构：
 - MFA、OAuth、密码重置、邮箱验证。
 - AI 自动发布税务规则。
 - 完整县/市/行业级自动化。
+- Desktop database management、backup/restore UI、Crystal Reports-style reports、mail merge/labels、extension form printing、arbitrary field renaming、network-user maintenance、detailed rights matrices，以及外部 email/SMS/calendar reminders。
 
 ## 数据模型
 
@@ -61,6 +65,7 @@ Better Auth 管理认证表。业务表引用认证用户和未来 firm profile�
 - `states`
 - `county`
 - `fiscalYearType`
+- `notes`
 - `sourceSystem`
 - `createdVia`: `csv_import | manual`
 - `createdAt`
@@ -75,6 +80,9 @@ Better Auth 管理认证表。业务表引用认证用户和未来 firm profile�
 - `totalRows`
 - `acceptedRows`
 - `reviewRows`
+- `duplicateRows`
+- `headerDetected`
+- `adapterVersion`
 - `createdAt`
 
 `tax_obligations`
@@ -114,11 +122,14 @@ Better Auth 管理认证表。业务表引用认证用户和未来 firm profile�
 - `id`
 - `firmId`
 - `clientId`
-- `taxRuleId`
+- `taxRuleId` nullable；仅在 `sourceType = verified_rule` 时必填
 - `title`
 - `jurisdiction`
 - `taxCategory`
 - `dueDate`
+- `originalDueDate`
+- `extensionDueDate`
+- `recurrenceKey`
 - `status`: `not_started | in_progress | extended | done`
 - `priority`
 - `sourceType`: `verified_rule | user_provided`
@@ -228,6 +239,7 @@ Manual entry：
 Dashboard：
 
 - `dashboard.summary`
+- `dashboard.export`
 - `tasks.updateStatus`
 - `tasks.getEvidence`
 
@@ -313,7 +325,7 @@ flowchart LR
 
 `/`
 
-- Monday triage dashboard。
+- Monday triage dashboard，包含 urgency sections、filters/sorting、task status updates、extension visibility、evidence access 和 export。
 
 `/coverage`
 
@@ -376,9 +388,12 @@ flowchart LR
 
 - 注册登录。
 - 导入每个来源的代表 CSV。
+- 确认 import preview 在 commit 前检测 headers、mapping、review rows 和 likely duplicates。
 - 手动创建客户和截止日期。
 - 确认只有 verified rules 创建官方任务。
 - 确认 source changed rule 不会创建新的官方任务。
+- 确认 verified recurring obligations 不需要 manual rollover 就能生成 upcoming tasks。
+- 确认 dashboard filters/sorting、extension status、urgency surfaces 和 export 可用。
 - 确认 coverage matrix 显示 monitor status。
 - 确认 evidence drawer 显示 last checked、last changed 和 rule versions。
 - 确认 verification queue approval 会发布新版本。

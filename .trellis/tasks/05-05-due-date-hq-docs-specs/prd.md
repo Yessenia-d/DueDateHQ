@@ -18,9 +18,12 @@ Create durable repo documents for:
 - Manual client and deadline entry
 - Go-to-market plan
 - Feature progress tracking plan
+- Competitor-informed feature decisions where they affect Beta scope
+- Core competitor capability parity, with DueDateHQ-specific improvements where the competitor workflow is dated or weaker
 
 ## Deliverables
 
+- `.trellis/tasks/05-05-due-date-hq-docs-specs/research/file-in-time-competitor-research.md`
 - `docs/due-date-hq-beta-plan.md`
 - `docs/product/due-date-hq-product-plan.md`
 - `docs/technical/due-date-hq-beta-technical-plan.md`
@@ -37,6 +40,35 @@ Create durable repo documents for:
 - `specs/gtm.md`
 - `specs/cloudflare-deployment.md`
 
+## Research Inputs
+
+- File In Time user manual competitor research: `.trellis/tasks/05-05-due-date-hq-docs-specs/research/file-in-time-competitor-research.md`
+
+## Product Direction Update
+
+The product target is not to cherry-pick a few competitor ideas. For core CPA due-date operations, DueDateHQ should cover the useful File In Time capabilities and make them better through a modern web workflow, verified source evidence, rule monitoring, and lower operational overhead.
+
+Core competitor capabilities that must be represented in product/spec planning:
+
+- Client records with tax-relevant profile fields, notes, entity/client type, jurisdiction context, and import/manual entry paths.
+- CSV import with preview, field mapping, review before commit, header handling, and duplicate detection/resolution.
+- A service/obligation library that can generate client deadline tasks, while preserving DueDateHQ's distinction between known obligations, verified schedulable rules, unsupported obligations, and user-provided deadlines.
+- Compact task rows centered on client, obligation, jurisdiction, due date, days remaining, status, and evidence/trust state.
+- First-class weekly triage, plus filters/sorting by date horizon, client, jurisdiction/state, entity type, tax type, task status, and verification status.
+- Deadline extension handling where verified rule evidence supports extension dates, with extension status visible in task workflow.
+- Recurring/upcoming task generation from verified rules or clearly user-provided recurring deadlines, without requiring manual rollover for official deadlines.
+- Basic operational exports for dashboard/task views so CPAs can preserve, share, or review workload data outside the app.
+- Simple reminder/urgency surfaces for due today/this week/this month, preferably integrated into the dashboard before adding external email/SMS/calendar channels.
+- Clear exclusion or later-stage treatment for heavy desktop-era features: local database administration, backup/restore UI, Crystal Reports-style report builders, mail merge/labels, extension form printing, arbitrary field renaming, network-user maintenance, and detailed rights matrices.
+
+DueDateHQ must be better than File In Time in these areas:
+
+- Trust: every official task has source evidence, verification status, versioning, and source-change visibility.
+- Automation: official recurring deadlines are generated from maintained rules, not manual rollover.
+- Transparency: unsupported, needs-review, source-changed, and user-provided deadlines are visible without pretending to be verified official deadlines.
+- Cloud workflow: users should not manage desktop installs, shared drives, database files, optimization, or backups.
+- Onboarding: source-specific CSV adapters should improve on generic delimited-file mapping.
+
 ## Constraints
 
 - Do not implement code.
@@ -50,3 +82,5 @@ Create durable repo documents for:
 - Each spec includes goal, user flow, Mermaid flow diagram, pages/API, data model, acceptance criteria, and out-of-scope.
 - Verification status rules include `Verified`, `Needs review`, `Source changed`, `Unsupported`, and user-provided manual deadlines.
 - Official source monitoring design includes 24h detection, change candidates, verification queue, and manual approval before publishing verified rules.
+- Product and feature specs reflect the File In Time competitor research where relevant, especially CSV import review, Monday triage, task filters, exports, and beta exclusions.
+- Product and feature specs explicitly show how DueDateHQ reaches parity or better for each core File In Time workflow area: client setup, import, obligation/service setup, task generation, triage, filtering, status/extension handling, recurrence/upcoming tasks, exports, reminders/urgency, and admin/settings boundaries.

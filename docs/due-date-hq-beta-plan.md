@@ -12,6 +12,8 @@ Traceable tax deadlines, not black-box dates.
 
 DueDateHQ maintains a 50-state tax obligation library, monitors official sources within a 24-hour detection window, and clearly separates verified system rules from unverified, user-provided, or unsupported obligations.
 
+Competitor framing: DueDateHQ Beta should reach parity or better with the useful core workflows from File In Time, while replacing desktop-era database, rollover, and reporting overhead with a cloud workflow and a verified-source trust model. Parity means CPAs can set up clients, import files, generate and triage deadline work, filter/sort tasks, handle extensions, export workload views, and see urgency without falling back to spreadsheets. Better means official tasks carry source evidence, verification status, source monitoring, rule versions, and no manual rollover for verified recurring deadlines.
+
 ## Current Delivery Goals
 
 - Build a real Beta product, not a pure front-end demo.
@@ -23,6 +25,7 @@ DueDateHQ maintains a 50-state tax obligation library, monitors official sources
 - Add manual entry for clients and custom deadlines.
 - Add official source monitoring and a verification queue for tax rule maintenance.
 - Add a feature progress page so product, engineering, and reviewers can see what is complete.
+- Cover File In Time's useful core due-date workflow areas at parity or better: client setup, CSV import review, obligation/service setup, task generation, weekly triage, filters/sorting, task status, extension handling, recurrence/upcoming tasks, exports, urgency surfaces, and admin/settings boundaries.
 
 ## Key Product Rule
 
@@ -64,6 +67,8 @@ In scope:
 - Official source monitoring design and API surface.
 - Verification queue for rule review and publishing.
 - Cloudflare deployment plan.
+- Source-specific CSV adapters with preview, mapping, review, and duplicate handling.
+- Dashboard/task exports and in-product urgency surfaces for due today, this week, and this month.
 
 Out of scope for Beta:
 
@@ -72,6 +77,8 @@ Out of scope for Beta:
 - Automatic publishing of rule changes without verification.
 - Complete city/county/industry-specific tax automation.
 - Live AI interpretation without human review.
+- Desktop-era File In Time features: local database administration, backup/restore UI, Crystal Reports-style reports, mail merge/labels, extension form printing, arbitrary field renaming, network-user maintenance, and detailed rights matrices.
+- Email, SMS, and calendar reminders unless later discovery reprioritizes them after the in-product urgency surfaces are proven.
 
 ## GTM Summary
 

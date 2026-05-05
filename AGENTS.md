@@ -27,3 +27,15 @@ If you're using Codex or another agent-capable tool, additional project-scoped h
 Managed by Trellis. Edits outside this block are preserved; edits inside may be overwritten by a future `trellis update`.
 
 <!-- TRELLIS:END -->
+
+## Agent skills
+
+This repo uses project-scoped skills from `mattpocock/skills`.
+
+Before using engineering skills such as `diagnose`, `tdd`, `to-prd`, `to-issues`, `triage`, `grill-with-docs`, `improve-codebase-architecture`, or `zoom-out`, read the repo-specific configuration in:
+
+- `docs/agents/issue-tracker.md` — where issues and PRDs are published.
+- `docs/agents/triage-labels.md` — how canonical triage roles map to tracker labels.
+- `docs/agents/domain.md` — where to find domain glossary and ADRs.
+
+Use `CONTEXT.md` vocabulary when naming domain concepts in issues, PRDs, tests, architecture notes, and debugging hypotheses. Respect ADRs in `docs/adr/` when proposing or implementing architecture changes.
