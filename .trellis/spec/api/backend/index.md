@@ -114,6 +114,68 @@ while (isWeekend(adjusted) || isTaxDueDateLegalHoliday(adjusted)) {
 }
 ```
 
+## Scenario: Client Year Calendar Query
+
+### 1. Scope / Trigger
+
+- Trigger: code exposes a client-specific annual deadline calendar to the web app.
+- Use this pattern for internal DueDateHQ calendar views. Do not use it to imply external Google, Apple, or Outlook calendar sync.
+
+### 2. Signatures
+
+- tRPC procedure: `clients.getYearCalendar({ clientId: string, year: number }): ClientYearCalendarResponse`.
+- Response buckets: `CalendarMonthBucket[]` with exactly 12 month entries.
+- Calendar items: `CalendarDeadlineItem = DeadlineTaskResponse & { profileDisplayName, month, day, isOverdue, isOfficial }`.
+
+### 3. Contracts
+
+- Require firm session with `requireFirmSession(ctx)`.
+- Verify the `client_relationships` row belongs to the current firm before returning calendar data.
+- Read from existing `deadline_tasks`; do not recalculate tax rules in this query.
+- Filter `deadline_tasks` by `firm_id`, `client_relationship_id`, and `current_due_date` between `YYYY-01-01` and `YYYY-12-31`.
+- Return `availableYears` from current year, next year, selected year, and years represented by the client's existing deadline tasks.
+- Preserve trust state from `serializeDeadlineTask`: `verified_rule` is official; `entered_deadline` is not verified by DueDateHQ.
+- Keep firm target date separate from official due date in the response and UI.
+
+### 4. Validation & Error Matrix
+
+- Missing session -> `UNAUTHORIZED` from `requireFirmSession`.
+- Unknown or other-firm `clientId` -> `NOT_FOUND` with `Client relationship was not found.`
+- `year` outside `2000..2100` or non-integer -> Zod validation error.
+- No tasks for the selected year -> valid response with 12 empty month buckets.
+
+### 5. Good/Base/Bad Cases
+
+- Good: selected client has verified and entered deadlines in the year; response groups them by month and keeps entered deadlines not verified.
+- Base: selected client has no deadlines in the year; UI renders an empty annual-calendar state.
+- Bad: query includes another firm's task, another client's task, or uses unverified coverage data as an official calendar item.
+
+### 6. Tests Required
+
+- Router-level test for selected-year grouping and sorting.
+- Assert entered deadlines retain reference note and not-verified trust label.
+- Assert verified-rule deadlines set `isOfficial = true`.
+- Assert other-client, other-firm, and other-year rows are excluded by the query contract.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```typescript
+// Builds an annual calendar by re-running rule matching in the read query.
+const tasks = generateDeadlineTasks(profile, matchedRules, [year]);
+```
+
+#### Correct
+
+```typescript
+// Annual calendar reads the existing firm-owned task ledger.
+const tasks = await ctx.db
+  .select()
+  .from(deadlineTasks)
+  .where(and(eq(deadlineTasks.firmId, firmId), gte(deadlineTasks.currentDueDate, yearStart)));
+```
+
 ## Scenario: Auth and Firm Workspace Session
 
 ### 1. Scope / Trigger

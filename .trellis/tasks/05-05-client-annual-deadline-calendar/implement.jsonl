@@ -1,0 +1,6 @@
+{"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python3 .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file": ".trellis/spec/guides/due-date-hq-project-conventions.md", "reason": "Project product invariants and API/frontend conventions"}
+{"file": ".trellis/spec/api/backend/index.md", "reason": "tRPC API backend rules for client calendar query"}
+{"file": ".trellis/spec/web/frontend/index.md", "reason": "React route and tRPC frontend rules"}
+{"file": "specs/dashboard.md", "reason": "Deadline task trust and dashboard behavior boundaries"}
+{"file": "specs/manual-client-and-deadline-entry.md", "reason": "Entered deadline trust boundary"}

@@ -1,4 +1,4 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, gte, lte } from "drizzle-orm";
 import {
   clientRelationships,
   clientRelationshipTypes,
@@ -88,6 +88,45 @@ export type ClientDetailResponse = {
   deadlines: DeadlineTaskResponse[];
 };
 
+export type CalendarDeadlineItem = DeadlineTaskResponse & {
+  profileDisplayName: string;
+  month: number;
+  day: number;
+  isOverdue: boolean;
+  isOfficial: boolean;
+};
+
+export type CalendarMonthBucket = {
+  month: number;
+  label: string;
+  count: number;
+  deadlines: CalendarDeadlineItem[];
+};
+
+export type ClientYearCalendarResponse = {
+  client: ClientRelationshipResponse;
+  profiles: FilingProfileResponse[];
+  year: number;
+  availableYears: number[];
+  months: CalendarMonthBucket[];
+  deadlines: CalendarDeadlineItem[];
+};
+
+const monthLabels = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+] as const;
+
 function nullableText(value: string | null | undefined): string | null {
   const trimmed = value?.trim();
   return trimmed ? trimmed : null;
@@ -171,6 +210,38 @@ export function serializeDeadlineTask(task: DeadlineTask): DeadlineTaskResponse 
     createdAt: serializeDate(task.createdAt),
     updatedAt: serializeDate(task.updatedAt),
   };
+}
+
+function parseDateParts(date: string): { year: number; month: number; day: number } {
+  const [year, month, day] = date.split("-").map(Number);
+
+  return {
+    year: year ?? 0,
+    month: month ?? 0,
+    day: day ?? 0,
+  };
+}
+
+function formatDateKey(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function createCalendarMonths(deadlines: readonly CalendarDeadlineItem[]): CalendarMonthBucket[] {
+  return monthLabels.map((label, index) => {
+    const month = index + 1;
+    const monthDeadlines = deadlines.filter((deadline) => deadline.month === month);
+
+    return {
+      month,
+      label,
+      count: monthDeadlines.length,
+      deadlines: monthDeadlines,
+    };
+  });
 }
 
 export const clientsRouter = router({
@@ -391,6 +462,112 @@ export const clientsRouter = router({
         client: serializeClientRelationship(client),
         profiles: profiles.map(serializeFilingProfile),
         deadlines: deadlines.map(serializeDeadlineTask),
+      };
+    }),
+
+  getYearCalendar: publicProcedure
+    .input(
+      z.object({
+        clientId: z.string().trim().min(1),
+        year: z.number().int().min(2000).max(2100),
+      }),
+    )
+    .query(async ({ ctx, input }): Promise<ClientYearCalendarResponse> => {
+      const session = requireFirmSession(ctx);
+
+      const [client] = await ctx.db
+        .select()
+        .from(clientRelationships)
+        .where(
+          and(
+            eq(clientRelationships.firmId, session.firm.id),
+            eq(clientRelationships.id, input.clientId),
+          ),
+        )
+        .limit(1);
+
+      if (!client) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Client relationship was not found.",
+        });
+      }
+
+      const profiles = await ctx.db
+        .select()
+        .from(filingProfiles)
+        .where(
+          and(
+            eq(filingProfiles.firmId, session.firm.id),
+            eq(filingProfiles.clientRelationshipId, client.id),
+          ),
+        )
+        .orderBy(asc(filingProfiles.displayName));
+      const profileNames = new Map(profiles.map((profile) => [profile.id, profile.displayName]));
+      const allDeadlineDateRows = await ctx.db
+        .select({ currentDueDate: deadlineTasks.currentDueDate })
+        .from(deadlineTasks)
+        .where(
+          and(
+            eq(deadlineTasks.firmId, session.firm.id),
+            eq(deadlineTasks.clientRelationshipId, client.id),
+          ),
+        )
+        .orderBy(asc(deadlineTasks.currentDueDate));
+      const yearStart = `${input.year}-01-01`;
+      const yearEnd = `${input.year}-12-31`;
+      const deadlineRows = await ctx.db
+        .select()
+        .from(deadlineTasks)
+        .where(
+          and(
+            eq(deadlineTasks.firmId, session.firm.id),
+            eq(deadlineTasks.clientRelationshipId, client.id),
+            gte(deadlineTasks.currentDueDate, yearStart),
+            lte(deadlineTasks.currentDueDate, yearEnd),
+          ),
+        )
+        .orderBy(asc(deadlineTasks.currentDueDate), asc(deadlineTasks.title));
+      const today = formatDateKey(new Date());
+      const deadlines = deadlineRows
+        .map((deadline): CalendarDeadlineItem => {
+          const dateParts = parseDateParts(deadline.currentDueDate);
+
+          return {
+            ...serializeDeadlineTask(deadline),
+            profileDisplayName: profileNames.get(deadline.filingProfileId) ?? "Unknown filing profile",
+            month: dateParts.month,
+            day: dateParts.day,
+            isOverdue: deadline.currentDueDate < today && deadline.status !== "done",
+            isOfficial: deadline.sourceType === "verified_rule",
+          };
+        })
+        .sort((left, right) => {
+          const dueDateCompare = left.currentDueDate.localeCompare(right.currentDueDate);
+          if (dueDateCompare !== 0) return dueDateCompare;
+
+          const profileCompare = left.profileDisplayName.localeCompare(right.profileDisplayName);
+          if (profileCompare !== 0) return profileCompare;
+
+          return left.title.localeCompare(right.title);
+        });
+      const currentYear = new Date().getFullYear();
+      const availableYears = [
+        ...new Set([
+          currentYear,
+          currentYear + 1,
+          input.year,
+          ...allDeadlineDateRows.map((row) => parseDateParts(row.currentDueDate).year),
+        ]),
+      ].sort((left, right) => left - right);
+
+      return {
+        client: serializeClientRelationship(client),
+        profiles: profiles.map(serializeFilingProfile),
+        year: input.year,
+        availableYears,
+        months: createCalendarMonths(deadlines),
+        deadlines,
       };
     }),
 });

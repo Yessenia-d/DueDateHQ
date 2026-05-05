@@ -5,6 +5,7 @@ import type {
   DashboardTaskRow,
   DashboardVerificationStatus,
 } from "@due-date-hq/api/routers/dashboard";
+import type { CalendarDeadlineItem } from "@due-date-hq/api/routers/clients";
 import { Button } from "@due-date-hq/ui/components/button";
 import { Input } from "@due-date-hq/ui/components/input";
 import {
@@ -18,6 +19,7 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   Building2,
+  CalendarDays,
   ChevronDown,
   ClipboardList,
   FileUp,
@@ -32,6 +34,7 @@ import { EvidenceDrawer } from "@/components/evidence/evidence-drawer";
 import { StatusBadge } from "@/components/status-badge";
 import { BulkTaskActions } from "@/components/task-table/bulk-task-actions";
 import { TaskTable } from "@/components/task-table/task-table";
+import { formatDate } from "@/utils/date-format";
 import { trpc } from "@/utils/trpc";
 
 export const Route = createFileRoute("/tax-work")({
@@ -396,8 +399,8 @@ function TaxWorkComponent() {
                 <div className="flex h-full min-h-0 min-w-0 flex-col gap-4">
                   <section className="min-w-0 shrink-0 overflow-hidden rounded-lg border border-border/80 bg-card">
                     <div className="min-w-0 px-4 py-3">
-                      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                        <div className="min-w-0">
+                      <div className="grid justify-start gap-4 xl:grid-cols-[minmax(420px,520px)_minmax(660px,820px)]">
+                        <div className="min-w-0 max-w-[520px]">
                           <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
                             <Building2 className="size-3.5" />
                             Client relationship
@@ -420,15 +423,24 @@ function TaxWorkComponent() {
                               status="entered_deadline"
                               value={clientQueueSummary.enteredDeadline}
                             />
+                            <StatusBadge status="neutral">
+                              {clientQueueSummary.open} open
+                            </StatusBadge>
+                            {clientQueueSummary.overdue > 0 ? (
+                              <StatusBadge status="overdue">
+                                {clientQueueSummary.overdue} overdue
+                              </StatusBadge>
+                            ) : null}
                           </div>
+                          <a
+                            href={`/import?clientIds=${encodeURIComponent(selectedClient.id)}`}
+                            className="mt-3 inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-border bg-background px-2.5 text-xs font-medium text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          >
+                            <FileUp className="size-3.5" />
+                            Import for this client
+                          </a>
                         </div>
-                        <a
-                          href={`/import?clientIds=${encodeURIComponent(selectedClient.id)}`}
-                          className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-border bg-background px-2.5 text-xs font-medium text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                        >
-                          <FileUp className="size-3.5" />
-                          Import for this client
-                        </a>
+                        <AnnualDeadlineCalendarCard clientId={selectedClient.id} />
                       </div>
                     </div>
                   </section>
@@ -718,6 +730,159 @@ function TrustBadge({
     <StatusBadge status={config[status].badgeStatus}>
       {config[status].label} {value}
     </StatusBadge>
+  );
+}
+
+function AnnualDeadlineCalendarCard({ clientId }: { clientId: string }) {
+  const currentYear = new Date().getFullYear();
+  const currentMonth = new Date().getMonth() + 1;
+  const [calendarYear, setCalendarYear] = React.useState(currentYear);
+  const [selectedMonth, setSelectedMonth] = React.useState(currentMonth);
+  const calendar = useQuery(
+    trpc.clients.getYearCalendar.queryOptions({ clientId, year: calendarYear }),
+  );
+
+  function handleCalendarYearChange(year: number) {
+    setCalendarYear(year);
+    setSelectedMonth(year === currentYear ? currentMonth : 1);
+  }
+
+  if (calendar.isPending) {
+    return (
+      <div className="border-t border-border pt-3 xl:border-l xl:border-t-0 xl:pl-4 xl:pt-0">
+        <div className="h-36 animate-pulse rounded-lg bg-muted/40" />
+      </div>
+    );
+  }
+
+  if (calendar.isError) {
+    return (
+      <div className="border-t border-border pt-3 xl:border-l xl:border-t-0 xl:pl-4 xl:pt-0">
+        <div className="rounded-md border border-ddhq-risk/30 bg-ddhq-risk-soft px-3 py-2 text-xs text-ddhq-risk">
+          Annual deadline calendar could not be loaded.
+        </div>
+      </div>
+    );
+  }
+
+  const data = calendar.data;
+  const selectedMonthBucket =
+    data.months.find((month) => month.month === selectedMonth) ?? data.months[0];
+  const selectedMonthDeadlines = selectedMonthBucket?.deadlines ?? [];
+
+  return (
+    <div className="min-w-0 max-w-[820px] border-t border-border pt-3 xl:border-l xl:border-t-0 xl:pl-4 xl:pt-0">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+            <CalendarDays className="size-3.5" />
+            Annual calendar
+          </div>
+          <div className="mt-1 text-sm font-semibold text-foreground">
+            {data.deadlines.length} deadline{data.deadlines.length === 1 ? "" : "s"}
+          </div>
+        </div>
+        <Select
+          value={String(calendarYear)}
+          onValueChange={(value) => handleCalendarYearChange(Number(value ?? currentYear))}
+        >
+          <SelectTrigger className="h-7 rounded-lg bg-background px-2">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="rounded-lg">
+            {data.availableYears.map((year) => (
+              <SelectItem key={year} value={String(year)}>
+                {year}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="mt-3 grid gap-3 md:grid-cols-[228px_minmax(0,1fr)] md:items-stretch">
+        <div className="grid h-[246px] grid-cols-3 grid-rows-4 gap-1.5">
+          {data.months.map((month) => (
+            <button
+              key={month.month}
+              type="button"
+              aria-pressed={selectedMonth === month.month}
+              className={`rounded-[6px] border px-2 py-1.5 text-center ${
+                selectedMonth === month.month
+                  ? "border-primary/40 bg-ddhq-accent-soft text-primary ring-1 ring-primary/20"
+                  : month.count > 0
+                  ? "border-primary/20 bg-ddhq-accent-soft/45 text-primary"
+                  : "border-border bg-background text-muted-foreground"
+              } hover:border-primary/30 hover:bg-ddhq-accent-soft/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring`}
+              onClick={() => setSelectedMonth(month.month)}
+            >
+              <div className="text-[10px] font-semibold uppercase leading-none">
+                {month.label.slice(0, 3)}
+              </div>
+              <div className="mt-1 font-mono text-sm font-semibold tabular-nums">
+                {month.count}
+              </div>
+            </button>
+          ))}
+        </div>
+
+        <div className="flex h-[246px] min-w-0 flex-col rounded-md border border-border/80 bg-background/70 p-2.5">
+          <div className="mb-1.5 flex items-center justify-between gap-2">
+            <div className="text-[11px] font-semibold text-muted-foreground">
+              {selectedMonthBucket?.label ?? "Month"} tax list
+            </div>
+            <div className="font-mono text-[11px] text-muted-foreground tabular-nums">
+              {selectedMonthDeadlines.length}
+            </div>
+          </div>
+          {selectedMonthDeadlines.length === 0 ? (
+            <div className="min-h-0 rounded-md border border-dashed border-border bg-muted/20 px-3 py-2 text-xs leading-5 text-muted-foreground">
+              No deadlines for this month.
+            </div>
+          ) : (
+            <div className="min-h-0 flex-1 overflow-auto pr-1">
+              <div className="grid gap-1.5">
+                {selectedMonthDeadlines.map((deadline) => (
+                  <AnnualCalendarDeadline key={deadline.id} deadline={deadline} />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AnnualCalendarDeadline({ deadline }: { deadline: CalendarDeadlineItem }) {
+  return (
+    <div className="rounded-md border border-border/80 bg-background px-2 py-1.5">
+      <div className="flex min-w-0 items-start justify-between gap-2">
+        <div className="min-w-0">
+          <div className="flex items-center gap-1.5">
+            <span className="font-mono text-xs font-semibold tabular-nums text-foreground">
+              {formatDate(deadline.currentDueDate)}
+            </span>
+            {deadline.isOverdue ? <StatusBadge status="overdue">Overdue</StatusBadge> : null}
+          </div>
+          <div className="mt-1 truncate text-xs font-semibold text-foreground">
+            {deadline.title}
+          </div>
+          <div className="mt-0.5 truncate text-[11px] text-muted-foreground">
+            {deadline.profileDisplayName} / {deadline.jurisdiction} / {deadline.taxCategory}
+          </div>
+          {deadline.firmTargetDate ? (
+            <div className="mt-0.5 text-[11px] text-muted-foreground">
+              Firm target date: {formatDate(deadline.firmTargetDate)}
+            </div>
+          ) : null}
+        </div>
+        <div className="shrink-0">
+          <StatusBadge status={deadline.isOfficial ? "verified" : "entered_deadline"}>
+            {deadline.isOfficial ? "Official" : "Entered"}
+          </StatusBadge>
+        </div>
+      </div>
+    </div>
   );
 }
 
