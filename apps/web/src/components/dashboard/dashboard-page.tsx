@@ -1,5 +1,4 @@
 import { Button } from "@due-date-hq/ui/components/button";
-import { Input } from "@due-date-hq/ui/components/input";
 import {
   Select,
   SelectContent,
@@ -8,26 +7,22 @@ import {
   SelectValue,
 } from "@due-date-hq/ui/components/select";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import {
-  CalendarDays,
-  Download,
-  Filter,
-  ShieldAlert,
-  ShieldCheck,
-  Target,
-} from "lucide-react";
+import { CalendarDays, Download, Filter } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
 
 import { EvidenceDrawer } from "@/components/evidence/evidence-drawer";
-import { StatusBadge } from "@/components/status-badge";
+import { BulkTaskActions } from "@/components/task-table/bulk-task-actions";
 import { TaskTable } from "@/components/task-table/task-table";
-import { queryClient, trpc } from "@/utils/trpc";
+import { trpc } from "@/utils/trpc";
 
 import type {
   DashboardHorizon,
+  DashboardSection,
   DashboardSort,
   DashboardSummaryInput,
+  DashboardSummaryResponse,
+  DashboardTaskHorizon,
   DashboardTaskRow,
   DashboardVerificationStatus,
 } from "@due-date-hq/api/routers/dashboard";
@@ -39,8 +34,61 @@ const horizonLabels: Record<DashboardHorizon, string> = {
   overdue: "Overdue",
   due_this_week: "Due this week",
   this_month: "This month",
-  long_range: "Long range",
+  long_range: "Later",
 };
+
+const dashboardHorizons: DashboardTaskHorizon[] = [
+  "overdue",
+  "due_this_week",
+  "this_month",
+  "long_range",
+];
+
+const horizonToneStyles = {
+  overdue: {
+    activeCard: "border-ddhq-risk/55 bg-ddhq-risk-soft/85 ring-2 ring-ddhq-risk/20 shadow-sm",
+    count: "text-ddhq-risk",
+    currentView: "bg-background/75 text-ddhq-risk ring-1 ring-ddhq-risk/25",
+    dot: "bg-ddhq-risk",
+    idleCard: "border-ddhq-risk/25 bg-ddhq-risk-soft/35 hover:border-ddhq-risk/45 hover:bg-ddhq-risk-soft/60",
+    title: "text-ddhq-risk",
+  },
+  due_this_week: {
+    activeCard: "border-ddhq-review/55 bg-ddhq-review-soft/85 ring-2 ring-ddhq-review/20 shadow-sm",
+    count: "text-ddhq-review",
+    currentView: "bg-background/75 text-ddhq-review ring-1 ring-ddhq-review/25",
+    dot: "bg-ddhq-review",
+    idleCard:
+      "border-ddhq-review/25 bg-ddhq-review-soft/35 hover:border-ddhq-review/45 hover:bg-ddhq-review-soft/60",
+    title: "text-ddhq-review",
+  },
+  this_month: {
+    activeCard: "border-primary/45 bg-ddhq-accent-soft/80 ring-2 ring-primary/15 shadow-sm",
+    count: "text-primary",
+    currentView: "bg-background/75 text-primary ring-1 ring-primary/20",
+    dot: "bg-primary",
+    idleCard: "border-primary/20 bg-ddhq-accent-soft/35 hover:border-primary/40 hover:bg-ddhq-accent-soft/60",
+    title: "text-primary",
+  },
+  long_range: {
+    activeCard: "border-ddhq-gap/45 bg-ddhq-gap-soft/80 ring-2 ring-ddhq-gap/15 shadow-sm",
+    count: "text-ddhq-gap",
+    currentView: "bg-background/75 text-ddhq-gap ring-1 ring-ddhq-gap/20",
+    dot: "bg-ddhq-gap",
+    idleCard: "border-ddhq-gap/20 bg-ddhq-gap-soft/35 hover:border-ddhq-gap/40 hover:bg-ddhq-gap-soft/60",
+    title: "text-ddhq-gap",
+  },
+} satisfies Record<
+  DashboardTaskHorizon,
+  {
+    activeCard: string;
+    count: string;
+    currentView: string;
+    dot: string;
+    idleCard: string;
+    title: string;
+  }
+>;
 
 const sortLabels: Record<DashboardSort, string> = {
   smart_priority: "Smart priority",
@@ -71,10 +119,11 @@ const emptyFilters: DashboardSummaryInput = {
 
 export function DashboardPage() {
   const [filters, setFilters] = React.useState<DashboardSummaryInput>(emptyFilters);
+  const [activeHorizon, setActiveHorizon] =
+    React.useState<DashboardTaskHorizon>("due_this_week");
   const [selectedTaskIds, setSelectedTaskIds] = React.useState<Set<string>>(new Set());
   const [evidenceTaskId, setEvidenceTaskId] = React.useState<string | null>(null);
-  const [bulkStatus, setBulkStatus] = React.useState<DeadlineTaskStatus>("in_progress");
-  const [bulkFirmTargetDate, setBulkFirmTargetDate] = React.useState("");
+  const [showFilters, setShowFilters] = React.useState(false);
 
   const dashboard = useQuery(trpc.dashboard.summary.queryOptions(filters));
   const exportCurrentView = useMutation(
@@ -92,38 +141,32 @@ export function DashboardPage() {
       onError: (error) => toast.error(error.message),
     }),
   );
-  const bulkUpdateStatus = useMutation(
-    trpc.tasks.bulkUpdateStatus.mutationOptions({
-      onSuccess: (result) => {
-        toast.success(`Updated ${result.updatedCount} task statuses.`);
-        setSelectedTaskIds(new Set());
-        void queryClient.invalidateQueries();
-      },
-      onError: (error) => toast.error(error.message),
-    }),
-  );
-  const bulkUpdateFirmTarget = useMutation(
-    trpc.tasks.bulkUpdateFirmTargetDate.mutationOptions({
-      onSuccess: (result) => {
-        toast.success(`Updated ${result.updatedCount} firm target dates.`);
-        setSelectedTaskIds(new Set());
-        setBulkFirmTargetDate("");
-        void queryClient.invalidateQueries();
-      },
-      onError: (error) => toast.error(error.message),
-    }),
-  );
-
   const selectedCount = selectedTaskIds.size;
+  const activeSection = React.useMemo<DashboardSection>(() => {
+    const section = dashboard.data?.sections.find((item) => item.id === activeHorizon);
+
+    if (!section) {
+      return {
+        id: activeHorizon,
+        label: horizonLabels[activeHorizon],
+        count: 0,
+        tasks: [],
+      };
+    }
+
+    return {
+      ...section,
+      label: horizonLabels[section.id],
+    };
+  }, [activeHorizon, dashboard.data]);
 
   React.useEffect(() => {
-    if (!dashboard.data) return;
-    const visibleIds = new Set(dashboard.data.allTasks.map((task) => task.id));
+    const visibleIds = new Set(activeSection.tasks.map((task) => task.id));
     setSelectedTaskIds((current) => {
       const next = new Set([...current].filter((taskId) => visibleIds.has(taskId)));
       return next.size === current.size ? current : next;
     });
-  }, [dashboard.data]);
+  }, [activeSection]);
 
   function updateFilter<K extends keyof DashboardSummaryInput>(
     key: K,
@@ -163,8 +206,16 @@ export function DashboardPage() {
     });
   }
 
-  const isBusy =
-    bulkUpdateStatus.isPending || bulkUpdateFirmTarget.isPending || exportCurrentView.isPending;
+  const isBusy = exportCurrentView.isPending;
+  const activeFilterCount = [
+    filters.clientRelationshipId,
+    filters.filingProfileId,
+    filters.jurisdiction,
+    filters.entityType,
+    filters.taxCategory,
+    filters.taskStatus,
+    filters.verificationStatus,
+  ].filter(Boolean).length;
 
   if (dashboard.isPending) {
     return (
@@ -196,7 +247,7 @@ export function DashboardPage() {
     <main className="min-h-0 overflow-auto bg-background text-foreground">
       <div className="mx-auto flex max-w-[1440px] flex-col gap-4 px-5 py-5">
         {/* Page header */}
-        <section className="border-b border-border pb-4">
+        <section className="pb-1">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div className="min-w-0">
               <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
@@ -207,200 +258,180 @@ export function DashboardPage() {
                 Deadline dashboard
               </h1>
             </div>
-            <div className="grid gap-1 text-xs text-muted-foreground">
+            <div className="grid gap-1 text-xs text-muted-foreground lg:text-right">
               <span>Today {formatDate(data.today)}</span>
               <span>Generated {formatDateTime(data.generatedAt)}</span>
             </div>
           </div>
         </section>
 
-        {/* Metrics strip */}
-        <section className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7">
-          <MetricBadge tone="risk" label="Overdue" value={data.summary.overdue} />
-          <MetricBadge tone="risk" label="Due today" value={data.summary.dueToday} />
-          <MetricBadge tone="review" label="This week" value={data.summary.dueThisWeek} />
-          <MetricBadge tone="neutral" label="This month" value={data.summary.dueThisMonth} />
-          <MetricBadge tone="verified" label="Verified" value={data.summary.verified} />
-          <MetricBadge tone="review" label="Source changed" value={data.summary.sourceChanged} />
-          <MetricBadge tone="neutral" label="Entered deadlines" value={data.summary.enteredDeadline} />
-        </section>
+        {/* Horizon selector */}
+        <section className="grid grid-cols-1 gap-2 md:grid-cols-4">
+          {dashboardHorizons.map((horizon) => {
+            const section = data.sections.find((item) => item.id === horizon);
+            const count = section?.count ?? 0;
 
-        {/* Filters panel */}
-        <section className="rounded-xl border border-border bg-card">
-          <div className="flex items-center gap-2 border-b border-border px-3 py-2 text-xs font-semibold text-muted-foreground">
-            <Filter className="size-3.5" />
-            Filters
-          </div>
-          <div className="grid gap-2 p-3 md:grid-cols-3 xl:grid-cols-5">
-            <FilterSelect
-              label="Horizon"
-              value={filters.horizon ?? "all"}
-              onChange={(value) => updateFilter("horizon", value as DashboardHorizon)}
-              options={Object.entries(horizonLabels).map(([value, label]) => ({ value, label }))}
-            />
-            <FilterSelect
-              label="Client"
-              value={filters.clientRelationshipId ?? ""}
-              onChange={(value) => updateFilter("clientRelationshipId", value)}
-              options={data.filterOptions.clientRelationships.map((option) => ({
-                value: option.id,
-                label: option.label,
-              }))}
-              placeholder="All clients"
-            />
-            <FilterSelect
-              label="Filing profile"
-              value={filters.filingProfileId ?? ""}
-              onChange={(value) => updateFilter("filingProfileId", value)}
-              options={data.filterOptions.filingProfiles.map((option) => ({
-                value: option.id,
-                label: option.label,
-              }))}
-              placeholder="All profiles"
-            />
-            <FilterSelect
-              label="Jurisdiction"
-              value={filters.jurisdiction ?? ""}
-              onChange={(value) => updateFilter("jurisdiction", value)}
-              options={data.filterOptions.jurisdictions.map((value) => ({ value, label: value }))}
-              placeholder="All jurisdictions"
-            />
-            <FilterSelect
-              label="Entity type"
-              value={filters.entityType ?? ""}
-              onChange={(value) =>
-                updateFilter("entityType", value as DashboardSummaryInput["entityType"] | "")
-              }
-              options={data.filterOptions.entityTypes.map((value) => ({ value, label: value }))}
-              placeholder="All entities"
-            />
-            <FilterSelect
-              label="Tax type"
-              value={filters.taxCategory ?? ""}
-              onChange={(value) => updateFilter("taxCategory", value)}
-              options={data.filterOptions.taxCategories.map((value) => ({ value, label: value }))}
-              placeholder="All tax types"
-            />
-            <FilterSelect
-              label="Status"
-              value={filters.taskStatus ?? ""}
-              onChange={(value) =>
-                updateFilter("taskStatus", value as DashboardSummaryInput["taskStatus"] | "")
-              }
-              options={data.filterOptions.taskStatuses.map((value) => ({
-                value,
-                label: statusLabels[value],
-              }))}
-              placeholder="All statuses"
-            />
-            <FilterSelect
-              label="Verification"
-              value={filters.verificationStatus ?? ""}
-              onChange={(value) =>
-                updateFilter(
-                  "verificationStatus",
-                  value as DashboardSummaryInput["verificationStatus"] | "",
-                )
-              }
-              options={data.filterOptions.verificationStatuses.map((value) => ({
-                value,
-                label: verificationLabels[value],
-              }))}
-              placeholder="All verification"
-            />
-            <FilterSelect
-              label="Sort"
-              value={filters.sort ?? "smart_priority"}
-              onChange={(value) => updateFilter("sort", value as DashboardSort)}
-              options={Object.entries(sortLabels).map(([value, label]) => ({ value, label }))}
-            />
-          </div>
-        </section>
-
-        {/* Bulk actions bar */}
-        <section className="sticky top-0 z-10 rounded-xl border border-border bg-card px-3 py-2 shadow-sm">
-          <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-            <div className="text-sm font-semibold">
-              {selectedCount} selected
-              <span className="ml-2 text-xs font-normal text-muted-foreground">
-                {data.summary.total} rows in current view
-              </span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Select
-                value={bulkStatus}
-                onValueChange={(value) => setBulkStatus(value as DeadlineTaskStatus)}
-              >
-                <SelectTrigger className="h-8 w-auto">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {data.filterOptions.taskStatuses.map((status) => (
-                    <SelectItem key={status} value={status}>
-                      {statusLabels[status]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button
-                type="button"
-                variant="outline"
-                disabled={selectedCount === 0 || isBusy}
-                onClick={() =>
-                  bulkUpdateStatus.mutate({
-                    taskIds: [...selectedTaskIds],
-                    status: bulkStatus,
-                  })
-                }
-              >
-                Apply status
-              </Button>
-              <Input
-                aria-label="Bulk firm target date"
-                className="w-40"
-                type="date"
-                value={bulkFirmTargetDate}
-                onChange={(event) => setBulkFirmTargetDate(event.target.value)}
+            return (
+              <HorizonCard
+                key={horizon}
+                count={count}
+                horizon={horizon}
+                isSelected={activeHorizon === horizon}
+                onSelect={() => setActiveHorizon(horizon)}
+                summary={getHorizonSummary(horizon, data)}
               />
+            );
+          })}
+        </section>
+
+        {/* Controls */}
+        <section className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex min-h-8 flex-wrap items-center gap-2">
               <Button
                 type="button"
                 variant="outline"
-                disabled={selectedCount === 0 || isBusy}
-                onClick={() =>
-                  bulkUpdateFirmTarget.mutate({
-                    taskIds: [...selectedTaskIds],
-                    firmTargetDate: bulkFirmTargetDate || null,
-                  })
+                size="sm"
+                className={
+                  showFilters
+                    ? "border-primary/30 bg-ddhq-accent-soft/70 text-foreground shadow-none"
+                    : undefined
                 }
+                onClick={() => setShowFilters((current) => !current)}
               >
-                <Target className="size-3.5" />
-                Apply target
+                <Filter
+                  className={showFilters ? "size-3.5 text-primary" : "size-3.5"}
+                />
+                Filters
               </Button>
-              <Button
-                type="button"
-                variant="outline"
-                disabled={isBusy}
-                onClick={() => exportCurrentView.mutate(filters)}
-              >
-                <Download className="size-3.5" />
-                Export view
-              </Button>
+              <span className="text-xs font-medium text-muted-foreground">
+                {activeFilterCount > 0 ? `${activeFilterCount} active` : "Default filters"}
+              </span>
+              {selectedCount > 0 ? (
+                <span className="ml-2 text-sm font-semibold">
+                  {selectedCount} selected
+                  <span className="ml-2 text-xs font-normal text-muted-foreground">
+                    {activeSection.count} rows in current view
+                  </span>
+                </span>
+              ) : null}
             </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 w-32"
+              disabled={isBusy}
+              onClick={() => exportCurrentView.mutate({ ...filters, horizon: activeHorizon })}
+            >
+              <Download className="size-3.5" />
+              Export view
+            </Button>
           </div>
+
+          {showFilters ? (
+            <div className="grid gap-2 rounded-lg border border-border/80 bg-card p-3 shadow-sm md:grid-cols-3 xl:grid-cols-5">
+              <FilterSelect
+                label="Client"
+                value={filters.clientRelationshipId ?? ""}
+                onChange={(value) => updateFilter("clientRelationshipId", value)}
+                options={data.filterOptions.clientRelationships.map((option) => ({
+                  value: option.id,
+                  label: option.label,
+                }))}
+                placeholder="All clients"
+              />
+              <FilterSelect
+                label="Filing profile"
+                value={filters.filingProfileId ?? ""}
+                onChange={(value) => updateFilter("filingProfileId", value)}
+                options={data.filterOptions.filingProfiles.map((option) => ({
+                  value: option.id,
+                  label: option.label,
+                }))}
+                placeholder="All profiles"
+              />
+              <FilterSelect
+                label="Jurisdiction"
+                value={filters.jurisdiction ?? ""}
+                onChange={(value) => updateFilter("jurisdiction", value)}
+                options={data.filterOptions.jurisdictions.map((value) => ({
+                  value,
+                  label: value,
+                }))}
+                placeholder="All jurisdictions"
+              />
+              <FilterSelect
+                label="Entity type"
+                value={filters.entityType ?? ""}
+                onChange={(value) =>
+                  updateFilter("entityType", value as DashboardSummaryInput["entityType"] | "")
+                }
+                options={data.filterOptions.entityTypes.map((value) => ({ value, label: value }))}
+                placeholder="All entities"
+              />
+              <FilterSelect
+                label="Tax type"
+                value={filters.taxCategory ?? ""}
+                onChange={(value) => updateFilter("taxCategory", value)}
+                options={data.filterOptions.taxCategories.map((value) => ({
+                  value,
+                  label: value,
+                }))}
+                placeholder="All tax types"
+              />
+              <FilterSelect
+                label="Status"
+                value={filters.taskStatus ?? ""}
+                onChange={(value) =>
+                  updateFilter("taskStatus", value as DashboardSummaryInput["taskStatus"] | "")
+                }
+                options={data.filterOptions.taskStatuses.map((value) => ({
+                  value,
+                  label: statusLabels[value],
+                }))}
+                placeholder="All statuses"
+              />
+              <FilterSelect
+                label="Verification"
+                value={filters.verificationStatus ?? ""}
+                onChange={(value) =>
+                  updateFilter(
+                    "verificationStatus",
+                    value as DashboardSummaryInput["verificationStatus"] | "",
+                  )
+                }
+                options={data.filterOptions.verificationStatuses.map((value) => ({
+                  value,
+                  label: verificationLabels[value],
+                }))}
+                placeholder="All verification"
+              />
+              <FilterSelect
+                label="Sort"
+                value={filters.sort ?? "smart_priority"}
+                onChange={(value) => updateFilter("sort", value as DashboardSort)}
+                options={Object.entries(sortLabels).map(([value, label]) => ({ value, label }))}
+              />
+            </div>
+          ) : null}
         </section>
 
         {/* Task sections */}
-        <section className="flex flex-col gap-4">
-          {data.sections.map((section) => (
-            <TaskTable
-              key={section.id}
-              section={section}
-              selectedTaskIds={selectedTaskIds}
-              onToggleTask={toggleTask}
-              onToggleSection={toggleSection}
-              onOpenEvidence={setEvidenceTaskId}
-            />
-          ))}
+        <section className="grid gap-1">
+          <BulkTaskActions
+            disabled={isBusy}
+            selectedTaskIds={selectedTaskIds}
+            taskStatuses={data.filterOptions.taskStatuses}
+            onClearSelection={() => setSelectedTaskIds(new Set())}
+          />
+          <TaskTable
+            section={activeSection}
+            selectedTaskIds={selectedTaskIds}
+            onToggleTask={toggleTask}
+            onToggleSection={toggleSection}
+            onOpenEvidence={setEvidenceTaskId}
+          />
         </section>
       </div>
 
@@ -409,32 +440,66 @@ export function DashboardPage() {
   );
 }
 
-function MetricBadge({
-  label,
-  tone,
-  value,
+function HorizonCard({
+  count,
+  horizon,
+  isSelected,
+  onSelect,
+  summary,
 }: {
-  label: string;
-  tone: "verified" | "review" | "risk" | "neutral";
-  value: number;
+  count: number;
+  horizon: DashboardTaskHorizon;
+  isSelected: boolean;
+  onSelect: () => void;
+  summary: string;
 }) {
-  const toneClass = {
-    verified: "border-ddhq-verified/30 bg-ddhq-verified-soft text-ddhq-verified",
-    review: "border-ddhq-review/30 bg-ddhq-review-soft text-ddhq-review",
-    risk: "border-ddhq-risk/30 bg-ddhq-risk-soft text-ddhq-risk",
-    neutral: "border-border bg-muted text-muted-foreground",
-  }[tone];
-  const Icon = tone === "verified" ? ShieldCheck : tone === "review" ? ShieldAlert : null;
+  const tone = horizonToneStyles[horizon];
+  const cardClass = isSelected ? tone.activeCard : tone.idleCard;
 
   return (
-    <div className={`rounded-xl border p-3 ${toneClass}`}>
-      <div className="flex items-center gap-1.5 text-xs font-semibold">
-        {Icon ? <Icon className="size-3.5" /> : null}
-        {label}
+    <button
+      type="button"
+      aria-pressed={isSelected}
+      className={`min-h-24 rounded-lg border p-3 text-left transition-colors ${cardClass}`}
+      onClick={onSelect}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className={`flex items-center gap-2 text-sm font-semibold ${tone.title}`}>
+            <span className={`size-1.5 rounded-full ${tone.dot}`} aria-hidden="true" />
+            {horizonLabels[horizon]}
+          </div>
+          <div className="mt-1 text-xs text-muted-foreground">{summary}</div>
+        </div>
+        <div className={`text-xl font-semibold leading-none ${tone.count}`}>{count}</div>
       </div>
-      <div className="mt-1 text-lg font-semibold">{value}</div>
-    </div>
+      {isSelected ? (
+        <div className={`mt-4 inline-flex rounded-full px-2 py-1 text-xs font-semibold ${tone.currentView}`}>
+          Current view
+        </div>
+      ) : (
+        <div className="mt-4 text-xs text-muted-foreground">Open queue</div>
+      )}
+    </button>
   );
+}
+
+function getHorizonSummary(
+  horizon: DashboardTaskHorizon,
+  data: DashboardSummaryResponse,
+): string {
+  switch (horizon) {
+    case "overdue":
+      return data.summary.overdue > 0 ? "Past-due work needs review" : "No overdue work";
+    case "due_this_week":
+      return data.summary.dueToday > 0
+        ? `${data.summary.dueToday} due today`
+        : "Default weekly queue";
+    case "this_month":
+      return "Upcoming monthly planning";
+    case "long_range":
+      return "Future deadlines to monitor";
+  }
 }
 
 function FilterSelect({
