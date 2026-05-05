@@ -1,39 +1,42 @@
-# Frontend Development Guidelines
+# UI Package Guidelines
 
-> Best practices for frontend development in this project.
+## Pre-Development Checklist
 
----
+Before editing `packages/ui`, read:
 
-## Overview
+- `.trellis/spec/guides/due-date-hq-project-conventions.md`
+- `.trellis/spec/web/frontend/index.md` if the change is driven by a product
+  screen
 
-This directory contains guidelines for frontend development. Fill in each file with your project's specific conventions.
+## Package Responsibility
 
----
+`@due-date-hq/ui` owns reusable UI primitives, global styles, and shared UI
+utilities. Product-specific layouts and workflow components stay in `apps/web`.
 
-## Guidelines Index
+## Current Structure
 
-| Guide | Description | Status |
-|-------|-------------|--------|
-| [Directory Structure](./directory-structure.md) | Module organization and file layout | To fill |
-| [Component Guidelines](./component-guidelines.md) | Component patterns, props, composition | To fill |
-| [Hook Guidelines](./hook-guidelines.md) | Custom hooks, data fetching patterns | To fill |
-| [State Management](./state-management.md) | Local state, global state, server state | To fill |
-| [Quality Guidelines](./quality-guidelines.md) | Code standards, forbidden patterns | To fill |
-| [Type Safety](./type-safety.md) | Type patterns, validation | To fill |
+```txt
+packages/ui/src/components/*
+packages/ui/src/lib/utils.ts
+packages/ui/src/styles/globals.css
+```
 
----
+Components export through package subpath exports such as
+`@due-date-hq/ui/components/button`.
 
-## How to Fill These Guidelines
+## Implementation Rules
 
-For each guideline file:
+- Build primitives with Base UI where available.
+- Use `cva` for variants and `cn()` for class merging.
+- Keep primitive props compatible with the underlying primitive props.
+- Keep icon-only controls accessible with visible tooltips or `sr-only` labels.
+- Do not move product workflow state into the UI package.
+- Preserve the operational product aesthetic: compact, scannable, restrained,
+  and status-forward.
 
-1. Document your project's **actual conventions** (not ideals)
-2. Include **code examples** from your codebase
-3. List **forbidden patterns** and why
-4. Add **common mistakes** your team has made
+## Verification
 
-The goal is to help AI assistants and new team members understand how YOUR project works.
-
----
-
-**Language**: All documentation should be written in **English**.
+- Run `pnpm --filter @due-date-hq/ui check-types` or repo-level
+  `pnpm check-types`.
+- For visual changes consumed by `apps/web`, verify the relevant route in a
+  browser.

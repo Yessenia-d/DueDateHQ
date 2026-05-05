@@ -1,38 +1,46 @@
-# Backend Development Guidelines
+# Server Backend Guidelines
 
-> Best practices for backend development in this project.
+## Pre-Development Checklist
 
----
+Before editing `apps/server`, read:
 
-## Overview
+- `.trellis/spec/guides/due-date-hq-project-conventions.md`
+- `docs/technical/due-date-hq-beta-technical-plan.md` for cross-service scope
+- The task PRD and any referenced feature spec under `specs/`
 
-This directory contains guidelines for backend development. Fill in each file with your project's specific conventions.
+## Package Responsibility
 
----
+`apps/server` is the Cloudflare Worker HTTP boundary. It owns the Hono app,
+middleware, CORS, request logging, the root health response, and tRPC mounting.
+It must not own domain routers, database schema, or business logic that belongs
+in `packages/api` or `packages/db`.
 
-## Guidelines Index
+## Current Structure
 
-| Guide | Description | Status |
-|-------|-------------|--------|
-| [Directory Structure](./directory-structure.md) | Module organization and file layout | To fill |
-| [Database Guidelines](./database-guidelines.md) | ORM patterns, queries, migrations | To fill |
-| [Error Handling](./error-handling.md) | Error types, handling strategies | To fill |
-| [Quality Guidelines](./quality-guidelines.md) | Code standards, forbidden patterns | To fill |
-| [Logging Guidelines](./logging-guidelines.md) | Structured logging, log levels | To fill |
+```txt
+apps/server/src/index.ts
+```
 
----
+The file currently wires:
 
-## How to Fill These Guidelines
+- `logger()` from Hono
+- CORS using `env.CORS_ORIGIN`
+- `/trpc/*` through `@hono/trpc-server`
+- `createContext` from `@due-date-hq/api/context`
+- `appRouter` from `@due-date-hq/api/routers/index`
+- `GET /` returning `OK`
 
-For each guideline file:
+## Implementation Rules
 
-1. Document your project's **actual conventions** (not ideals)
-2. Include **code examples** from your codebase
-3. List **forbidden patterns** and why
-4. Add **common mistakes** your team has made
+- Add server-wide middleware in `apps/server/src/index.ts`.
+- Add tRPC procedures in `packages/api`; only mount the router here.
+- Read server env through `@due-date-hq/env/server`.
+- Keep CORS explicit. Do not hardcode production origins in feature code.
+- Preserve Cloudflare Worker compatibility. Do not introduce Node-only runtime
+  APIs into request handling.
 
-The goal is to help AI assistants and new team members understand how YOUR project works.
+## Verification
 
----
-
-**Language**: All documentation should be written in **English**.
+- Run `pnpm check-types`.
+- For deployment-sensitive changes, also verify the Cloudflare/Alchemy path
+  through the relevant infra task.

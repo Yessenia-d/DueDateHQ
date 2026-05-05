@@ -1,38 +1,52 @@
-# Backend Development Guidelines
+# Database Backend Guidelines
 
-> Best practices for backend development in this project.
+## Pre-Development Checklist
 
----
+Before editing `packages/db`, read:
 
-## Overview
+- `.trellis/spec/guides/due-date-hq-project-conventions.md`
+- `specs/tax-rule-verification.md`
+- Any feature spec that introduces or changes tables
 
-This directory contains guidelines for backend development. Fill in each file with your project's specific conventions.
+## Package Responsibility
 
----
+`packages/db` owns Drizzle schema, migrations, and database construction for
+Cloudflare D1. Other packages consume exported schema and `createDb()`; they do
+not define tables locally.
 
-## Guidelines Index
+## Current Structure
 
-| Guide | Description | Status |
-|-------|-------------|--------|
-| [Directory Structure](./directory-structure.md) | Module organization and file layout | To fill |
-| [Database Guidelines](./database-guidelines.md) | ORM patterns, queries, migrations | To fill |
-| [Error Handling](./error-handling.md) | Error types, handling strategies | To fill |
-| [Quality Guidelines](./quality-guidelines.md) | Code standards, forbidden patterns | To fill |
-| [Logging Guidelines](./logging-guidelines.md) | Structured logging, log levels | To fill |
+```txt
+packages/db/src/index.ts
+packages/db/src/schema/index.ts
+packages/db/drizzle.config.ts
+```
 
----
+`createDb()` uses `drizzle(env.DB, { schema })`. Drizzle Kit reads schema from
+`./src/schema` and writes migrations to `./src/migrations`.
 
-## How to Fill These Guidelines
+## Implementation Rules
 
-For each guideline file:
+- Split new domain schema by topic under `src/schema/`, then export from
+  `src/schema/index.ts`.
+- Prefer snake_case table and column names for D1/SQLite.
+- Keep firm ownership columns on workspace-owned data.
+- Preserve the invariant that only verified tax rules create official deadline
+  tasks.
+- Store event/audit history for official due-date changes, firm target date
+  changes, task status changes, import commits, and notice proposal decisions.
+- Do not silently overwrite current due-date state without a corresponding date
+  event.
 
-1. Document your project's **actual conventions** (not ideals)
-2. Include **code examples** from your codebase
-3. List **forbidden patterns** and why
-4. Add **common mistakes** your team has made
+## Migration Rules
 
-The goal is to help AI assistants and new team members understand how YOUR project works.
+- Use `pnpm db:generate` for schema migration files.
+- Verify migrations through the task-specific database command before claiming
+  schema work complete.
+- Do not edit generated migration SQL by hand unless the task explicitly calls
+  out a D1/SQLite limitation and the reason is documented.
 
----
+## Verification
 
-**Language**: All documentation should be written in **English**.
+- Run `pnpm check-types`.
+- Run the relevant Drizzle generation/apply check for schema tasks.

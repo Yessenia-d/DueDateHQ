@@ -1,39 +1,42 @@
-# Frontend Development Guidelines
+# Infra Guidelines
 
-> Best practices for frontend development in this project.
+## Pre-Development Checklist
 
----
+Before editing `packages/infra`, read:
 
-## Overview
+- `.trellis/spec/guides/due-date-hq-project-conventions.md`
+- `specs/cloudflare-deployment.md`
 
-This directory contains guidelines for frontend development. Fill in each file with your project's specific conventions.
+## Package Responsibility
 
----
+`packages/infra` owns the Alchemy Cloudflare resource graph for the beta
+deployment. It should declare platform resources and bindings, not product
+business logic.
 
-## Guidelines Index
+## Current Structure
 
-| Guide | Description | Status |
-|-------|-------------|--------|
-| [Directory Structure](./directory-structure.md) | Module organization and file layout | To fill |
-| [Component Guidelines](./component-guidelines.md) | Component patterns, props, composition | To fill |
-| [Hook Guidelines](./hook-guidelines.md) | Custom hooks, data fetching patterns | To fill |
-| [State Management](./state-management.md) | Local state, global state, server state | To fill |
-| [Quality Guidelines](./quality-guidelines.md) | Code standards, forbidden patterns | To fill |
-| [Type Safety](./type-safety.md) | Type patterns, validation | To fill |
+```txt
+packages/infra/alchemy.run.ts
+```
 
----
+The current graph creates:
 
-## How to Fill These Guidelines
+- A D1 database with migrations from `../../packages/db/src/migrations`
+- A Worker for `apps/server`
+- A Vite deployment for `apps/web`
+- Bindings from the database/server URL into the runtime apps
 
-For each guideline file:
+## Implementation Rules
 
-1. Document your project's **actual conventions** (not ideals)
-2. Include **code examples** from your codebase
-3. List **forbidden patterns** and why
-4. Add **common mistakes** your team has made
+- Keep resource names stable unless the task explicitly handles migration.
+- Add new Worker bindings in infra and the env package together.
+- Keep local `dotenv` loading in the infra entrypoint or tool scripts only.
+- Do not put customer PII or secrets in checked-in config.
+- Monitor queues, cron, and AI provider settings belong here when those tasks
+  are implemented.
 
-The goal is to help AI assistants and new team members understand how YOUR project works.
+## Verification
 
----
-
-**Language**: All documentation should be written in **English**.
+- Run `pnpm check-types`.
+- Use the task-specific deploy/smoke-test commands before declaring deployment
+  changes complete.

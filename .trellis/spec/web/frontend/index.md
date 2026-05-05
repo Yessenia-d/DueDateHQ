@@ -1,39 +1,54 @@
-# Frontend Development Guidelines
+# Web Frontend Guidelines
 
-> Best practices for frontend development in this project.
+## Pre-Development Checklist
 
----
+Before editing `apps/web`, read:
 
-## Overview
+- `.trellis/spec/guides/due-date-hq-project-conventions.md`
+- `.trellis/spec/ui/frontend/index.md` for shared component rules
+- The relevant feature spec under `specs/`
 
-This directory contains guidelines for frontend development. Fill in each file with your project's specific conventions.
+## Package Responsibility
 
----
+`apps/web` owns the React app shell, routes, route-level data loading, and
+product-specific UI. Shared primitives come from `@due-date-hq/ui`; API data
+comes through tRPC.
 
-## Guidelines Index
+## Current Structure
 
-| Guide | Description | Status |
-|-------|-------------|--------|
-| [Directory Structure](./directory-structure.md) | Module organization and file layout | To fill |
-| [Component Guidelines](./component-guidelines.md) | Component patterns, props, composition | To fill |
-| [Hook Guidelines](./hook-guidelines.md) | Custom hooks, data fetching patterns | To fill |
-| [State Management](./state-management.md) | Local state, global state, server state | To fill |
-| [Quality Guidelines](./quality-guidelines.md) | Code standards, forbidden patterns | To fill |
-| [Type Safety](./type-safety.md) | Type patterns, validation | To fill |
+```txt
+apps/web/src/main.tsx
+apps/web/src/routes/
+apps/web/src/components/
+apps/web/src/utils/trpc.ts
+```
 
----
+`main.tsx` creates the TanStack Router, injects `trpc` and `queryClient` into
+router context, and wraps the app in `QueryClientProvider`.
 
-## How to Fill These Guidelines
+## Implementation Rules
 
-For each guideline file:
+- Add pages as TanStack file routes under `src/routes`.
+- Keep product-specific components under `src/components/<feature>/` when they
+  are reused by multiple routes.
+- Use `trpc.<procedure>.queryOptions()` with React Query for server state.
+- Keep local component state local. Do not add global state unless a workflow
+  truly spans unrelated routes.
+- Import shared UI primitives through `@due-date-hq/ui/components/*`.
+- Keep trust and verification state visible in deadline, coverage, import, and
+  notice views.
 
-1. Document your project's **actual conventions** (not ideals)
-2. Include **code examples** from your codebase
-3. List **forbidden patterns** and why
-4. Add **common mistakes** your team has made
+## UX Rules
 
-The goal is to help AI assistants and new team members understand how YOUR project works.
+- The default product surface should be work-focused, dense, and scannable.
+- Prefer explicit filters, badges, tables/lists, and action menus over
+  marketing-style sections.
+- Do not hide `Needs review`, `Coverage gap`, `Unsupported`, or user-provided
+  status behind generic "warning" labels.
+- For dashboards, keep due-date horizon, client/profile, jurisdiction, task
+  status, and verification status easy to scan.
 
----
+## Verification
 
-**Language**: All documentation should be written in **English**.
+- Run `pnpm check-types`.
+- For route/layout changes, run a browser check against the dev server.

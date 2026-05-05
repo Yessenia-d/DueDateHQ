@@ -1,39 +1,17 @@
-# Frontend Development Guidelines
+# Shared Config Guidelines
 
-> Best practices for frontend development in this project.
+`@due-date-hq/config` owns shared tool configuration. It is not a runtime
+frontend package.
 
----
+Before editing config, read:
 
-## Overview
+- `.trellis/spec/guides/due-date-hq-project-conventions.md`
 
-This directory contains guidelines for frontend development. Fill in each file with your project's specific conventions.
+Rules:
 
----
-
-## Guidelines Index
-
-| Guide | Description | Status |
-|-------|-------------|--------|
-| [Directory Structure](./directory-structure.md) | Module organization and file layout | To fill |
-| [Component Guidelines](./component-guidelines.md) | Component patterns, props, composition | To fill |
-| [Hook Guidelines](./hook-guidelines.md) | Custom hooks, data fetching patterns | To fill |
-| [State Management](./state-management.md) | Local state, global state, server state | To fill |
-| [Quality Guidelines](./quality-guidelines.md) | Code standards, forbidden patterns | To fill |
-| [Type Safety](./type-safety.md) | Type patterns, validation | To fill |
-
----
-
-## How to Fill These Guidelines
-
-For each guideline file:
-
-1. Document your project's **actual conventions** (not ideals)
-2. Include **code examples** from your codebase
-3. List **forbidden patterns** and why
-4. Add **common mistakes** your team has made
-
-The goal is to help AI assistants and new team members understand how YOUR project works.
-
----
-
-**Language**: All documentation should be written in **English**.
+- Keep strict TypeScript defaults in `tsconfig.base.json`.
+- Do not relax `noUnusedLocals`, `noUnusedParameters`, or
+  `noUncheckedIndexedAccess` for convenience.
+- Package-level tsconfigs should extend the shared base unless a tool requires
+  a local override.
+- Any broad compiler-option change must be verified with `pnpm check-types`.

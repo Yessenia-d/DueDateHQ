@@ -21,15 +21,15 @@ the rest conversationally.
 
 ## Status (update the checkboxes as you complete each item)
 
-- [ ] Fill guidelines for server
-- [ ] Fill guidelines for web
-- [ ] Fill guidelines for @due-date-hq/api
-- [ ] Fill guidelines for @due-date-hq/config
-- [ ] Fill guidelines for @due-date-hq/db
-- [ ] Fill guidelines for @due-date-hq/env
-- [ ] Fill guidelines for @due-date-hq/infra
-- [ ] Fill guidelines for @due-date-hq/ui
-- [ ] Add code examples
+- [x] Fill guidelines for server
+- [x] Fill guidelines for web
+- [x] Fill guidelines for @due-date-hq/api
+- [x] Fill guidelines for @due-date-hq/config
+- [x] Fill guidelines for @due-date-hq/db
+- [x] Fill guidelines for @due-date-hq/env
+- [x] Fill guidelines for @due-date-hq/infra
+- [x] Fill guidelines for @due-date-hq/ui
+- [x] Add code examples
 
 ---
 

@@ -1,39 +1,36 @@
-# Frontend Development Guidelines
+# Web Environment Guidelines
 
-> Best practices for frontend development in this project.
+## Pre-Development Checklist
 
----
+Before editing frontend environment contracts, read:
 
-## Overview
+- `.trellis/spec/guides/due-date-hq-project-conventions.md`
+- `.trellis/spec/web/frontend/index.md`
 
-This directory contains guidelines for frontend development. Fill in each file with your project's specific conventions.
+## Package Responsibility
 
----
+`@due-date-hq/env/web` validates browser-exposed environment values. It is the
+only supported import for frontend env access.
 
-## Guidelines Index
+## Current Contract
 
-| Guide | Description | Status |
-|-------|-------------|--------|
-| [Directory Structure](./directory-structure.md) | Module organization and file layout | To fill |
-| [Component Guidelines](./component-guidelines.md) | Component patterns, props, composition | To fill |
-| [Hook Guidelines](./hook-guidelines.md) | Custom hooks, data fetching patterns | To fill |
-| [State Management](./state-management.md) | Local state, global state, server state | To fill |
-| [Quality Guidelines](./quality-guidelines.md) | Code standards, forbidden patterns | To fill |
-| [Type Safety](./type-safety.md) | Type patterns, validation | To fill |
+The web env schema currently requires:
 
----
+```ts
+VITE_SERVER_URL: z.url()
+```
 
-## How to Fill These Guidelines
+The client prefix is `VITE_`, and runtime values come from `import.meta.env`.
 
-For each guideline file:
+## Implementation Rules
 
-1. Document your project's **actual conventions** (not ideals)
-2. Include **code examples** from your codebase
-3. List **forbidden patterns** and why
-4. Add **common mistakes** your team has made
+- Add new browser env keys to `packages/env/src/web.ts`.
+- Every browser-exposed key must start with `VITE_`.
+- Never read `import.meta.env` directly in route or component code.
+- Never expose server-only secrets to the web env package.
 
-The goal is to help AI assistants and new team members understand how YOUR project works.
+## Verification
 
----
-
-**Language**: All documentation should be written in **English**.
+- Run `pnpm check-types`.
+- For deployment changes, confirm `packages/infra/alchemy.run.ts` provides the
+  same binding name expected by the web env schema.

@@ -1,39 +1,17 @@
-# Frontend Development Guidelines
+# Server Frontend Boundary Guidelines
 
-> Best practices for frontend development in this project.
+`apps/server` has no React UI. Frontend-facing work here means keeping the HTTP
+and tRPC boundary compatible with `apps/web`.
 
----
+Before changing server responses consumed by the web app, read:
 
-## Overview
+- `.trellis/spec/guides/due-date-hq-project-conventions.md`
+- `.trellis/spec/server/backend/index.md`
+- `.trellis/spec/api/backend/index.md`
 
-This directory contains guidelines for frontend development. Fill in each file with your project's specific conventions.
+Rules:
 
----
-
-## Guidelines Index
-
-| Guide | Description | Status |
-|-------|-------------|--------|
-| [Directory Structure](./directory-structure.md) | Module organization and file layout | To fill |
-| [Component Guidelines](./component-guidelines.md) | Component patterns, props, composition | To fill |
-| [Hook Guidelines](./hook-guidelines.md) | Custom hooks, data fetching patterns | To fill |
-| [State Management](./state-management.md) | Local state, global state, server state | To fill |
-| [Quality Guidelines](./quality-guidelines.md) | Code standards, forbidden patterns | To fill |
-| [Type Safety](./type-safety.md) | Type patterns, validation | To fill |
-
----
-
-## How to Fill These Guidelines
-
-For each guideline file:
-
-1. Document your project's **actual conventions** (not ideals)
-2. Include **code examples** from your codebase
-3. List **forbidden patterns** and why
-4. Add **common mistakes** your team has made
-
-The goal is to help AI assistants and new team members understand how YOUR project works.
-
----
-
-**Language**: All documentation should be written in **English**.
+- Mount API functionality through tRPC rather than adding ad hoc JSON routes.
+- Keep CORS and deployed URLs aligned with `@due-date-hq/env/web`.
+- Do not expose internal monitoring/admin endpoints to the public web app
+  unless the task PRD explicitly calls for it.
