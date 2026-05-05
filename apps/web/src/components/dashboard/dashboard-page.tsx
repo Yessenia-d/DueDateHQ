@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import { EvidenceDrawer } from "@/components/evidence/evidence-drawer";
 import { BulkTaskActions } from "@/components/task-table/bulk-task-actions";
 import { TaskTable } from "@/components/task-table/task-table";
+import { formatDate, formatDateTime, formatMonthDay } from "@/utils/date-format";
 import { trpc } from "@/utils/trpc";
 
 import type {
@@ -623,7 +624,7 @@ function DeadlineTimeline({
                     : "mt-1 text-sm font-semibold"
                 }
               >
-                {formatShortDate(item.date)}
+                {formatMonthDay(item.date)}
               </time>
               <div className="min-h-10 max-w-[148px] text-xs leading-4">
                 <div className="line-clamp-2 font-medium">{item.title}</div>
@@ -1000,30 +1001,4 @@ function getDayDifference(date: string, today: string): number {
   const base = new Date(`${today}T00:00:00.000Z`).getTime();
 
   return Math.round((current - base) / (24 * 60 * 60 * 1000));
-}
-
-function formatShortDate(value: string): string {
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    timeZone: "UTC",
-  }).format(new Date(`${value.slice(0, 10)}T00:00:00.000Z`));
-}
-
-function formatDate(value: string): string {
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    timeZone: "UTC",
-  }).format(new Date(`${value.slice(0, 10)}T00:00:00.000Z`));
-}
-
-function formatDateTime(value: string): string {
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(new Date(value));
 }

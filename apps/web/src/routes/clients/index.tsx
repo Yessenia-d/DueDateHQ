@@ -12,6 +12,7 @@ import { Link, createFileRoute } from "@tanstack/react-router";
 import { Building2, CircleDashed, ExternalLink, UserPlus, Users } from "lucide-react";
 
 import { StatusBadge } from "@/components/status-badge";
+import { formatDate } from "@/utils/date-format";
 import { trpc } from "@/utils/trpc";
 
 export const Route = createFileRoute("/clients/")({
@@ -192,12 +193,4 @@ function NewClientLink() {
       New client relationship
     </Link>
   );
-}
-
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("en", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(new Date(value));
 }

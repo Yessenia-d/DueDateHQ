@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 
 import { StatusBadge } from "@/components/status-badge";
+import { formatDate } from "@/utils/date-format";
 import { trpc } from "@/utils/trpc";
 
 export const Route = createFileRoute("/progress")({
@@ -256,12 +257,4 @@ function PriorityBadge({ priority }: { priority: FeaturePriority }) {
       {priorityLabels[priority]}
     </StatusBadge>
   );
-}
-
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("en", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(new Date(value));
 }

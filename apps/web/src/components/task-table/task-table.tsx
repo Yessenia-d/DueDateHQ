@@ -44,6 +44,7 @@ import * as React from "react";
 import { toast } from "sonner";
 
 import { StatusBadge } from "@/components/status-badge";
+import { formatDate } from "@/utils/date-format";
 import { queryClient, trpc } from "@/utils/trpc";
 
 import type { DashboardSection, DashboardTaskRow } from "@due-date-hq/api/routers/dashboard";
@@ -998,13 +999,4 @@ function VerificationBadge({ task }: { task: DashboardTaskRow }) {
   }
 
   return <StatusBadge status="needs_review">{task.verificationLabel}</StatusBadge>;
-}
-
-function formatDate(value: string): string {
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    timeZone: "UTC",
-  }).format(new Date(`${value}T00:00:00.000Z`));
 }

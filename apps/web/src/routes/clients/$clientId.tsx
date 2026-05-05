@@ -2,6 +2,7 @@ import { Link, createFileRoute } from "@tanstack/react-router";
 import { Building2, ClipboardList } from "lucide-react";
 
 import { StatusBadge } from "@/components/status-badge";
+import { formatDate } from "@/utils/date-format";
 import { trpc } from "@/utils/trpc";
 
 import { useQuery } from "@tanstack/react-query";
@@ -89,8 +90,8 @@ function ClientDetailComponent() {
             <dl className="mt-3 grid gap-3 text-sm">
               <InfoRow label="Relationship type" value={relationshipTypeLabels[client.relationshipType]} />
               <InfoRow label="Created via" value={createdViaLabels[client.createdVia]} />
-              <InfoRow label="Created" value={formatDateTime(client.createdAt)} />
-              <InfoRow label="Updated" value={formatDateTime(client.updatedAt)} />
+              <InfoRow label="Created" value={formatDate(client.createdAt)} />
+              <InfoRow label="Updated" value={formatDate(client.updatedAt)} />
             </dl>
           </div>
 
@@ -122,12 +123,4 @@ function InfoRow({ label, value }: { label: string; value: string }) {
       <dd className="text-sm text-foreground">{value}</dd>
     </div>
   );
-}
-
-function formatDateTime(value: string) {
-  return new Intl.DateTimeFormat("en", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(new Date(value));
 }

@@ -36,6 +36,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { StatusBadge } from "@/components/status-badge";
+import { formatDate, formatDateTime } from "@/utils/date-format";
 import { trpc } from "@/utils/trpc";
 
 export const Route = createFileRoute("/coverage")({
@@ -789,23 +790,4 @@ function formatEntityType(et: string): string {
   return et
     .replace(/_/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase());
-}
-
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("en", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    timeZone: "UTC",
-  }).format(new Date(value));
-}
-
-function formatDateTime(value: string): string {
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(new Date(value));
 }
