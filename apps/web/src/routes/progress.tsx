@@ -1,3 +1,11 @@
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@due-date-hq/ui/components/table";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
@@ -10,6 +18,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 
+import { StatusBadge } from "@/components/status-badge";
 import { trpc } from "@/utils/trpc";
 
 export const Route = createFileRoute("/progress")({
@@ -23,11 +32,11 @@ const statusLabels = {
   not_started: "Not started",
 } as const;
 
-const statusClasses = {
-  done: "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
-  in_progress: "border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300",
-  blocked: "border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-300",
-  not_started: "border-border bg-muted text-muted-foreground",
+const statusToBadge = {
+  done: "done",
+  in_progress: "in_progress",
+  blocked: "blocked",
+  not_started: "not_started",
 } as const;
 
 const statusIcons = {
@@ -52,9 +61,9 @@ function ProgressComponent() {
   if (progress.isPending) {
     return (
       <main className="min-h-0 overflow-auto">
-        <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-6">
-          <div className="h-24 animate-pulse border bg-muted/30" />
-          <div className="h-96 animate-pulse border bg-muted/30" />
+        <div className="mx-auto flex max-w-6xl flex-col gap-6 px-5 py-6">
+          <div className="h-24 animate-pulse rounded-xl border border-border bg-card" />
+          <div className="h-96 animate-pulse rounded-xl border border-border bg-card" />
         </div>
       </main>
     );
@@ -63,8 +72,8 @@ function ProgressComponent() {
   if (progress.isError) {
     return (
       <main className="min-h-0 overflow-auto">
-        <div className="mx-auto max-w-6xl px-4 py-6">
-          <div className="border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+        <div className="mx-auto max-w-6xl px-5 py-6">
+          <div className="rounded-xl border border-ddhq-risk/30 bg-ddhq-risk-soft p-4 text-sm text-ddhq-risk">
             Progress data could not be loaded.
           </div>
         </div>
@@ -76,8 +85,8 @@ function ProgressComponent() {
 
   return (
     <main className="min-h-0 overflow-auto">
-      <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-6">
-        <section className="grid gap-4 border-b pb-5 md:grid-cols-[1fr_auto] md:items-end">
+      <div className="mx-auto flex max-w-6xl flex-col gap-6 px-5 py-6">
+        <section className="grid gap-4 border-b border-border pb-5 md:grid-cols-[1fr_auto] md:items-end">
           <div className="max-w-3xl">
             <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase text-muted-foreground">
               <ShieldCheck className="size-3.5" />
@@ -110,7 +119,7 @@ function ProgressComponent() {
           />
         </section>
 
-        <section className="grid gap-2 border-y py-3 sm:grid-cols-2 lg:grid-cols-4">
+        <section className="grid gap-2 border-y border-border py-3 sm:grid-cols-2 lg:grid-cols-4">
           {data.statuses.map((status) => (
             <StatusCount
               key={status}
@@ -122,7 +131,7 @@ function ProgressComponent() {
 
         <section className="flex flex-col gap-5">
           {data.groups.map((group) => (
-            <div key={group.category} className="border-b pb-5 last:border-b-0">
+            <div key={group.category} className="border-b border-border pb-5 last:border-b-0">
               <div className="mb-3 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
                 <div>
                   <h2 className="text-base font-medium">{group.category}</h2>
@@ -139,47 +148,47 @@ function ProgressComponent() {
                 </div>
               </div>
 
-              <div className="overflow-x-auto border">
-                <table className="w-full min-w-[760px] border-collapse text-left text-sm">
-                  <thead className="bg-muted/40 text-xs text-muted-foreground">
-                    <tr>
-                      <th className="w-28 px-3 py-2 font-medium">Priority</th>
-                      <th className="px-3 py-2 font-medium">Feature</th>
-                      <th className="w-40 px-3 py-2 font-medium">Status</th>
-                      <th className="w-64 px-3 py-2 font-medium">Spec</th>
-                      <th className="w-28 px-3 py-2 font-medium">Updated</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+              <div className="rounded-xl border border-border">
+                <Table className="min-w-[760px]">
+                  <TableHeader>
+                    <TableRow className="bg-muted/40">
+                      <TableHead className="w-28 text-[11px] font-semibold uppercase text-muted-foreground">Priority</TableHead>
+                      <TableHead className="text-[11px] font-semibold uppercase text-muted-foreground">Feature</TableHead>
+                      <TableHead className="w-40 text-[11px] font-semibold uppercase text-muted-foreground">Status</TableHead>
+                      <TableHead className="w-64 text-[11px] font-semibold uppercase text-muted-foreground">Spec</TableHead>
+                      <TableHead className="w-28 text-[11px] font-semibold uppercase text-muted-foreground">Updated</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {group.items.map((item) => (
-                      <tr key={item.id} className="border-t align-top">
-                        <td className="px-3 py-3">
+                      <TableRow key={item.id} className="align-top">
+                        <TableCell>
                           <PriorityBadge priority={item.priority} />
-                        </td>
-                        <td className="px-3 py-3">
+                        </TableCell>
+                        <TableCell>
                           <div className="font-medium">{item.name}</div>
                           <div className="mt-1 max-w-2xl text-xs leading-5 text-muted-foreground">
                             {item.description}
                           </div>
-                        </td>
-                        <td className="px-3 py-3">
-                          <StatusBadge status={item.status} />
-                        </td>
-                        <td className="px-3 py-3">
+                        </TableCell>
+                        <TableCell>
+                          <ProgressStatusBadge status={item.status} />
+                        </TableCell>
+                        <TableCell>
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
                             <FileText className="size-3.5 shrink-0" />
-                            <code className="break-all rounded-none bg-muted px-1.5 py-1 font-mono text-[11px] text-foreground">
+                            <code className="break-all bg-muted px-1.5 py-1 font-mono text-[11px] text-foreground">
                               {item.specPath}
                             </code>
                           </div>
-                        </td>
-                        <td className="px-3 py-3 text-xs text-muted-foreground">
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
                           {formatDate(item.updatedAt)}
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               </div>
             </div>
           ))}
@@ -199,13 +208,13 @@ function ProgressMeter({
   detail: string;
 }) {
   return (
-    <div className="border p-4">
+    <div className="rounded-xl border border-border p-4">
       <div className="flex items-center justify-between gap-4 text-sm">
         <span className="font-medium">{label}</span>
         <span className="text-muted-foreground">{detail}</span>
       </div>
-      <div className="mt-3 h-2 overflow-hidden bg-muted">
-        <div className="h-full bg-primary" style={{ width: `${value}%` }} />
+      <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
+        <div className="h-full rounded-full bg-primary" style={{ width: `${value}%` }} />
       </div>
       <div className="mt-2 text-xs text-muted-foreground">{value}% complete</div>
     </div>
@@ -215,31 +224,30 @@ function ProgressMeter({
 function StatusCount({ status, count }: { status: ProgressStatus; count: number }) {
   return (
     <div className="flex items-center justify-between gap-3 px-2 py-1.5">
-      <StatusBadge status={status} />
+      <ProgressStatusBadge status={status} />
       <span className="text-sm font-medium">{count}</span>
     </div>
   );
 }
 
-function StatusBadge({ status }: { status: ProgressStatus }) {
+function ProgressStatusBadge({ status }: { status: ProgressStatus }) {
   const Icon = statusIcons[status];
+  const badgeStatus = statusToBadge[status] as Parameters<typeof StatusBadge>[0]["status"];
 
   return (
-    <span
-      className={`inline-flex h-7 items-center gap-1.5 whitespace-nowrap border px-2 text-xs font-medium ${statusClasses[status]}`}
-    >
+    <StatusBadge status={badgeStatus}>
       <Icon className="size-3.5" />
       {statusLabels[status]}
-    </span>
+    </StatusBadge>
   );
 }
 
 function PriorityBadge({ priority }: { priority: FeaturePriority }) {
   return (
-    <span className="inline-flex h-6 items-center border bg-background px-2 text-xs font-medium text-muted-foreground">
-      <Clock3 className="mr-1 size-3" />
+    <StatusBadge status="neutral">
+      <Clock3 className="mr-0.5 size-3" />
       {priorityLabels[priority]}
-    </span>
+    </StatusBadge>
   );
 }
 

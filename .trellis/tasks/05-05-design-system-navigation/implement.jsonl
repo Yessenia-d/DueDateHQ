@@ -1,0 +1,5 @@
+{"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python3 .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file": "DESIGN.md", "reason": "Design system tokens, typography, layout, components, forbidden patterns"}
+{"file": "PRODUCT.md", "reason": "Product context, register, voice, visual references"}
+{"file": "docs/due-date-hq-style-sample.html", "reason": "Sample HTML showing target sidebar nav and panel layout"}
+{"file": ".trellis/spec/web/frontend/index.md", "reason": "Frontend guidelines"}

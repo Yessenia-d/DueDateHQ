@@ -2,12 +2,21 @@ import { Button } from "@due-date-hq/ui/components/button";
 import { Checkbox } from "@due-date-hq/ui/components/checkbox";
 import { Input } from "@due-date-hq/ui/components/input";
 import { Label } from "@due-date-hq/ui/components/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@due-date-hq/ui/components/select";
+import { Textarea } from "@due-date-hq/ui/components/textarea";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { CalendarPlus, CircleDashed, ShieldAlert } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
 
+import { StatusBadge } from "@/components/status-badge";
 import { trpc } from "@/utils/trpc";
 
 export const Route = createFileRoute("/clients/$clientId/deadlines/new")({
@@ -100,9 +109,9 @@ function NewDeadlineComponent() {
   if (clientDetail.isPending) {
     return (
       <main className="min-h-0 overflow-auto">
-        <div className="mx-auto flex max-w-5xl flex-col gap-5 px-4 py-6">
-          <div className="h-24 animate-pulse border bg-muted/30" />
-          <div className="h-96 animate-pulse border bg-muted/30" />
+        <div className="mx-auto flex max-w-5xl flex-col gap-5 px-5 py-6">
+          <div className="h-24 animate-pulse rounded-xl border border-border bg-card" />
+          <div className="h-96 animate-pulse rounded-xl border border-border bg-card" />
         </div>
       </main>
     );
@@ -111,8 +120,8 @@ function NewDeadlineComponent() {
   if (clientDetail.isError) {
     return (
       <main className="min-h-0 overflow-auto">
-        <div className="mx-auto max-w-5xl px-4 py-6">
-          <div className="border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+        <div className="mx-auto max-w-5xl px-5 py-6">
+          <div className="rounded-xl border border-ddhq-risk/30 bg-ddhq-risk-soft p-4 text-sm text-ddhq-risk">
             Client relationship could not be loaded.
           </div>
         </div>
@@ -124,8 +133,8 @@ function NewDeadlineComponent() {
 
   return (
     <main className="min-h-0 overflow-auto">
-      <div className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-6">
-        <section className="grid gap-4 border-b pb-5 md:grid-cols-[1fr_auto] md:items-end">
+      <div className="mx-auto flex max-w-5xl flex-col gap-6 px-5 py-6">
+        <section className="grid gap-4 border-b border-border pb-5 md:grid-cols-[1fr_auto] md:items-end">
           <div>
             <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase text-muted-foreground">
               <CalendarPlus className="size-3.5" />
@@ -136,14 +145,14 @@ function NewDeadlineComponent() {
               User-provided deadlines are saved separately from official DueDateHQ verified tasks.
             </p>
           </div>
-          <StatusBadge>
+          <StatusBadge status="user_provided">
             <ShieldAlert className="size-3" />
             User provided - Not verified by DueDateHQ
           </StatusBadge>
         </section>
 
         {profiles.length === 0 ? (
-          <section className="border bg-muted/20 p-5">
+          <section className="rounded-xl border border-border bg-muted/20 p-5">
             <div className="flex items-center gap-2 text-sm font-medium">
               <CircleDashed className="size-4" />
               No filing profiles
@@ -154,28 +163,30 @@ function NewDeadlineComponent() {
             <Link
               to="/clients/$clientId"
               params={{ clientId }}
-              className="mt-4 inline-flex h-8 items-center justify-center border border-input bg-background px-2.5 text-xs font-medium hover:bg-muted"
+              className="mt-4 inline-flex h-8 items-center justify-center rounded-lg border border-input bg-card px-2.5 text-xs font-medium hover:bg-muted"
             >
               Back to client
             </Link>
           </section>
         ) : (
           <form className="grid gap-5" onSubmit={handleSubmit}>
-            <section className="grid gap-4 border-b pb-5 md:grid-cols-2">
+            <section className="grid gap-4 border-b border-border pb-5 md:grid-cols-2">
               <Field label="Filing profile" htmlFor="filing-profile">
-                <select
-                  id="filing-profile"
-                  className="h-8 w-full border border-input bg-background px-2.5 text-xs outline-none focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring/50"
+                <Select
                   value={selectedProfileId}
-                  onChange={(event) => setFilingProfileId(event.target.value)}
-                  required
+                  onValueChange={(v) => setFilingProfileId(v ?? "")}
                 >
-                  {profiles.map((profile) => (
-                    <option key={profile.id} value={profile.id}>
-                      {profile.displayName}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="h-8 w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {profiles.map((profile) => (
+                      <SelectItem key={profile.id} value={profile.id}>
+                        {profile.displayName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </Field>
 
               <Field label="Tax type" htmlFor="tax-category">
@@ -206,33 +217,39 @@ function NewDeadlineComponent() {
               </Field>
 
               <Field label="Filing/payment" htmlFor="deadline-kind">
-                <select
-                  id="deadline-kind"
-                  className="h-8 w-full border border-input bg-background px-2.5 text-xs outline-none focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring/50"
+                <Select
                   value={deadlineKind}
-                  onChange={(event) => setDeadlineKind(event.target.value as DeadlineKind)}
+                  onValueChange={(value) => setDeadlineKind(value as DeadlineKind)}
                 >
-                  {deadlineKindOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="h-8 w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {deadlineKindOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </Field>
 
               <Field label="Priority" htmlFor="priority">
-                <select
-                  id="priority"
-                  className="h-8 w-full border border-input bg-background px-2.5 text-xs outline-none focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring/50"
+                <Select
                   value={priority}
-                  onChange={(event) => setPriority(event.target.value as DeadlinePriority)}
+                  onValueChange={(value) => setPriority(value as DeadlinePriority)}
                 >
-                  {priorityOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="h-8 w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {priorityOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </Field>
 
               <Field label="Current due date" htmlFor="current-due-date">
@@ -255,33 +272,36 @@ function NewDeadlineComponent() {
               </Field>
 
               <Field label="Recurrence" htmlFor="recurrence">
-                <select
-                  id="recurrence"
-                  className="h-8 w-full border border-input bg-background px-2.5 text-xs outline-none focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring/50"
+                <Select
                   value={recurrence}
-                  onChange={(event) => setRecurrence(event.target.value as Recurrence)}
+                  onValueChange={(value) => setRecurrence(value as Recurrence)}
                 >
-                  {recurrenceOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="h-8 w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {recurrenceOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </Field>
             </section>
 
-            <section className="grid gap-4 border-b pb-5">
+            <section className="grid gap-4 border-b border-border pb-5">
               <Field label="Source note" htmlFor="source-note">
-                <textarea
+                <Textarea
                   id="source-note"
-                  className="min-h-24 w-full resize-y border border-input bg-background px-2.5 py-2 text-xs leading-5 outline-none focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring/50"
+                  className="min-h-24"
                   value={sourceNote}
                   onChange={(event) => setSourceNote(event.target.value)}
                   required
                 />
               </Field>
 
-              <label className="flex items-start gap-3 border bg-muted/20 p-3 text-xs leading-5">
+              <label className="flex items-start gap-3 rounded-lg border border-border bg-muted/20 p-3 text-xs leading-5">
                 <Checkbox
                   checked={shouldRequestVerification}
                   onCheckedChange={(checked) => setShouldRequestVerification(checked === true)}
@@ -297,7 +317,7 @@ function NewDeadlineComponent() {
             </section>
 
             {createManual.error || requestVerification.error ? (
-              <div className="border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
+              <div className="rounded-lg border border-ddhq-risk/30 bg-ddhq-risk-soft p-3 text-xs text-ddhq-risk">
                 {createManual.error?.message ?? requestVerification.error?.message}
               </div>
             ) : null}
@@ -306,7 +326,7 @@ function NewDeadlineComponent() {
               <Link
                 to="/clients/$clientId"
                 params={{ clientId }}
-                className="inline-flex h-8 items-center justify-center border border-input bg-background px-2.5 text-xs font-medium hover:bg-muted"
+                className="inline-flex h-8 items-center justify-center rounded-lg border border-input bg-card px-2.5 text-xs font-medium hover:bg-muted"
               >
                 Cancel
               </Link>
@@ -336,13 +356,5 @@ function Field({
       <Label htmlFor={htmlFor}>{label}</Label>
       {children}
     </div>
-  );
-}
-
-function StatusBadge({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="inline-flex h-7 items-center gap-1.5 border border-border bg-background px-2 text-xs font-medium text-muted-foreground">
-      {children}
-    </span>
   );
 }

@@ -1,7 +1,13 @@
 import { Button } from "@due-date-hq/ui/components/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+} from "@due-date-hq/ui/components/sheet";
 import { useQuery } from "@tanstack/react-query";
-import { ExternalLink, History, ShieldAlert, ShieldCheck, X } from "lucide-react";
+import { ExternalLink, History, ShieldAlert, ShieldCheck } from "lucide-react";
 
+import { StatusBadge } from "@/components/status-badge";
 import { trpc } from "@/utils/trpc";
 
 import type { TaskEvidenceResponse } from "@due-date-hq/api/routers/tasks";
@@ -18,42 +24,41 @@ export function EvidenceDrawer({
     enabled: Boolean(taskId),
   });
 
-  if (!taskId) return null;
-
   return (
-    <aside className="fixed inset-y-0 right-0 z-50 flex w-full max-w-xl flex-col border-l border-[#ded8ce] bg-white text-[#241f1a] shadow-xl">
-      <div className="flex items-center justify-between border-b border-[#e7e2da] px-4 py-3">
-        <div>
-          <div className="text-xs font-semibold text-[#6f685f]">Evidence</div>
-          <h2 className="text-base font-semibold">Deadline evidence</h2>
-        </div>
-        <Button type="button" variant="outline" size="icon-sm" aria-label="Close evidence" onClick={onClose}>
-          <X className="size-4" />
-        </Button>
-      </div>
+    <Sheet open={Boolean(taskId)} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <SheetContent side="right" className="w-full max-w-xl p-0 sm:max-w-xl">
+        <SheetTitle className="sr-only">Deadline evidence</SheetTitle>
 
-      {evidence.isPending ? (
-        <div className="space-y-3 p-4">
-          <div className="h-16 animate-pulse border border-[#ded8ce] bg-[#f6f3ee]" />
-          <div className="h-40 animate-pulse border border-[#ded8ce] bg-[#f6f3ee]" />
+        <div className="flex items-center justify-between border-b border-border px-4 py-3">
+          <div>
+            <div className="text-xs font-semibold text-muted-foreground">Evidence</div>
+            <h2 className="text-base font-semibold">Deadline evidence</h2>
+          </div>
         </div>
-      ) : evidence.isError ? (
-        <div className="m-4 border border-[#e2afa1] bg-[#fff1ed] p-3 text-sm text-[#9b3321]">
-          Evidence could not be loaded.
-        </div>
-      ) : (
-        <EvidenceContent evidence={evidence.data} />
-      )}
-    </aside>
+
+        {evidence.isPending ? (
+          <div className="space-y-3 p-4">
+            <div className="h-16 animate-pulse rounded-lg border border-border bg-muted" />
+            <div className="h-40 animate-pulse rounded-lg border border-border bg-muted" />
+          </div>
+        ) : evidence.isError ? (
+          <div className="m-4 rounded-lg border border-ddhq-risk/30 bg-ddhq-risk-soft p-3 text-sm text-ddhq-risk">
+            Evidence could not be loaded.
+          </div>
+        ) : (
+          <EvidenceContent evidence={evidence.data} />
+        )}
+      </SheetContent>
+    </Sheet>
   );
 }
 
 function EvidenceContent({ evidence }: { evidence: TaskEvidenceResponse }) {
   return (
     <div className="min-h-0 flex-1 overflow-auto p-4">
-      <section className="border-b border-[#e7e2da] pb-4">
+      <section className="border-b border-border pb-4">
         <div className="text-sm font-semibold">{evidence.task.title}</div>
-        <div className="mt-1 text-xs text-[#6f685f]">
+        <div className="mt-1 text-xs text-muted-foreground">
           {evidence.clientRelationship.displayName} / {evidence.filingProfile.displayName}
         </div>
         <div className="mt-3 grid gap-2 text-xs sm:grid-cols-2">
@@ -70,24 +75,35 @@ function EvidenceContent({ evidence }: { evidence: TaskEvidenceResponse }) {
         </div>
       </section>
 
-      <section className="border-b border-[#e7e2da] py-4">
+      <section className="border-b border-border py-4">
         <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
           {evidence.rule?.verificationStatus === "verified" ? (
-            <ShieldCheck className="size-4 text-[#287347]" />
+            <ShieldCheck className="size-4 text-ddhq-verified" />
           ) : (
-            <ShieldAlert className="size-4 text-[#806218]" />
+            <ShieldAlert className="size-4 text-ddhq-review" />
           )}
           Source evidence
         </div>
         {evidence.rule ? (
           <div className="space-y-3 text-xs">
-            <StatusLine label="Verification" value={evidence.rule.verificationStatus} />
-            <p className="leading-5 text-[#6f685f]">{evidence.rule.ruleSummary}</p>
+            <div className="flex items-center justify-between rounded-lg border border-border bg-muted px-2 py-1.5">
+              <span className="text-muted-foreground">Verification</span>
+              <StatusBadge
+                status={
+                  evidence.rule.verificationStatus === "verified"
+                    ? "verified"
+                    : evidence.rule.verificationStatus === "source_changed"
+                      ? "source_changed"
+                      : "needs_review"
+                }
+              />
+            </div>
+            <p className="leading-5 text-muted-foreground">{evidence.rule.ruleSummary}</p>
             <div className="grid gap-2">
               <EvidenceField label="Source name" value={evidence.rule.sourceName ?? "None"} />
               {evidence.rule.sourceUrl ? (
                 <a
-                  className="inline-flex items-center gap-1 font-medium text-[#176b86]"
+                  className="inline-flex items-center gap-1 font-mono text-xs font-medium text-primary"
                   href={evidence.rule.sourceUrl}
                   target="_blank"
                   rel="noreferrer"
@@ -99,6 +115,7 @@ function EvidenceContent({ evidence }: { evidence: TaskEvidenceResponse }) {
               <EvidenceField
                 label="Last verified"
                 value={evidence.rule.lastVerifiedAt ? formatDateTime(evidence.rule.lastVerifiedAt) : "Not verified"}
+                mono
               />
               <EvidenceField
                 label="Source last checked"
@@ -107,6 +124,7 @@ function EvidenceContent({ evidence }: { evidence: TaskEvidenceResponse }) {
                     ? formatDateTime(evidence.rule.sourceLastCheckedAt)
                     : "Not checked"
                 }
+                mono
               />
               <EvidenceField
                 label="Source last changed"
@@ -115,18 +133,13 @@ function EvidenceContent({ evidence }: { evidence: TaskEvidenceResponse }) {
                     ? formatDateTime(evidence.rule.sourceLastChangedAt)
                     : "No change recorded"
                 }
+                mono
               />
-              <EvidenceField label="Rule version" value={`v${evidence.rule.currentVersion}`} />
-              <EvidenceField
-                label="Previous rule version"
-                value={
-                  evidence.rule.previousVersion ? `v${evidence.rule.previousVersion}` : "None recorded"
-                }
-              />
+              <EvidenceField label="Rule version" value={`v${evidence.rule.currentVersion}`} mono />
             </div>
           </div>
         ) : (
-          <div className="border border-[#ddd6cb] bg-[#f6f3ee] p-3 text-xs text-[#655e55]">
+          <div className="rounded-lg border border-border bg-muted p-3 text-xs text-muted-foreground">
             {evidence.task.userProvidedSourceNote ?? "User provided, not verified by DueDateHQ."}
           </div>
         )}
@@ -138,18 +151,18 @@ function EvidenceContent({ evidence }: { evidence: TaskEvidenceResponse }) {
           Date event history
         </div>
         {evidence.dateEvents.length === 0 ? (
-          <div className="border border-[#ddd6cb] bg-[#f6f3ee] p-3 text-xs text-[#655e55]">
+          <div className="rounded-lg border border-border bg-muted p-3 text-xs text-muted-foreground">
             No date events recorded.
           </div>
         ) : (
           <ol className="space-y-3">
             {evidence.dateEvents.map((event) => (
-              <li key={event.id} className="border border-[#ded8ce] p-3 text-xs">
+              <li key={event.id} className="rounded-lg border border-border p-3 text-xs">
                 <div className="flex items-start justify-between gap-3">
                   <div className="font-semibold">{event.eventType}</div>
-                  <div className="text-right text-[#6f685f]">{formatDateTime(event.createdAt)}</div>
+                  <div className="text-right font-mono text-muted-foreground">{formatDateTime(event.createdAt)}</div>
                 </div>
-                <div className="mt-2 grid gap-1 text-[#6f685f]">
+                <div className="mt-2 grid gap-1 text-muted-foreground">
                   {event.previousCurrentDueDate || event.newCurrentDueDate ? (
                     <span>
                       Official due date: {event.previousCurrentDueDate ?? "None"} to{" "}
@@ -163,17 +176,6 @@ function EvidenceContent({ evidence }: { evidence: TaskEvidenceResponse }) {
                     </span>
                   ) : null}
                   {event.sourceName ? <span>Source: {event.sourceName}</span> : null}
-                  {event.sourceUrl ? (
-                    <a
-                      className="inline-flex items-center gap-1 font-medium text-[#176b86]"
-                      href={event.sourceUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      {event.sourceUrl}
-                      <ExternalLink className="size-3" />
-                    </a>
-                  ) : null}
                   {event.notes ? <span>{event.notes}</span> : null}
                 </div>
               </li>
@@ -185,20 +187,11 @@ function EvidenceContent({ evidence }: { evidence: TaskEvidenceResponse }) {
   );
 }
 
-function EvidenceField({ label, value }: { label: string; value: string }) {
+function EvidenceField({ label, mono, value }: { label: string; mono?: boolean; value: string }) {
   return (
     <div className="grid gap-1">
-      <span className="text-[#6f685f]">{label}</span>
-      <span className="font-medium">{value}</span>
-    </div>
-  );
-}
-
-function StatusLine({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between border border-[#ddd6cb] bg-[#f6f3ee] px-2 py-1.5">
-      <span className="text-[#6f685f]">{label}</span>
-      <span className="font-semibold">{value}</span>
+      <span className="text-muted-foreground">{label}</span>
+      <span className={`font-medium ${mono ? "font-mono" : ""}`}>{value}</span>
     </div>
   );
 }

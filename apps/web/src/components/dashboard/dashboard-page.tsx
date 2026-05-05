@@ -1,5 +1,12 @@
 import { Button } from "@due-date-hq/ui/components/button";
 import { Input } from "@due-date-hq/ui/components/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@due-date-hq/ui/components/select";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   CalendarDays,
@@ -13,6 +20,7 @@ import * as React from "react";
 import { toast } from "sonner";
 
 import { EvidenceDrawer } from "@/components/evidence/evidence-drawer";
+import { StatusBadge } from "@/components/status-badge";
 import { TaskTable } from "@/components/task-table/task-table";
 import { queryClient, trpc } from "@/utils/trpc";
 
@@ -160,11 +168,11 @@ export function DashboardPage() {
 
   if (dashboard.isPending) {
     return (
-      <main className="min-h-0 overflow-auto bg-[#fbfaf7] text-[#241f1a]">
-        <div className="mx-auto flex max-w-[1440px] flex-col gap-4 px-4 py-5">
-          <div className="h-24 animate-pulse border border-[#ded8ce] bg-white" />
-          <div className="h-12 animate-pulse border border-[#ded8ce] bg-white" />
-          <div className="h-[420px] animate-pulse border border-[#ded8ce] bg-white" />
+      <main className="min-h-0 overflow-auto bg-background text-foreground">
+        <div className="mx-auto flex max-w-[1440px] flex-col gap-4 px-5 py-5">
+          <div className="h-24 animate-pulse rounded-xl border border-border bg-card" />
+          <div className="h-12 animate-pulse rounded-xl border border-border bg-card" />
+          <div className="h-[420px] animate-pulse rounded-xl border border-border bg-card" />
         </div>
       </main>
     );
@@ -172,9 +180,9 @@ export function DashboardPage() {
 
   if (dashboard.isError) {
     return (
-      <main className="min-h-0 overflow-auto bg-[#fbfaf7] text-[#241f1a]">
-        <div className="mx-auto max-w-[1440px] px-4 py-5">
-          <div className="border border-[#e2afa1] bg-[#fff1ed] p-4 text-sm text-[#9b3321]">
+      <main className="min-h-0 overflow-auto bg-background text-foreground">
+        <div className="mx-auto max-w-[1440px] px-5 py-5">
+          <div className="rounded-xl border border-ddhq-risk/30 bg-ddhq-risk-soft p-4 text-sm text-ddhq-risk">
             Dashboard data could not be loaded.
           </div>
         </div>
@@ -185,37 +193,41 @@ export function DashboardPage() {
   const data = dashboard.data;
 
   return (
-    <main className="min-h-0 overflow-auto bg-[#fbfaf7] text-[#241f1a]">
-      <div className="mx-auto flex max-w-[1440px] flex-col gap-4 px-4 py-5">
-        <section className="border-b border-[#ded8ce] pb-4">
+    <main className="min-h-0 overflow-auto bg-background text-foreground">
+      <div className="mx-auto flex max-w-[1440px] flex-col gap-4 px-5 py-5">
+        {/* Page header */}
+        <section className="border-b border-border pb-4">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div className="min-w-0">
-              <div className="flex items-center gap-2 text-xs font-semibold text-[#6f685f]">
+              <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
                 <CalendarDays className="size-3.5" />
                 Monday triage
               </div>
               <h1 className="mt-1 text-2xl font-semibold leading-tight tracking-normal">
                 Deadline dashboard
               </h1>
-              <div className="mt-2 flex flex-wrap gap-2">
-                <MetricBadge tone="risk" label="Overdue" value={data.summary.overdue} />
-                <MetricBadge tone="risk" label="Due today" value={data.summary.dueToday} />
-                <MetricBadge tone="review" label="This week" value={data.summary.dueThisWeek} />
-                <MetricBadge tone="neutral" label="This month" value={data.summary.dueThisMonth} />
-                <MetricBadge tone="verified" label="Verified" value={data.summary.verified} />
-                <MetricBadge tone="review" label="Source changed" value={data.summary.sourceChanged} />
-                <MetricBadge tone="neutral" label="User provided" value={data.summary.userProvided} />
-              </div>
             </div>
-            <div className="grid gap-1 text-xs text-[#6f685f]">
+            <div className="grid gap-1 text-xs text-muted-foreground">
               <span>Today {formatDate(data.today)}</span>
               <span>Generated {formatDateTime(data.generatedAt)}</span>
             </div>
           </div>
         </section>
 
-        <section className="border border-[#ded8ce] bg-white">
-          <div className="flex items-center gap-2 border-b border-[#e7e2da] px-3 py-2 text-xs font-semibold text-[#6f685f]">
+        {/* Metrics strip */}
+        <section className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7">
+          <MetricBadge tone="risk" label="Overdue" value={data.summary.overdue} />
+          <MetricBadge tone="risk" label="Due today" value={data.summary.dueToday} />
+          <MetricBadge tone="review" label="This week" value={data.summary.dueThisWeek} />
+          <MetricBadge tone="neutral" label="This month" value={data.summary.dueThisMonth} />
+          <MetricBadge tone="verified" label="Verified" value={data.summary.verified} />
+          <MetricBadge tone="review" label="Source changed" value={data.summary.sourceChanged} />
+          <MetricBadge tone="neutral" label="User provided" value={data.summary.userProvided} />
+        </section>
+
+        {/* Filters panel */}
+        <section className="rounded-xl border border-border bg-card">
+          <div className="flex items-center gap-2 border-b border-border px-3 py-2 text-xs font-semibold text-muted-foreground">
             <Filter className="size-3.5" />
             Filters
           </div>
@@ -245,13 +257,6 @@ export function DashboardPage() {
                 label: option.label,
               }))}
               placeholder="All profiles"
-            />
-            <FilterSelect
-              label="Form/obligation"
-              value={filters.obligation ?? ""}
-              onChange={(value) => updateFilter("obligation", value)}
-              options={data.filterOptions.obligations.map((value) => ({ value, label: value }))}
-              placeholder="All obligations"
             />
             <FilterSelect
               label="Jurisdiction"
@@ -312,26 +317,31 @@ export function DashboardPage() {
           </div>
         </section>
 
-        <section className="sticky top-0 z-10 border border-[#ded8ce] bg-white px-3 py-2 shadow-sm">
+        {/* Bulk actions bar */}
+        <section className="sticky top-0 z-10 rounded-xl border border-border bg-card px-3 py-2 shadow-sm">
           <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
             <div className="text-sm font-semibold">
               {selectedCount} selected
-              <span className="ml-2 text-xs font-normal text-[#6f685f]">
+              <span className="ml-2 text-xs font-normal text-muted-foreground">
                 {data.summary.total} rows in current view
               </span>
             </div>
             <div className="flex flex-wrap gap-2">
-              <select
-                className="h-8 border border-[#cfc7bc] bg-white px-2 text-xs"
+              <Select
                 value={bulkStatus}
-                onChange={(event) => setBulkStatus(event.target.value as DeadlineTaskStatus)}
+                onValueChange={(value) => setBulkStatus(value as DeadlineTaskStatus)}
               >
-                {data.filterOptions.taskStatuses.map((status) => (
-                  <option key={status} value={status}>
-                    {statusLabels[status]}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger className="h-8 w-auto">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {data.filterOptions.taskStatuses.map((status) => (
+                    <SelectItem key={status} value={status}>
+                      {statusLabels[status]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <Button
                 type="button"
                 variant="outline"
@@ -379,7 +389,8 @@ export function DashboardPage() {
           </div>
         </section>
 
-        <section className="flex flex-col gap-5">
+        {/* Task sections */}
+        <section className="flex flex-col gap-4">
           {data.sections.map((section) => (
             <TaskTable
               key={section.id}
@@ -408,18 +419,21 @@ function MetricBadge({
   value: number;
 }) {
   const toneClass = {
-    verified: "border-[#b7dec6] bg-[#eef8f1] text-[#287347]",
-    review: "border-[#ead28e] bg-[#fff7dc] text-[#806218]",
-    risk: "border-[#e2afa1] bg-[#fff1ed] text-[#9b3321]",
-    neutral: "border-[#ddd6cb] bg-[#f6f3ee] text-[#655e55]",
+    verified: "border-ddhq-verified/30 bg-ddhq-verified-soft text-ddhq-verified",
+    review: "border-ddhq-review/30 bg-ddhq-review-soft text-ddhq-review",
+    risk: "border-ddhq-risk/30 bg-ddhq-risk-soft text-ddhq-risk",
+    neutral: "border-border bg-muted text-muted-foreground",
   }[tone];
   const Icon = tone === "verified" ? ShieldCheck : tone === "review" ? ShieldAlert : null;
 
   return (
-    <span className={`inline-flex h-7 items-center gap-1.5 border px-2 text-xs font-semibold ${toneClass}`}>
-      {Icon ? <Icon className="size-3.5" /> : null}
-      {label}: {value}
-    </span>
+    <div className={`rounded-xl border p-3 ${toneClass}`}>
+      <div className="flex items-center gap-1.5 text-xs font-semibold">
+        {Icon ? <Icon className="size-3.5" /> : null}
+        {label}
+      </div>
+      <div className="mt-1 text-lg font-semibold">{value}</div>
+    </div>
   );
 }
 
@@ -437,20 +451,21 @@ function FilterSelect({
   value: string;
 }) {
   return (
-    <label className="grid gap-1 text-xs font-medium text-[#6f685f]">
+    <label className="grid gap-1 text-xs font-medium text-muted-foreground">
       {label}
-      <select
-        className="h-8 min-w-0 border border-[#cfc7bc] bg-white px-2 text-xs text-[#241f1a] outline-none focus:border-[#176b86] focus:ring-1 focus:ring-[#176b86]/30"
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-      >
-        {placeholder ? <option value="">{placeholder}</option> : null}
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+      <Select value={value} onValueChange={(val) => onChange(val ?? "")}>
+        <SelectTrigger className="h-8 w-full">
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
+        <SelectContent>
+          {placeholder ? <SelectItem value="">{placeholder}</SelectItem> : null}
+          {options.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </label>
   );
 }

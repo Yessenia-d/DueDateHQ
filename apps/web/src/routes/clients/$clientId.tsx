@@ -1,6 +1,22 @@
 import { Button } from "@due-date-hq/ui/components/button";
 import { Input } from "@due-date-hq/ui/components/input";
 import { Label } from "@due-date-hq/ui/components/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@due-date-hq/ui/components/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@due-date-hq/ui/components/table";
+import { Textarea } from "@due-date-hq/ui/components/textarea";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import {
@@ -14,6 +30,7 @@ import {
 import * as React from "react";
 import { toast } from "sonner";
 
+import { StatusBadge } from "@/components/status-badge";
 import { trpc } from "@/utils/trpc";
 
 export const Route = createFileRoute("/clients/$clientId")({
@@ -98,9 +115,9 @@ function ClientDetailComponent() {
   if (clientDetail.isPending) {
     return (
       <main className="min-h-0 overflow-auto">
-        <div className="mx-auto flex max-w-6xl flex-col gap-5 px-4 py-6">
-          <div className="h-24 animate-pulse border bg-muted/30" />
-          <div className="h-80 animate-pulse border bg-muted/30" />
+        <div className="mx-auto flex max-w-6xl flex-col gap-5 px-5 py-6">
+          <div className="h-24 animate-pulse rounded-xl border border-border bg-card" />
+          <div className="h-80 animate-pulse rounded-xl border border-border bg-card" />
         </div>
       </main>
     );
@@ -109,8 +126,8 @@ function ClientDetailComponent() {
   if (clientDetail.isError) {
     return (
       <main className="min-h-0 overflow-auto">
-        <div className="mx-auto max-w-6xl px-4 py-6">
-          <div className="border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+        <div className="mx-auto max-w-6xl px-5 py-6">
+          <div className="rounded-xl border border-ddhq-risk/30 bg-ddhq-risk-soft p-4 text-sm text-ddhq-risk">
             Client relationship could not be loaded.
           </div>
         </div>
@@ -122,8 +139,8 @@ function ClientDetailComponent() {
 
   return (
     <main className="min-h-0 overflow-auto">
-      <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-6">
-        <section className="grid gap-4 border-b pb-5 md:grid-cols-[1fr_auto] md:items-end">
+      <div className="mx-auto flex max-w-6xl flex-col gap-6 px-5 py-6">
+        <section className="grid gap-4 border-b border-border pb-5 md:grid-cols-[1fr_auto] md:items-end">
           <div>
             <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase text-muted-foreground">
               <Building2 className="size-3.5" />
@@ -131,8 +148,8 @@ function ClientDetailComponent() {
             </div>
             <h1 className="text-2xl font-semibold tracking-normal">{client.displayName}</h1>
             <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-              <StatusBadge tone="neutral">{relationshipTypeLabel(client.relationshipType)}</StatusBadge>
-              <StatusBadge tone="neutral">Created manually</StatusBadge>
+              <StatusBadge status="neutral">{relationshipTypeLabel(client.relationshipType)}</StatusBadge>
+              <StatusBadge status="neutral">Created manually</StatusBadge>
             </div>
             {client.notes ? (
               <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">
@@ -143,7 +160,7 @@ function ClientDetailComponent() {
           <Link
             to="/clients/$clientId/deadlines/new"
             params={{ clientId }}
-            className="inline-flex h-8 items-center justify-center gap-1.5 border border-input bg-background px-2.5 text-xs font-medium hover:bg-muted"
+            className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-input bg-card px-2.5 text-xs font-medium hover:bg-muted"
           >
             <CalendarDays className="size-3.5" />
             Add deadline
@@ -151,7 +168,7 @@ function ClientDetailComponent() {
         </section>
 
         <section className="grid gap-6 lg:grid-cols-[24rem_1fr]">
-          <form className="grid content-start gap-4 border-b pb-5 lg:border-b-0 lg:border-r lg:pr-5" onSubmit={handleProfileSubmit}>
+          <form className="grid content-start gap-4 border-b border-border pb-5 lg:border-b-0 lg:border-r lg:pr-5" onSubmit={handleProfileSubmit}>
             <div>
               <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase text-muted-foreground">
                 <FileText className="size-3.5" />
@@ -170,18 +187,21 @@ function ClientDetailComponent() {
             </Field>
 
             <Field label="Entity type" htmlFor="entity-type">
-              <select
-                id="entity-type"
-                className="h-8 w-full border border-input bg-background px-2.5 text-xs outline-none focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring/50"
+              <Select
                 value={entityType}
-                onChange={(event) => setEntityType(event.target.value as EntityType)}
+                onValueChange={(value) => setEntityType(value as EntityType)}
               >
-                {entityTypeOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger className="h-8 w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {entityTypeOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </Field>
 
             <Field label="States" htmlFor="states">
@@ -202,24 +222,27 @@ function ClientDetailComponent() {
             </Field>
 
             <Field label="Fiscal year type" htmlFor="fiscal-year-type">
-              <select
-                id="fiscal-year-type"
-                className="h-8 w-full border border-input bg-background px-2.5 text-xs outline-none focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring/50"
+              <Select
                 value={fiscalYearType}
-                onChange={(event) => setFiscalYearType(event.target.value as FiscalYearType)}
+                onValueChange={(value) => setFiscalYearType(value as FiscalYearType)}
               >
-                {fiscalYearOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger className="h-8 w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {fiscalYearOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </Field>
 
             <Field label="Notes" htmlFor="profile-notes">
-              <textarea
+              <Textarea
                 id="profile-notes"
-                className="min-h-20 w-full resize-y border border-input bg-background px-2.5 py-2 text-xs leading-5 outline-none focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring/50"
+                className="min-h-20"
                 value={notes}
                 onChange={(event) => setNotes(event.target.value)}
               />
@@ -248,42 +271,42 @@ function ClientDetailComponent() {
                   detail="Add a tax profile before creating deadline tasks."
                 />
               ) : (
-                <div className="overflow-x-auto border">
-                  <table className="w-full min-w-[680px] border-collapse text-left text-sm">
-                    <thead className="bg-muted/40 text-xs text-muted-foreground">
-                      <tr>
-                        <th className="px-3 py-2 font-medium">Profile</th>
-                        <th className="px-3 py-2 font-medium">Entity</th>
-                        <th className="px-3 py-2 font-medium">Jurisdiction context</th>
-                        <th className="px-3 py-2 font-medium">Coverage</th>
-                      </tr>
-                    </thead>
-                    <tbody>
+                <div className="rounded-xl border border-border">
+                  <Table className="min-w-[680px]">
+                    <TableHeader>
+                      <TableRow className="bg-muted/40">
+                        <TableHead className="text-[11px] font-semibold uppercase text-muted-foreground">Profile</TableHead>
+                        <TableHead className="text-[11px] font-semibold uppercase text-muted-foreground">Entity</TableHead>
+                        <TableHead className="text-[11px] font-semibold uppercase text-muted-foreground">Jurisdiction context</TableHead>
+                        <TableHead className="text-[11px] font-semibold uppercase text-muted-foreground">Coverage</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
                       {profiles.map((profile) => (
-                        <tr key={profile.id} className="border-t align-top">
-                          <td className="px-3 py-3">
+                        <TableRow key={profile.id} className="align-top">
+                          <TableCell>
                             <div className="font-medium">{profile.displayName}</div>
                             {profile.notes ? (
                               <div className="mt-1 text-xs leading-5 text-muted-foreground">
                                 {profile.notes}
                               </div>
                             ) : null}
-                          </td>
-                          <td className="px-3 py-3 text-xs text-muted-foreground">
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
                             {entityTypeLabel(profile.entityType)}
-                          </td>
-                          <td className="px-3 py-3 text-xs text-muted-foreground">
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
                             {[profile.states.join(", ") || "Federal", profile.county]
                               .filter(Boolean)
                               .join(" / ")}
-                          </td>
-                          <td className="px-3 py-3">
-                            <StatusBadge tone="review">Needs review</StatusBadge>
-                          </td>
-                        </tr>
+                          </TableCell>
+                          <TableCell>
+                            <StatusBadge status="needs_review" />
+                          </TableCell>
+                        </TableRow>
                       ))}
-                    </tbody>
-                  </table>
+                    </TableBody>
+                  </Table>
                 </div>
               )}
             </section>
@@ -304,48 +327,48 @@ function ClientDetailComponent() {
                   detail="User-provided deadlines will stay separate from verified DueDateHQ tasks."
                 />
               ) : (
-                <div className="overflow-x-auto border">
-                  <table className="w-full min-w-[760px] border-collapse text-left text-sm">
-                    <thead className="bg-muted/40 text-xs text-muted-foreground">
-                      <tr>
-                        <th className="px-3 py-2 font-medium">Deadline</th>
-                        <th className="px-3 py-2 font-medium">Current due date</th>
-                        <th className="px-3 py-2 font-medium">Firm target date</th>
-                        <th className="px-3 py-2 font-medium">Trust</th>
-                        <th className="px-3 py-2 font-medium">Recurrence</th>
-                      </tr>
-                    </thead>
-                    <tbody>
+                <div className="rounded-xl border border-border">
+                  <Table className="min-w-[760px]">
+                    <TableHeader>
+                      <TableRow className="bg-muted/40">
+                        <TableHead className="text-[11px] font-semibold uppercase text-muted-foreground">Deadline</TableHead>
+                        <TableHead className="text-[11px] font-semibold uppercase text-muted-foreground">Current due date</TableHead>
+                        <TableHead className="text-[11px] font-semibold uppercase text-muted-foreground">Firm target date</TableHead>
+                        <TableHead className="text-[11px] font-semibold uppercase text-muted-foreground">Trust</TableHead>
+                        <TableHead className="text-[11px] font-semibold uppercase text-muted-foreground">Recurrence</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
                       {deadlines.map((deadline) => (
-                        <tr key={deadline.id} className="border-t align-top">
-                          <td className="px-3 py-3">
+                        <TableRow key={deadline.id} className="align-top">
+                          <TableCell>
                             <div className="font-medium">{deadline.title}</div>
                             <div className="mt-1 text-xs text-muted-foreground">
                               {deadline.jurisdiction} / {deadline.taxCategory}
                             </div>
-                          </td>
-                          <td className="px-3 py-3 text-xs font-medium">
+                          </TableCell>
+                          <TableCell className="text-xs font-medium">
                             {formatDate(deadline.currentDueDate)}
-                          </td>
-                          <td className="px-3 py-3 text-xs text-muted-foreground">
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
                             {deadline.firmTargetDate ? formatDate(deadline.firmTargetDate) : "None"}
-                          </td>
-                          <td className="px-3 py-3">
-                            <StatusBadge tone="user">
+                          </TableCell>
+                          <TableCell>
+                            <StatusBadge status="user_provided">
                               <ShieldAlert className="size-3" />
                               User provided
                             </StatusBadge>
                             <div className="mt-1 text-xs text-muted-foreground">
                               Not verified by DueDateHQ
                             </div>
-                          </td>
-                          <td className="px-3 py-3 text-xs text-muted-foreground">
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
                             {deadline.recurrenceKey ? deadline.recurrenceLabel : "One-time"}
-                          </td>
-                        </tr>
+                          </TableCell>
+                        </TableRow>
                       ))}
-                    </tbody>
-                  </table>
+                    </TableBody>
+                  </Table>
                 </div>
               )}
             </section>
@@ -390,36 +413,13 @@ function EmptyState({
   title: string;
 }) {
   return (
-    <div className="border bg-muted/20 p-5">
+    <div className="rounded-xl border border-border bg-muted/20 p-5">
       <div className="flex items-center gap-2 text-sm font-medium">
         <Icon className="size-4" />
         {title}
       </div>
       <div className="mt-2 text-xs leading-5 text-muted-foreground">{detail}</div>
     </div>
-  );
-}
-
-type StatusTone = "neutral" | "review" | "user";
-
-function StatusBadge({
-  children,
-  tone,
-}: {
-  children: React.ReactNode;
-  tone: StatusTone;
-}) {
-  const toneClass = {
-    neutral: "border-border bg-muted text-muted-foreground",
-    review:
-      "border-amber-600/30 bg-amber-500/10 text-amber-700 dark:border-amber-400/30 dark:text-amber-300",
-    user: "border-border bg-background text-muted-foreground",
-  }[tone];
-
-  return (
-    <span className={`inline-flex h-6 items-center gap-1.5 border px-2 text-xs font-medium ${toneClass}`}>
-      {children}
-    </span>
   );
 }
 

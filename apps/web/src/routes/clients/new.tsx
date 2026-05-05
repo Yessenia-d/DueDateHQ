@@ -1,6 +1,14 @@
 import { Button } from "@due-date-hq/ui/components/button";
 import { Input } from "@due-date-hq/ui/components/input";
 import { Label } from "@due-date-hq/ui/components/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@due-date-hq/ui/components/select";
+import { Textarea } from "@due-date-hq/ui/components/textarea";
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Building2, CircleDashed, UserPlus } from "lucide-react";
@@ -59,8 +67,8 @@ function NewClientComponent() {
 
   return (
     <main className="min-h-0 overflow-auto">
-      <div className="mx-auto flex max-w-4xl flex-col gap-6 px-4 py-6">
-        <section className="grid gap-4 border-b pb-5 md:grid-cols-[1fr_auto] md:items-end">
+      <div className="mx-auto flex max-w-4xl flex-col gap-6 px-5 py-6">
+        <section className="grid gap-4 border-b border-border pb-5 md:grid-cols-[1fr_auto] md:items-end">
           <div>
             <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase text-muted-foreground">
               <Building2 className="size-3.5" />
@@ -73,7 +81,7 @@ function NewClientComponent() {
             </p>
           </div>
           {search.coverageObligationId ? (
-            <div className="border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+            <div className="rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
               <div className="flex items-center gap-2 font-medium text-foreground">
                 <CircleDashed className="size-3.5" />
                 Coverage gap path
@@ -84,7 +92,7 @@ function NewClientComponent() {
         </section>
 
         <form className="grid gap-5" onSubmit={handleSubmit}>
-          <section className="grid gap-4 border-b pb-5">
+          <section className="grid gap-4 border-b border-border pb-5">
             <Field label="Display name" htmlFor="display-name">
               <Input
                 id="display-name"
@@ -96,24 +104,27 @@ function NewClientComponent() {
             </Field>
 
             <Field label="Relationship type" htmlFor="relationship-type">
-              <select
-                id="relationship-type"
-                className="h-8 w-full border border-input bg-background px-2.5 text-xs outline-none focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring/50"
+              <Select
                 value={relationshipType}
-                onChange={(event) => setRelationshipType(event.target.value as RelationshipType)}
+                onValueChange={(value) => setRelationshipType(value as RelationshipType)}
               >
-                {relationshipTypeOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger className="h-8 w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {relationshipTypeOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </Field>
 
             <Field label="Notes" htmlFor="notes">
-              <textarea
+              <Textarea
                 id="notes"
-                className="min-h-24 w-full resize-y border border-input bg-background px-2.5 py-2 text-xs leading-5 outline-none focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring/50"
+                className="min-h-24"
                 value={notes}
                 onChange={(event) => setNotes(event.target.value)}
               />

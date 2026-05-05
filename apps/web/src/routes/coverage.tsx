@@ -1,4 +1,24 @@
 import { Button } from "@due-date-hq/ui/components/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@due-date-hq/ui/components/select";
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+} from "@due-date-hq/ui/components/sheet";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@due-date-hq/ui/components/table";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
@@ -11,18 +31,18 @@ import {
   Shield,
   ShieldAlert,
   ShieldCheck,
-  X,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { StatusBadge } from "@/components/status-badge";
 import { trpc } from "@/utils/trpc";
 
 export const Route = createFileRoute("/coverage")({
   component: CoverageComponent,
 });
 
-// ── Status display config ──
+// -- Status display config --
 
 type VerificationStatusKey =
   | "verified"
@@ -31,43 +51,20 @@ type VerificationStatusKey =
   | "unsupported"
   | "no_rule";
 
-const statusConfig: Record<
-  VerificationStatusKey,
-  { label: string; className: string }
-> = {
-  verified: {
-    label: "Verified",
-    className:
-      "border-emerald-600/30 bg-emerald-500/10 text-emerald-700 dark:border-emerald-400/30 dark:text-emerald-300",
-  },
-  needs_review: {
-    label: "Needs review",
-    className:
-      "border-amber-600/30 bg-amber-500/10 text-amber-700 dark:border-amber-400/30 dark:text-amber-300",
-  },
-  source_changed: {
-    label: "Source changed",
-    className:
-      "border-amber-600/40 bg-amber-500/15 text-amber-800 dark:border-amber-400/40 dark:text-amber-200",
-  },
-  unsupported: {
-    label: "Unsupported",
-    className:
-      "border-slate-500/30 bg-slate-400/10 text-slate-600 dark:border-slate-400/30 dark:text-slate-300",
-  },
-  no_rule: {
-    label: "Coverage gap",
-    className:
-      "border-slate-500/30 bg-slate-400/10 text-slate-600 dark:border-slate-400/30 dark:text-slate-300",
-  },
-};
-
 const statusIcons: Record<VerificationStatusKey, typeof CheckCircle2> = {
   verified: ShieldCheck,
   needs_review: Eye,
   source_changed: ShieldAlert,
   unsupported: HelpCircle,
   no_rule: CircleDashed,
+};
+
+const statusToBadge: Record<VerificationStatusKey, Parameters<typeof StatusBadge>[0]["status"]> = {
+  verified: "verified",
+  needs_review: "needs_review",
+  source_changed: "source_changed",
+  unsupported: "unsupported",
+  no_rule: "no_rule",
 };
 
 function getStatusKey(status: string | null): VerificationStatusKey {
@@ -78,7 +75,7 @@ function getStatusKey(status: string | null): VerificationStatusKey {
   return "no_rule";
 }
 
-// ── Filters ──
+// -- Filters --
 
 type JurisdictionFilter = "all" | string;
 type StatusFilter = "all" | VerificationStatusKey;
@@ -110,9 +107,9 @@ function CoverageComponent() {
   if (coverage.isPending) {
     return (
       <main className="min-h-0 overflow-auto">
-        <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-6">
-          <div className="h-24 animate-pulse border bg-muted/30" />
-          <div className="h-96 animate-pulse border bg-muted/30" />
+        <div className="mx-auto flex max-w-7xl flex-col gap-6 px-5 py-6">
+          <div className="h-24 animate-pulse rounded-xl border border-border bg-card" />
+          <div className="h-96 animate-pulse rounded-xl border border-border bg-card" />
         </div>
       </main>
     );
@@ -121,8 +118,8 @@ function CoverageComponent() {
   if (coverage.isError) {
     return (
       <main className="min-h-0 overflow-auto">
-        <div className="mx-auto max-w-7xl px-4 py-6">
-          <div className="border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+        <div className="mx-auto max-w-7xl px-5 py-6">
+          <div className="rounded-xl border border-ddhq-risk/30 bg-ddhq-risk-soft p-4 text-sm text-ddhq-risk">
             Coverage data could not be loaded.
           </div>
         </div>
@@ -148,9 +145,9 @@ function CoverageComponent() {
 
   return (
     <main className="min-h-0 overflow-auto">
-      <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-6">
+      <div className="mx-auto flex max-w-7xl flex-col gap-6 px-5 py-6">
         {/* Header */}
-        <section className="grid gap-4 border-b pb-5 md:grid-cols-[1fr_auto] md:items-end">
+        <section className="grid gap-4 border-b border-border pb-5 md:grid-cols-[1fr_auto] md:items-end">
           <div className="max-w-3xl">
             <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase text-muted-foreground">
               <Shield className="size-3.5" />
@@ -173,7 +170,7 @@ function CoverageComponent() {
         </section>
 
         {/* Summary counts */}
-        <section className="grid gap-2 border-b pb-3 sm:grid-cols-2 lg:grid-cols-5">
+        <section className="grid gap-2 border-b border-border pb-3 sm:grid-cols-2 lg:grid-cols-5">
           <SummaryCount label="Verified" count={data.summary.totalVerified} statusKey="verified" />
           <SummaryCount
             label="Needs review"
@@ -194,7 +191,7 @@ function CoverageComponent() {
         </section>
 
         {/* Supported sources */}
-        <section className="border-b pb-3">
+        <section className="border-b border-border pb-3">
           <h2 className="mb-2 text-xs font-medium uppercase text-muted-foreground">
             P0 supported official sources
           </h2>
@@ -202,7 +199,7 @@ function CoverageComponent() {
             {data.supportedSources.map((source) => (
               <span
                 key={source}
-                className="inline-flex items-center gap-1.5 border bg-background px-2 py-1 text-xs text-muted-foreground"
+                className="inline-flex items-center gap-1.5 rounded-[6px] border border-border bg-card px-2 py-1 text-xs text-muted-foreground"
               >
                 <Globe className="size-3" />
                 {source}
@@ -213,49 +210,51 @@ function CoverageComponent() {
 
         {/* Filters */}
         <section className="flex flex-wrap items-center gap-3">
-          <label className="text-xs font-medium text-muted-foreground">
+          <div className="grid gap-1 text-xs font-medium text-muted-foreground">
             Jurisdiction
-            <select
-              className="ml-2 border bg-background px-2 py-1.5 text-xs"
-              value={jurisdictionFilter}
-              onChange={(e) => setJurisdictionFilter(e.target.value)}
-            >
-              <option value="all">All jurisdictions</option>
-              {jurisdictions.map((j) => (
-                <option key={j} value={j}>
-                  {j === "federal" ? "Federal" : j}
-                </option>
-              ))}
-            </select>
-          </label>
+            <Select value={jurisdictionFilter} onValueChange={(v) => setJurisdictionFilter(v ?? "all")}>
+              <SelectTrigger className="h-8 w-auto">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All jurisdictions</SelectItem>
+                {jurisdictions.map((j) => (
+                  <SelectItem key={j} value={j}>
+                    {j === "federal" ? "Federal" : j}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-          <label className="text-xs font-medium text-muted-foreground">
+          <div className="grid gap-1 text-xs font-medium text-muted-foreground">
             Status
-            <select
-              className="ml-2 border bg-background px-2 py-1.5 text-xs"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-            >
-              <option value="all">All statuses</option>
-              <option value="verified">Verified</option>
-              <option value="needs_review">Needs review</option>
-              <option value="source_changed">Source changed</option>
-              <option value="unsupported">Unsupported</option>
-              <option value="no_rule">Coverage gap</option>
-            </select>
-          </label>
+            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
+              <SelectTrigger className="h-8 w-auto">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All statuses</SelectItem>
+                <SelectItem value="verified">Verified</SelectItem>
+                <SelectItem value="needs_review">Needs review</SelectItem>
+                <SelectItem value="source_changed">Source changed</SelectItem>
+                <SelectItem value="unsupported">Unsupported</SelectItem>
+                <SelectItem value="no_rule">Coverage gap</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </section>
 
         {/* Coverage table by jurisdiction group */}
         <section className="flex flex-col gap-5">
           {filteredGroups.length === 0 && (
-            <div className="border bg-muted/20 p-6 text-center text-sm text-muted-foreground">
+            <div className="rounded-xl border border-border bg-muted/20 p-6 text-center text-sm text-muted-foreground">
               No obligations match the current filters.
             </div>
           )}
 
           {filteredGroups.map((group) => (
-            <div key={group.jurisdiction} className="border-b pb-5 last:border-b-0">
+            <div key={group.jurisdiction} className="border-b border-border pb-5 last:border-b-0">
               <div className="mb-3 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
                 <div>
                   <h2 className="text-base font-medium">
@@ -297,53 +296,53 @@ function CoverageComponent() {
                 </div>
               </div>
 
-              <div className="overflow-x-auto border">
-                <table className="w-full min-w-[800px] border-collapse text-left text-sm">
-                  <thead className="bg-muted/40 text-xs font-semibold text-muted-foreground">
-                    <tr>
-                      <th className="px-3 py-2">Obligation</th>
-                      <th className="w-36 px-3 py-2">Tax category</th>
-                      <th className="w-40 px-3 py-2">Entity types</th>
-                      <th className="w-36 px-3 py-2">Status</th>
-                      <th className="w-28 px-3 py-2">Last verified</th>
-                      <th className="w-24 px-3 py-2">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+              <div className="rounded-xl border border-border">
+                <Table className="min-w-[800px]">
+                  <TableHeader>
+                    <TableRow className="bg-muted/40">
+                      <TableHead className="text-[11px] font-semibold uppercase text-muted-foreground">Obligation</TableHead>
+                      <TableHead className="w-36 text-[11px] font-semibold uppercase text-muted-foreground">Tax category</TableHead>
+                      <TableHead className="w-40 text-[11px] font-semibold uppercase text-muted-foreground">Entity types</TableHead>
+                      <TableHead className="w-36 text-[11px] font-semibold uppercase text-muted-foreground">Status</TableHead>
+                      <TableHead className="w-28 text-[11px] font-semibold uppercase text-muted-foreground">Last verified</TableHead>
+                      <TableHead className="w-24 text-[11px] font-semibold uppercase text-muted-foreground">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {group.obligations.map((obl) => {
                       const sk = getStatusKey(obl.verificationStatus);
                       return (
-                        <tr key={obl.obligationId} className="border-t align-top">
-                          <td className="px-3 py-3">
+                        <TableRow key={obl.obligationId} className="align-top">
+                          <TableCell>
                             <div className="font-medium">{obl.obligationName}</div>
                             {obl.ruleSummary && (
                               <div className="mt-1 max-w-lg text-xs leading-5 text-muted-foreground">
                                 {obl.ruleSummary}
                               </div>
                             )}
-                          </td>
-                          <td className="px-3 py-3 text-xs text-muted-foreground">
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
                             {obl.taxCategory}
-                          </td>
-                          <td className="px-3 py-3">
+                          </TableCell>
+                          <TableCell>
                             <div className="flex flex-wrap gap-1">
                               {obl.entityTypes.map((et) => (
                                 <span
                                   key={et}
-                                  className="border bg-background px-1.5 py-0.5 text-[11px] text-muted-foreground"
+                                  className="rounded-[6px] border border-border bg-card px-1.5 py-0.5 text-[11px] text-muted-foreground"
                                 >
                                   {formatEntityType(et)}
                                 </span>
                               ))}
                             </div>
-                          </td>
-                          <td className="px-3 py-3">
+                          </TableCell>
+                          <TableCell>
                             <VerificationBadge statusKey={sk} />
-                          </td>
-                          <td className="px-3 py-3 font-mono text-xs text-muted-foreground">
+                          </TableCell>
+                          <TableCell className="font-mono text-xs text-muted-foreground">
                             {obl.lastVerifiedAt ? formatDate(obl.lastVerifiedAt) : "-"}
-                          </td>
-                          <td className="px-3 py-3">
+                          </TableCell>
+                          <TableCell>
                             <div className="flex flex-wrap gap-1">
                               {obl.ruleId && (
                                 <Button
@@ -402,12 +401,12 @@ function CoverageComponent() {
                             {sk === "verified" && !obl.ruleId && (
                               <span className="text-xs text-muted-foreground">No action</span>
                             )}
-                          </td>
-                        </tr>
+                          </TableCell>
+                        </TableRow>
                       );
                     })}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               </div>
             </div>
           ))}
@@ -415,14 +414,19 @@ function CoverageComponent() {
       </div>
 
       {/* Rule evidence drawer */}
-      {selectedRuleId && (
-        <RuleDetailDrawer ruleId={selectedRuleId} onClose={() => setSelectedRuleId(null)} />
-      )}
+      <Sheet open={Boolean(selectedRuleId)} onOpenChange={(open) => { if (!open) setSelectedRuleId(null); }}>
+        <SheetContent side="right" className="w-full max-w-lg p-0 sm:max-w-lg">
+          <SheetTitle className="sr-only">Rule evidence</SheetTitle>
+          {selectedRuleId && (
+            <RuleDetailContent ruleId={selectedRuleId} />
+          )}
+        </SheetContent>
+      </Sheet>
     </main>
   );
 }
 
-// ── Components ──
+// -- Components --
 
 function SummaryCount({
   label,
@@ -434,243 +438,212 @@ function SummaryCount({
   statusKey: VerificationStatusKey;
 }) {
   const Icon = statusIcons[statusKey];
-  const config = statusConfig[statusKey];
 
   return (
     <div className="flex items-center justify-between gap-3 px-2 py-1.5">
-      <span
-        className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-[6px] border px-1.5 py-0.5 text-[11px] font-semibold leading-[1.1] ${config.className}`}
-      >
+      <StatusBadge status={statusToBadge[statusKey]}>
         <Icon className="size-3" />
         {label}
-      </span>
+      </StatusBadge>
       <span className="text-sm font-medium">{count}</span>
     </div>
   );
 }
 
 function VerificationBadge({ statusKey }: { statusKey: VerificationStatusKey }) {
-  const config = statusConfig[statusKey];
   const Icon = statusIcons[statusKey];
 
   return (
-    <span
-      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-[6px] border px-1.5 py-0.5 text-[11px] font-semibold leading-[1.1] ${config.className}`}
-    >
+    <StatusBadge status={statusToBadge[statusKey]}>
       <Icon className="size-3" />
-      {config.label}
-    </span>
+    </StatusBadge>
   );
 }
 
-function RuleDetailDrawer({
+function RuleDetailContent({
   ruleId,
-  onClose,
 }: {
   ruleId: string;
-  onClose: () => void;
 }) {
   const ruleDetail = useQuery(trpc.coverage.getRule.queryOptions({ ruleId }));
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
-      {/* backdrop */}
-        <Button
-          type="button"
-          variant="ghost"
-          className="absolute inset-0 h-auto w-auto justify-start rounded-none border-0 bg-black/20 p-0 hover:bg-black/20"
-          onClick={onClose}
-          aria-label="Close evidence drawer"
-        />
-      {/* drawer */}
-      <div className="relative z-10 flex w-full max-w-lg flex-col overflow-y-auto border-l bg-background shadow-lg">
-        <div className="flex items-center justify-between border-b px-4 py-3">
-          <h2 className="text-base font-medium">Rule evidence</h2>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-xs"
-            onClick={onClose}
-            className="text-muted-foreground hover:text-foreground"
-            aria-label="Close"
-          >
-            <X className="size-4" />
-          </Button>
-        </div>
+    <>
+      <div className="flex items-center justify-between border-b border-border px-4 py-3">
+        <h2 className="text-base font-medium">Rule evidence</h2>
+      </div>
 
-        {ruleDetail.isPending && (
-          <div className="p-4 text-sm text-muted-foreground">Loading evidence...</div>
-        )}
+      {ruleDetail.isPending && (
+        <div className="p-4 text-sm text-muted-foreground">Loading evidence...</div>
+      )}
 
-        {ruleDetail.isError && (
-          <div className="p-4 text-sm text-destructive">Could not load rule evidence.</div>
-        )}
+      {ruleDetail.isError && (
+        <div className="p-4 text-sm text-ddhq-risk">Could not load rule evidence.</div>
+      )}
 
-        {ruleDetail.data && (
-          <div className="flex flex-col gap-4 p-4">
-            {/* Obligation info */}
-            <div>
-              <div className="text-xs font-medium uppercase text-muted-foreground">Obligation</div>
-              <div className="mt-1 font-medium">{ruleDetail.data.obligationName}</div>
-              <div className="mt-0.5 text-xs text-muted-foreground">
-                {ruleDetail.data.jurisdiction === "federal"
-                  ? "Federal"
-                  : ruleDetail.data.jurisdiction}{" "}
-                / {ruleDetail.data.taxCategory}
-              </div>
-            </div>
-
-            {/* Entity types */}
-            <div>
-              <div className="text-xs font-medium uppercase text-muted-foreground">
-                Entity types
-              </div>
-              <div className="mt-1 flex flex-wrap gap-1">
-                {ruleDetail.data.entityTypes.map((et) => (
-                  <span
-                    key={et}
-                    className="border bg-background px-1.5 py-0.5 text-[11px] text-muted-foreground"
-                  >
-                    {formatEntityType(et)}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {/* Verification status */}
-            <div>
-              <div className="text-xs font-medium uppercase text-muted-foreground">
-                Verification status
-              </div>
-              <div className="mt-1">
-                <VerificationBadge
-                  statusKey={getStatusKey(ruleDetail.data.verificationStatus)}
-                />
-              </div>
-            </div>
-
-            {/* Rule summary */}
-            <div>
-              <div className="text-xs font-medium uppercase text-muted-foreground">
-                Rule summary
-              </div>
-              <div className="mt-1 text-sm leading-relaxed">{ruleDetail.data.ruleSummary}</div>
-            </div>
-
-            {/* Source */}
-            <div>
-              <div className="text-xs font-medium uppercase text-muted-foreground">
-                Official source
-              </div>
-              <div className="mt-1 text-sm">{ruleDetail.data.sourceName}</div>
-              {ruleDetail.data.sourceUrl && (
-                <a
-                  href={ruleDetail.data.sourceUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-1 inline-flex items-center gap-1 font-mono text-xs text-muted-foreground hover:text-foreground"
-                >
-                  <ExternalLink className="size-3" />
-                  {ruleDetail.data.sourceUrl}
-                </a>
-              )}
-            </div>
-
-            {/* Timestamps */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <div className="text-xs font-medium uppercase text-muted-foreground">
-                  Last verified
-                </div>
-                <div className="mt-1 font-mono text-xs">
-                  {ruleDetail.data.lastVerifiedAt
-                    ? formatDate(ruleDetail.data.lastVerifiedAt)
-                    : "-"}
-                </div>
-              </div>
-              <div>
-                <div className="text-xs font-medium uppercase text-muted-foreground">
-                  Source last checked
-                </div>
-                <div className="mt-1 font-mono text-xs">
-                  {ruleDetail.data.sourceLastCheckedAt
-                    ? formatDate(ruleDetail.data.sourceLastCheckedAt)
-                    : "-"}
-                </div>
-              </div>
-              <div>
-                <div className="text-xs font-medium uppercase text-muted-foreground">
-                  Source last changed
-                </div>
-                <div className="mt-1 font-mono text-xs">
-                  {ruleDetail.data.sourceLastChangedAt
-                    ? formatDate(ruleDetail.data.sourceLastChangedAt)
-                    : "No changes detected"}
-                </div>
-              </div>
-              <div>
-                <div className="text-xs font-medium uppercase text-muted-foreground">
-                  Rule version
-                </div>
-                <div className="mt-1 font-mono text-xs">v{ruleDetail.data.currentVersion}</div>
-              </div>
-            </div>
-
-            {/* Verification notes */}
-            {ruleDetail.data.verificationNotes && (
-              <div>
-                <div className="text-xs font-medium uppercase text-muted-foreground">
-                  Verification notes
-                </div>
-                <div className="mt-1 text-sm text-muted-foreground">
-                  {ruleDetail.data.verificationNotes}
-                </div>
-              </div>
-            )}
-
-            {/* Example due dates */}
-            <div>
-              <div className="text-xs font-medium uppercase text-muted-foreground">
-                Calculated due dates
-              </div>
-              <div className="mt-2 overflow-x-auto border">
-                <table className="w-full border-collapse text-left text-xs">
-                  <thead className="bg-muted/40 font-semibold text-muted-foreground">
-                    <tr>
-                      <th className="px-2 py-1.5">Tax year</th>
-                      <th className="px-2 py-1.5">Quarter</th>
-                      <th className="px-2 py-1.5">Due date</th>
-                      <th className="px-2 py-1.5">Extension</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {ruleDetail.data.exampleDueDates.map((ed) => (
-                      <tr
-                        key={`${ed.taxYear}-${ed.quarter ?? "annual"}`}
-                        className="border-t"
-                      >
-                        <td className="px-2 py-1.5 font-mono">{ed.taxYear}</td>
-                        <td className="px-2 py-1.5 font-mono">
-                          {ed.quarter ? `Q${ed.quarter}` : "-"}
-                        </td>
-                        <td className="px-2 py-1.5 font-mono">{formatDate(ed.dueDate)}</td>
-                        <td className="px-2 py-1.5 font-mono">
-                          {ed.extensionDate ? formatDate(ed.extensionDate) : "-"}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+      {ruleDetail.data && (
+        <div className="flex flex-col gap-4 overflow-y-auto p-4">
+          {/* Obligation info */}
+          <div>
+            <div className="text-xs font-medium uppercase text-muted-foreground">Obligation</div>
+            <div className="mt-1 font-medium">{ruleDetail.data.obligationName}</div>
+            <div className="mt-0.5 text-xs text-muted-foreground">
+              {ruleDetail.data.jurisdiction === "federal"
+                ? "Federal"
+                : ruleDetail.data.jurisdiction}{" "}
+              / {ruleDetail.data.taxCategory}
             </div>
           </div>
-        )}
-      </div>
-    </div>
+
+          {/* Entity types */}
+          <div>
+            <div className="text-xs font-medium uppercase text-muted-foreground">
+              Entity types
+            </div>
+            <div className="mt-1 flex flex-wrap gap-1">
+              {ruleDetail.data.entityTypes.map((et) => (
+                <span
+                  key={et}
+                  className="rounded-[6px] border border-border bg-card px-1.5 py-0.5 text-[11px] text-muted-foreground"
+                >
+                  {formatEntityType(et)}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Verification status */}
+          <div>
+            <div className="text-xs font-medium uppercase text-muted-foreground">
+              Verification status
+            </div>
+            <div className="mt-1">
+              <VerificationBadge
+                statusKey={getStatusKey(ruleDetail.data.verificationStatus)}
+              />
+            </div>
+          </div>
+
+          {/* Rule summary */}
+          <div>
+            <div className="text-xs font-medium uppercase text-muted-foreground">
+              Rule summary
+            </div>
+            <div className="mt-1 text-sm leading-relaxed">{ruleDetail.data.ruleSummary}</div>
+          </div>
+
+          {/* Source */}
+          <div>
+            <div className="text-xs font-medium uppercase text-muted-foreground">
+              Official source
+            </div>
+            <div className="mt-1 text-sm">{ruleDetail.data.sourceName}</div>
+            {ruleDetail.data.sourceUrl && (
+              <a
+                href={ruleDetail.data.sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-1 inline-flex items-center gap-1 font-mono text-xs text-muted-foreground hover:text-foreground"
+              >
+                <ExternalLink className="size-3" />
+                {ruleDetail.data.sourceUrl}
+              </a>
+            )}
+          </div>
+
+          {/* Timestamps */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <div className="text-xs font-medium uppercase text-muted-foreground">
+                Last verified
+              </div>
+              <div className="mt-1 font-mono text-xs">
+                {ruleDetail.data.lastVerifiedAt
+                  ? formatDate(ruleDetail.data.lastVerifiedAt)
+                  : "-"}
+              </div>
+            </div>
+            <div>
+              <div className="text-xs font-medium uppercase text-muted-foreground">
+                Source last checked
+              </div>
+              <div className="mt-1 font-mono text-xs">
+                {ruleDetail.data.sourceLastCheckedAt
+                  ? formatDate(ruleDetail.data.sourceLastCheckedAt)
+                  : "-"}
+              </div>
+            </div>
+            <div>
+              <div className="text-xs font-medium uppercase text-muted-foreground">
+                Source last changed
+              </div>
+              <div className="mt-1 font-mono text-xs">
+                {ruleDetail.data.sourceLastChangedAt
+                  ? formatDate(ruleDetail.data.sourceLastChangedAt)
+                  : "No changes detected"}
+              </div>
+            </div>
+            <div>
+              <div className="text-xs font-medium uppercase text-muted-foreground">
+                Rule version
+              </div>
+              <div className="mt-1 font-mono text-xs">v{ruleDetail.data.currentVersion}</div>
+            </div>
+          </div>
+
+          {/* Verification notes */}
+          {ruleDetail.data.verificationNotes && (
+            <div>
+              <div className="text-xs font-medium uppercase text-muted-foreground">
+                Verification notes
+              </div>
+              <div className="mt-1 text-sm text-muted-foreground">
+                {ruleDetail.data.verificationNotes}
+              </div>
+            </div>
+          )}
+
+          {/* Example due dates */}
+          <div>
+            <div className="text-xs font-medium uppercase text-muted-foreground">
+              Calculated due dates
+            </div>
+            <div className="mt-2 rounded-xl border border-border">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/40">
+                    <TableHead className="text-[11px] font-semibold uppercase text-muted-foreground">Tax year</TableHead>
+                    <TableHead className="text-[11px] font-semibold uppercase text-muted-foreground">Quarter</TableHead>
+                    <TableHead className="text-[11px] font-semibold uppercase text-muted-foreground">Due date</TableHead>
+                    <TableHead className="text-[11px] font-semibold uppercase text-muted-foreground">Extension</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {ruleDetail.data.exampleDueDates.map((ed) => (
+                    <TableRow
+                      key={`${ed.taxYear}-${ed.quarter ?? "annual"}`}
+                    >
+                      <TableCell className="font-mono">{ed.taxYear}</TableCell>
+                      <TableCell className="font-mono">
+                        {ed.quarter ? `Q${ed.quarter}` : "-"}
+                      </TableCell>
+                      <TableCell className="font-mono">{formatDate(ed.dueDate)}</TableCell>
+                      <TableCell className="font-mono">
+                        {ed.extensionDate ? formatDate(ed.extensionDate) : "-"}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
-// ── Utilities ──
+// -- Utilities --
 
 function formatEntityType(et: string): string {
   return et

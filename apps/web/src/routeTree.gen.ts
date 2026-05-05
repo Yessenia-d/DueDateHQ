@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ProgressRouteImport } from './routes/progress'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as ImportRouteImport } from './routes/import'
 import { Route as CoverageRouteImport } from './routes/coverage'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ClientsNewRouteImport } from './routes/clients/new'
@@ -25,6 +26,11 @@ const ProgressRoute = ProgressRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ImportRoute = ImportRouteImport.update({
+  id: '/import',
+  path: '/import',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CoverageRoute = CoverageRouteImport.update({
@@ -57,6 +63,7 @@ const ClientsClientIdDeadlinesNewRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/coverage': typeof CoverageRoute
+  '/import': typeof ImportRoute
   '/login': typeof LoginRoute
   '/progress': typeof ProgressRoute
   '/clients/$clientId': typeof ClientsClientIdRouteWithChildren
@@ -66,6 +73,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/coverage': typeof CoverageRoute
+  '/import': typeof ImportRoute
   '/login': typeof LoginRoute
   '/progress': typeof ProgressRoute
   '/clients/$clientId': typeof ClientsClientIdRouteWithChildren
@@ -76,6 +84,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/coverage': typeof CoverageRoute
+  '/import': typeof ImportRoute
   '/login': typeof LoginRoute
   '/progress': typeof ProgressRoute
   '/clients/$clientId': typeof ClientsClientIdRouteWithChildren
@@ -87,6 +96,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/coverage'
+    | '/import'
     | '/login'
     | '/progress'
     | '/clients/$clientId'
@@ -96,6 +106,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/coverage'
+    | '/import'
     | '/login'
     | '/progress'
     | '/clients/$clientId'
@@ -105,6 +116,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/coverage'
+    | '/import'
     | '/login'
     | '/progress'
     | '/clients/$clientId'
@@ -115,6 +127,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CoverageRoute: typeof CoverageRoute
+  ImportRoute: typeof ImportRoute
   LoginRoute: typeof LoginRoute
   ProgressRoute: typeof ProgressRoute
   ClientsClientIdRoute: typeof ClientsClientIdRouteWithChildren
@@ -135,6 +148,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/import': {
+      id: '/import'
+      path: '/import'
+      fullPath: '/import'
+      preLoaderRoute: typeof ImportRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/coverage': {
@@ -190,6 +210,7 @@ const ClientsClientIdRouteWithChildren = ClientsClientIdRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CoverageRoute: CoverageRoute,
+  ImportRoute: ImportRoute,
   LoginRoute: LoginRoute,
   ProgressRoute: ProgressRoute,
   ClientsClientIdRoute: ClientsClientIdRouteWithChildren,
