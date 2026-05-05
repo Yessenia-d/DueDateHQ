@@ -73,6 +73,7 @@ export const dashboardSummaryFiltersSchema = z.object({
   horizon: z.enum(dashboardHorizonValues).default("all"),
   clientRelationshipId: z.string().trim().min(1).optional(),
   filingProfileId: z.string().trim().min(1).optional(),
+  obligation: z.string().trim().min(1).optional(),
   jurisdiction: z.string().trim().min(1).optional(),
   entityType: z.enum(filingProfileEntityTypes).optional(),
   taxCategory: z.string().trim().min(1).optional(),
@@ -150,6 +151,7 @@ export type DashboardSummaryResponse = {
   filterOptions: {
     clientRelationships: Array<{ id: string; label: string }>;
     filingProfiles: Array<{ id: string; label: string; clientRelationshipId: string }>;
+    obligations: string[];
     jurisdictions: string[];
     entityTypes: FilingProfile["entityType"][];
     taxCategories: string[];
@@ -170,6 +172,7 @@ function normalizeDashboardInput(input: DashboardSummaryInput | undefined): Dash
     horizon: input?.horizon ?? "all",
     clientRelationshipId: input?.clientRelationshipId,
     filingProfileId: input?.filingProfileId,
+    obligation: input?.obligation,
     jurisdiction: input?.jurisdiction,
     entityType: input?.entityType,
     taxCategory: input?.taxCategory,
@@ -400,6 +403,7 @@ export function filterAndSortDashboardRows(
       return false;
     }
     if (filters.filingProfileId && row.filingProfile.id !== filters.filingProfileId) return false;
+    if (filters.obligation && row.title !== filters.obligation) return false;
     if (filters.jurisdiction && row.jurisdiction !== filters.jurisdiction) return false;
     if (filters.entityType && row.filingProfile.entityType !== filters.entityType) return false;
     if (filters.taxCategory && row.taxCategory !== filters.taxCategory) return false;
@@ -491,6 +495,7 @@ function getFilterOptions(rows: DashboardTaskRow[]): DashboardSummaryResponse["f
         clientRelationshipId: row.clientRelationship.id,
       })),
     ),
+    obligations: [...new Set(rows.map((row) => row.title))].sort(compareStrings),
     jurisdictions: [...new Set(rows.map((row) => row.jurisdiction))].sort(compareStrings),
     entityTypes: [...new Set(rows.map((row) => row.filingProfile.entityType))].sort(
       compareStrings,
@@ -684,14 +689,24 @@ export const dashboardRouter = router({
   export: publicProcedure
     .input(dashboardSummaryFiltersSchema.optional())
     .mutation(async ({ ctx, input }) => {
-      const summary = await buildDashboardSummary(ctx, input);
+      return exportDashboardCurrentView(ctx, input);
+    }),
 
-      return {
-        generatedAt: summary.generatedAt,
-        filename: `due-date-hq-current-task-view-${summary.today}.csv`,
-        contentType: "text/csv;charset=utf-8",
-        rowCount: summary.allTasks.length,
-        csv: createDashboardCsv(summary.allTasks),
-      };
+  bulkExportCurrentFilteredView: publicProcedure
+    .input(dashboardSummaryFiltersSchema.optional())
+    .mutation(async ({ ctx, input }) => {
+      return exportDashboardCurrentView(ctx, input);
     }),
 });
+
+async function exportDashboardCurrentView(ctx: Context, input: DashboardSummaryInput | undefined) {
+  const summary = await buildDashboardSummary(ctx, input);
+
+  return {
+    generatedAt: summary.generatedAt,
+    filename: `due-date-hq-current-task-view-${summary.today}.csv`,
+    contentType: "text/csv;charset=utf-8",
+    rowCount: summary.allTasks.length,
+    csv: createDashboardCsv(summary.allTasks),
+  };
+}

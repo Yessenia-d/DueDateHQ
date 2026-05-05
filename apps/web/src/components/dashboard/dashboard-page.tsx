@@ -247,6 +247,13 @@ export function DashboardPage() {
               placeholder="All profiles"
             />
             <FilterSelect
+              label="Form/obligation"
+              value={filters.obligation ?? ""}
+              onChange={(value) => updateFilter("obligation", value)}
+              options={data.filterOptions.obligations.map((value) => ({ value, label: value }))}
+              placeholder="All obligations"
+            />
+            <FilterSelect
               label="Jurisdiction"
               value={filters.jurisdiction ?? ""}
               onChange={(value) => updateFilter("jurisdiction", value)}

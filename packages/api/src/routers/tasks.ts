@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, lt } from "drizzle-orm";
 import { auditLogs } from "@due-date-hq/db/schema/audit";
 import {
   clientRelationships,
@@ -9,7 +9,11 @@ import {
   type DeadlineDateEvent,
   type DeadlineTask,
 } from "@due-date-hq/db/schema/deadline-domain";
-import { taxRules, type TaxRule } from "@due-date-hq/db/schema/tax-rules";
+import {
+  taxRules,
+  taxRuleVersions,
+  type TaxRule,
+} from "@due-date-hq/db/schema/tax-rules";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
@@ -53,6 +57,7 @@ export type TaskEvidenceResponse = {
     sourceLastChangedAt: string | null;
     verificationNotes: string | null;
     currentVersion: number;
+    previousVersion: number | null;
   } | null;
   dateEvents: Array<{
     id: string;
@@ -326,6 +331,18 @@ export const tasksRouter = router({
         });
       }
 
+      const previousVersionRows = row.rule
+        ? await ctx.db
+            .select({ version: taxRuleVersions.version })
+            .from(taxRuleVersions)
+            .where(
+              and(
+                eq(taxRuleVersions.ruleId, row.rule.id),
+                lt(taxRuleVersions.version, row.rule.currentVersion),
+              ),
+            )
+            .orderBy(desc(taxRuleVersions.version))
+        : [];
       const events = await ctx.db
         .select()
         .from(deadlineDateEvents)
@@ -370,6 +387,7 @@ export const tasksRouter = router({
               sourceLastChangedAt: toISOOrNull(row.rule.sourceLastChangedAt),
               verificationNotes: row.rule.verificationNotes,
               currentVersion: row.rule.currentVersion,
+              previousVersion: previousVersionRows[0]?.version ?? null,
             }
           : null,
         dateEvents: events.map((event) => ({

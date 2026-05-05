@@ -117,6 +117,12 @@ function EvidenceContent({ evidence }: { evidence: TaskEvidenceResponse }) {
                 }
               />
               <EvidenceField label="Rule version" value={`v${evidence.rule.currentVersion}`} />
+              <EvidenceField
+                label="Previous rule version"
+                value={
+                  evidence.rule.previousVersion ? `v${evidence.rule.previousVersion}` : "None recorded"
+                }
+              />
             </div>
           </div>
         ) : (
@@ -157,6 +163,17 @@ function EvidenceContent({ evidence }: { evidence: TaskEvidenceResponse }) {
                     </span>
                   ) : null}
                   {event.sourceName ? <span>Source: {event.sourceName}</span> : null}
+                  {event.sourceUrl ? (
+                    <a
+                      className="inline-flex items-center gap-1 font-medium text-[#176b86]"
+                      href={event.sourceUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      {event.sourceUrl}
+                      <ExternalLink className="size-3" />
+                    </a>
+                  ) : null}
                   {event.notes ? <span>{event.notes}</span> : null}
                 </div>
               </li>

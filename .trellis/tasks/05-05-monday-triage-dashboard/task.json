@@ -3,7 +3,7 @@
   "name": "monday-triage-dashboard",
   "title": "Implement Monday triage dashboard",
   "description": "Implement the CPA dashboard, evidence access, task status updates, firm target dates, bulk ops, and export.",
-  "status": "planning",
+  "status": "in_progress",
   "dev_type": null,
   "scope": null,
   "package": "web",

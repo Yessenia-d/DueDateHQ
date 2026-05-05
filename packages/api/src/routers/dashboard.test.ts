@@ -72,10 +72,39 @@ test("dashboard groups rows into Monday triage horizons", () => {
 
 test("dashboard filters by core CPA triage fields", () => {
   const rows = [
-    makeRow({ id: "verified-ca", jurisdiction: "CA", verificationStatus: "verified" }),
+    makeRow({
+      id: "verified-ca",
+      clientRelationship: {
+        id: "client-ca",
+        displayName: "California Client",
+        relationshipType: "business",
+      },
+      filingProfile: {
+        id: "profile-ca",
+        displayName: "California S Corp",
+        entityType: "s_corp",
+        states: ["CA"],
+      },
+      jurisdiction: "CA",
+      verificationStatus: "verified",
+    }),
     makeRow({
       id: "manual-ny",
+      clientRelationship: {
+        id: "client-ny",
+        displayName: "New York Client",
+        relationshipType: "business",
+      },
+      filingProfile: {
+        id: "profile-ny",
+        displayName: "New York LLC",
+        entityType: "llc",
+        states: ["NY"],
+      },
+      title: "NY franchise tax payment",
       jurisdiction: "NY",
+      horizon: "this_month",
+      urgency: "due_this_month",
       sourceType: "user_provided",
       verificationStatus: "user_provided",
       status: "waiting_on_client",
@@ -84,9 +113,13 @@ test("dashboard filters by core CPA triage fields", () => {
   ];
 
   const filtered = filterAndSortDashboardRows(rows, {
-    horizon: "all",
+    horizon: "this_month",
     sort: "smart_priority",
+    clientRelationshipId: "client-ny",
+    filingProfileId: "profile-ny",
+    obligation: "NY franchise tax payment",
     jurisdiction: "NY",
+    entityType: "llc",
     taskStatus: "waiting_on_client",
     taxCategory: "Franchise Tax",
     verificationStatus: "user_provided",

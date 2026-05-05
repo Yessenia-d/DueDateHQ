@@ -219,6 +219,7 @@ test("tasks.getEvidence returns source and date event history", async () => {
           },
         },
       ],
+      [{ version: 1 }],
       [event],
     ],
     updateRows: [],
@@ -228,6 +229,8 @@ test("tasks.getEvidence returns source and date event history", async () => {
 
   assert.equal(result.task.originalDueDate, "2026-03-15");
   assert.equal(result.rule?.verificationStatus, "verified");
+  assert.equal(result.rule?.previousVersion, 1);
   assert.equal(result.dateEvents.length, 1);
   assert.equal(result.dateEvents[0]?.eventType, "official_extension");
+  assert.equal(result.dateEvents[0]?.sourceUrl, "https://www.irs.gov");
 });
