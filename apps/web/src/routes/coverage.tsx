@@ -109,6 +109,10 @@ const evidenceLabelClassName =
   "text-[11px] font-semibold uppercase leading-4 text-muted-foreground";
 const evidenceValueClassName = "mt-1.5 text-sm leading-5 text-foreground";
 const evidenceMetadataValueClassName = "mt-1 font-mono text-[12px] leading-5 text-foreground";
+const dateHighlightClassName =
+  "inline-flex min-w-[6.5rem] items-center rounded-[6px] border border-ddhq-review/35 bg-ddhq-review-soft/55 px-2 py-1 font-mono text-[12px] font-semibold leading-4 text-foreground";
+const extensionDateHighlightClassName =
+  "inline-flex min-w-[6.5rem] items-center rounded-[6px] border border-ddhq-accent/25 bg-ddhq-accent-soft/50 px-2 py-1 font-mono text-[12px] font-semibold leading-4 text-foreground";
 
 function getStatusKey(status: string | null): VerificationStatusKey {
   if (status === "verified") return "verified";
@@ -514,7 +518,7 @@ function CoverageComponent() {
 
       {/* Rule evidence drawer */}
       <Sheet open={Boolean(selectedRuleId)} onOpenChange={(open) => { if (!open) setSelectedRuleId(null); }}>
-        <SheetContent side="right" className="w-full max-w-lg p-0 sm:max-w-lg">
+        <SheetContent side="right" className="w-full max-w-2xl p-0 sm:max-w-2xl">
           <SheetTitle className="sr-only">Rule evidence</SheetTitle>
           {selectedRuleId && (
             <RuleDetailContent ruleId={selectedRuleId} />
@@ -661,46 +665,58 @@ function RuleDetailContent({
           {/* Source */}
           <section className="border-b border-border pb-5">
             <div className={evidenceLabelClassName}>Official source</div>
-            <div className={evidenceValueClassName}>{ruleDetail.data.sourceName}</div>
-            {ruleDetail.data.sourceUrl && (
-              <a
-                href={ruleDetail.data.sourceUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-2 inline-flex max-w-full items-start gap-1.5 font-mono text-[12px] leading-5 text-muted-foreground [overflow-wrap:anywhere] hover:text-foreground"
-              >
-                <ExternalLink className="mt-0.5 size-3 shrink-0" />
-                {ruleDetail.data.sourceUrl}
-              </a>
-            )}
+            <div className="mt-2 rounded-[8px] border border-ddhq-accent/25 bg-ddhq-accent-soft/45 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.72)]">
+              <div className="flex items-start gap-2.5">
+                <span className="grid size-7 shrink-0 place-items-center rounded-[6px] border border-ddhq-accent/25 bg-background text-ddhq-accent">
+                  <ShieldCheck className="size-4" aria-hidden="true" />
+                </span>
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold leading-5 text-foreground">
+                    {ruleDetail.data.sourceName}
+                  </div>
+                  {ruleDetail.data.sourceUrl && (
+                    <a
+                      href={ruleDetail.data.sourceUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-1.5 inline-flex max-w-full items-start gap-1.5 font-mono text-[12px] leading-5 text-ddhq-accent [overflow-wrap:anywhere] hover:text-foreground"
+                    >
+                      <ExternalLink className="mt-0.5 size-3 shrink-0" />
+                      {ruleDetail.data.sourceUrl}
+                    </a>
+                  )}
+                </div>
+              </div>
+            </div>
           </section>
 
           {/* Timestamps */}
           <section className="grid grid-cols-2 gap-x-4 gap-y-4 border-b border-border pb-5">
-            <div>
-              <div className={evidenceLabelClassName}>Last verified</div>
-              <div className={evidenceMetadataValueClassName}>
-                {ruleDetail.data.lastVerifiedAt
+            <EvidenceDateCard
+              label="Last verified"
+              value={
+                ruleDetail.data.lastVerifiedAt
                   ? formatDate(ruleDetail.data.lastVerifiedAt)
-                  : "-"}
-              </div>
-            </div>
-            <div>
-              <div className={evidenceLabelClassName}>Source last checked</div>
-              <div className={evidenceMetadataValueClassName}>
-                {ruleDetail.data.sourceLastCheckedAt
+                  : "-"
+              }
+            />
+            <EvidenceDateCard
+              label="Source last checked"
+              value={
+                ruleDetail.data.sourceLastCheckedAt
                   ? formatDate(ruleDetail.data.sourceLastCheckedAt)
-                  : "-"}
-              </div>
-            </div>
-            <div>
-              <div className={evidenceLabelClassName}>Source last changed</div>
-              <div className={evidenceMetadataValueClassName}>
-                {ruleDetail.data.sourceLastChangedAt
+                  : "-"
+              }
+            />
+            <EvidenceDateCard
+              label="Source last changed"
+              tone={ruleDetail.data.sourceLastChangedAt ? "changed" : "stable"}
+              value={
+                ruleDetail.data.sourceLastChangedAt
                   ? formatDate(ruleDetail.data.sourceLastChangedAt)
-                  : "No changes detected"}
-              </div>
-            </div>
+                  : "No changes detected"
+              }
+            />
             <div>
               <div className={evidenceLabelClassName}>Rule version</div>
               <div className={evidenceMetadataValueClassName}>v{ruleDetail.data.currentVersion}</div>
@@ -739,9 +755,17 @@ function RuleDetailContent({
                       <TableCell className="font-mono text-[12px]">
                         {ed.quarter ? `Q${ed.quarter}` : "-"}
                       </TableCell>
-                      <TableCell className="font-mono text-[12px]">{formatDate(ed.dueDate)}</TableCell>
+                      <TableCell>
+                        <span className={dateHighlightClassName}>{formatDate(ed.dueDate)}</span>
+                      </TableCell>
                       <TableCell className="font-mono text-[12px]">
-                        {ed.extensionDate ? formatDate(ed.extensionDate) : "-"}
+                        {ed.extensionDate ? (
+                          <span className={extensionDateHighlightClassName}>
+                            {formatDate(ed.extensionDate)}
+                          </span>
+                        ) : (
+                          "-"
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -752,6 +776,32 @@ function RuleDetailContent({
         </div>
       )}
     </>
+  );
+}
+
+function EvidenceDateCard({
+  label,
+  tone = "date",
+  value,
+}: {
+  label: string;
+  tone?: "date" | "changed" | "stable";
+  value: string;
+}) {
+  const toneClassName =
+    tone === "stable"
+      ? "border-ddhq-verified/25 bg-ddhq-verified-soft/45"
+      : tone === "changed"
+        ? "border-ddhq-review/35 bg-ddhq-review-soft/55"
+        : "border-ddhq-accent/25 bg-ddhq-accent-soft/45";
+
+  return (
+    <div className={`rounded-[8px] border px-3 py-2.5 ${toneClassName}`}>
+      <div className={evidenceLabelClassName}>{label}</div>
+      <div className="mt-1 font-mono text-[12px] font-semibold leading-5 text-foreground">
+        {value}
+      </div>
+    </div>
   );
 }
 

@@ -62,23 +62,29 @@ function EvidenceContent({ evidence }: { evidence: TaskEvidenceResponse }) {
           {evidence.clientRelationship.displayName} / {evidence.filingProfile.displayName}
         </div>
         <div className="mt-3 grid gap-2 text-xs sm:grid-cols-2">
-          <EvidenceField
+          <OfficialDateField
             label={
               evidence.task.sourceType === "entered_deadline"
                 ? "Current due date"
                 : "Current official due date"
             }
+            tone="current"
             value={formatDate(evidence.task.currentDueDate)}
           />
-          <EvidenceField
+          <OfficialDateField
             label="Original due date"
-            value={evidence.task.originalDueDate ? formatDate(evidence.task.originalDueDate) : "None recorded"}
+            tone="original"
+            value={
+              evidence.task.originalDueDate
+                ? formatDate(evidence.task.originalDueDate)
+                : "None recorded"
+            }
           />
           <EvidenceField
             label="Firm target date"
             value={evidence.task.firmTargetDate ? formatDate(evidence.task.firmTargetDate) : "None"}
           />
-          <EvidenceField label="Work status" value={evidence.task.status} />
+          <EvidenceStatusField label="Work status" status={evidence.task.status} />
         </div>
       </section>
 
@@ -204,6 +210,43 @@ function EvidenceField({ label, mono, value }: { label: string; mono?: boolean; 
     <div className="grid gap-1">
       <span className="text-muted-foreground">{label}</span>
       <span className={`font-medium ${mono ? "font-mono" : ""}`}>{value}</span>
+    </div>
+  );
+}
+
+function OfficialDateField({
+  label,
+  tone,
+  value,
+}: {
+  label: string;
+  tone: "current" | "original";
+  value: string;
+}) {
+  const toneClass =
+    tone === "current"
+      ? "border-ddhq-review/35 bg-ddhq-review-soft/55 text-ddhq-review"
+      : "border-ddhq-gap/30 bg-ddhq-gap-soft/55 text-ddhq-gap";
+
+  return (
+    <div className={`grid gap-1.5 rounded-lg border px-2.5 py-2 ${toneClass}`}>
+      <span className="text-[11px] font-semibold text-foreground/70">{label}</span>
+      <span className="text-sm font-semibold text-foreground">{value}</span>
+    </div>
+  );
+}
+
+function EvidenceStatusField({
+  label,
+  status,
+}: {
+  label: string;
+  status: TaskEvidenceResponse["task"]["status"];
+}) {
+  return (
+    <div className="grid content-start gap-1">
+      <span className="text-muted-foreground">{label}</span>
+      <StatusBadge status={status} />
     </div>
   );
 }
