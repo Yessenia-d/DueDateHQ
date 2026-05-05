@@ -3,7 +3,7 @@
   "name": "feature-progress-page",
   "title": "Implement feature progress page",
   "description": "Implement the internal/reviewer feature progress page backed by feature item data.",
-  "status": "planning",
+  "status": "in_progress",
   "dev_type": null,
   "scope": null,
   "package": "web",
