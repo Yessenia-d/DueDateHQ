@@ -25,11 +25,11 @@ DueDateHQ should not merely borrow isolated ideas from File In Time. For core CP
 | Workflow area | File In Time baseline | DueDateHQ Beta direction |
 |---|---|---|
 | Client setup | Client records with tax-relevant fields, notes, client/entity type, jurisdiction context, and manual/import paths | Match the practical tax profile fields needed for scheduling, keep notes, and avoid arbitrary desktop custom-field sprawl |
-| CSV import | Delimited-file preview, header handling, drag/drop mapping, review before commit, duplicate resolution | Better with source-specific adapters for TaxDome, Drake, Karbon, and QuickBooks, plus explicit mapping review and duplicate handling |
+| CSV import | Delimited-file preview, header handling, drag/drop mapping, review before commit, duplicate resolution | Better with source-specific adapters for TaxDome, Drake, Karbon, and QuickBooks, automatic recognition for client name/EIN/state/entity type, non-blocking review suggestions, and duplicate handling |
 | Obligation/service setup | Services define work type, frequency, due dates, and extension dates | Map services to tax obligations and verified tax rules while separating known, verified, needs-review, unsupported, and user-provided items |
 | Task generation | Assign services to clients to create due-date tasks | Generate official tasks only from Verified rules; show unsupported or needs-review obligations without pretending they are official deadlines |
-| Monday triage | Task view can be filtered to this week | Better with first-class `Due this week`, `This month`, and `Long range` sections by default |
-| Filters and sorting | Date, client, type, service, status, key person, and saved views | Match core filters by horizon, client, jurisdiction/state, entity type, tax type, task status, and verification status; advanced saved views can wait |
+| Monday triage | Task view can be filtered to this week | Better with first-class `Due this week`, `This month`, and `Long range` sections by default, all this-week work visible within 30 seconds after login, and a 5-minute triage target |
+| Filters and sorting | Date, client, type, service, status, key person, and saved views | Match core filters by horizon, client, jurisdiction/state, form/obligation type, entity type, tax type, task status, and verification status; advanced saved views can wait |
 | Task status | Status codes, dates, notes, extension flag | Match simple operational status with `Not started`, `In progress`, `Extended`, and `Done`, plus source/trust badges |
 | Extensions | Service-supported extension dates and extension state | Support extension status and verified extension due dates when official rule evidence supports them; keep extension form printing out |
 | Recurrence/upcoming tasks | Manual rollover creates the next period's tasks | Better by generating upcoming official tasks from maintained Verified rules, with no manual rollover for official recurring deadlines |
@@ -74,14 +74,19 @@ Primary persona:
 
 ### Story 1: Monday Triage
 
-As a solo CPA serving 80 clients across multiple states, I want to see all deadlines requiring action this week within 30 seconds of opening the product so that I can prioritize the week without cross-checking spreadsheets, calendars, and notes.
+As a solo or independent CPA serving about 80 clients across multiple states, I want to see all deadlines requiring action this week within 30 seconds of opening the product so that I can prioritize the week without cross-checking spreadsheets, calendars, and notes.
 
 Acceptance:
 
-- Dashboard defaults to `Due this week`, `This month`, and `Long range`.
-- Each task shows countdown, client, state, form/obligation, verification status, and source evidence access.
-- Filters respond by client, state, entity type, tax type, status, and verification status.
-- Tasks can be marked `Not started`, `In progress`, `Extended`, or `Done`.
+- Persona is a solo or independent CPA serving about 80 clients across multiple states.
+- After login, the default dashboard groups deadlines into `Due this week`, `This month`, and `Long range`.
+- Within 30 seconds of opening after login, the CPA can see all deadlines needing action this week.
+- This-week items show a specific countdown in days.
+- Fast filters respond by client, state, form/obligation type, entity type, tax type, task status, and verification status.
+- Core dashboard filters target `< 1 second` response for Beta-sized solo CPA workspaces.
+- Each deadline supports one-click status marking for `Done`, `Extended`, and `In progress`; `Not started` remains the default unworked state.
+- Smart priority sorting highlights the most urgent this-week work first; Beta can use deterministic rule-based priority rather than live AI.
+- The full weekly triage flow can be completed within 5 minutes, compared with the current 30-45 minute spreadsheet/calendar workflow.
 
 ### Story 2: CSV Import
 
@@ -90,10 +95,14 @@ As a CPA moving from TaxDome, Drake, Karbon, or QuickBooks, I want to import cli
 Acceptance:
 
 - Four CSV source adapters exist.
+- A CPA migrating from TaxDome can complete import of 30 clients within 30 minutes; the measurable target is `P95 <= 30 minutes for a 30-client import`.
+- TaxDome, Drake, Karbon, and QuickBooks exported CSVs are supported.
 - Header handling, field mapping, duplicate candidates, and import preview are shown before commit.
-- Missing or uncertain fields enter a review step.
-- Verified tax rules generate official tasks after import.
-- Unsupported and needs-review obligations are visible but not scheduled as confirmed deadlines.
+- Field mapping automatically recognizes client name, EIN, state, and entity type.
+- Fuzzy or missing fields receive intelligent, non-blocking suggestions and uncertain rows enter review instead of blocking the whole import.
+- After import, matching Verified tax rules immediately generate each client's full-year deadline calendar/tasks.
+- Unsupported and needs-review obligations are visible but not scheduled as official confirmed deadlines.
+- Related P0 capabilities include CSV import, field mapping, calendar/task auto-generation, entity type auto-recognition, and intelligent field matching.
 
 ### Story 3: Manual Entry
 
@@ -132,9 +141,9 @@ Two entry points:
 - CSV import for migration and bulk setup.
 - Manual entry for new clients, edge cases, and quick additions.
 
-CSV import supports TaxDome, Drake, Karbon, and QuickBooks through source-specific adapters that normalize records into a shared client shape.
+CSV import supports TaxDome, Drake, Karbon, and QuickBooks through source-specific adapters that normalize records into a shared client shape. The adapters should automatically recognize client name, EIN, state, and entity type where possible, use intelligent deterministic matching suggestions for fuzzy fields, and send uncertain rows to review without blocking the whole import.
 
-The import workflow should meet or exceed File In Time's practical import flow: preview rows, detect headers, map columns, flag missing or uncertain data, surface likely duplicates before commit, and summarize created clients, generated tasks, needs-review obligations, and unsupported obligations.
+The import workflow should meet or exceed File In Time's practical import flow: preview rows, detect headers, map columns, flag missing or uncertain data, surface likely duplicates before commit, and summarize created clients, generated tasks, needs-review obligations, and unsupported obligations. Beta success requires a CPA to complete a 30-client import within 30 minutes at `P95 <= 30 minutes for a 30-client import`.
 
 ### Tax Obligation Library
 
@@ -256,7 +265,9 @@ Each task row includes:
 - Verification badge.
 - Source evidence action.
 
-Dashboard controls must support filters and sorting by due horizon, client, jurisdiction/state, entity type, tax type, task status, and verification status. Dashboard urgency surfaces should make due today, due this week, and due this month visible without adding external reminder channels in Beta. A basic dashboard/task export supports CPA workload sharing and review outside the app.
+Dashboard controls must support filters and sorting by due horizon, client, jurisdiction/state, form/obligation type, entity type, tax type, task status, and verification status. Dashboard urgency surfaces should make due today, due this week, and due this month visible without adding external reminder channels in Beta. A basic dashboard/task export supports CPA workload sharing and review outside the app.
+
+Core filters should update in `< 1 second` for Beta-sized solo CPA workspaces. The default priority sort should place this-week work first using deterministic factors such as due date, days remaining, verification warning state, extension state, and unfinished task status; Beta does not require live AI to satisfy smart priority sorting.
 
 ### Feature Progress Page
 
@@ -396,7 +407,12 @@ Mitigation:
 ## Beta Acceptance Criteria
 
 - A CPA can register, import or manually enter clients, and see deadline tasks.
+- A solo or independent CPA serving about 80 multi-state clients can open the product after login and see all deadlines needing action this week within 30 seconds.
+- A CPA can complete weekly triage within 5 minutes using `Due this week`, `This month`, `Long range`, countdowns in days, one-click `Done`/`Extended`/`In progress` status marking, fast filters, and smart deterministic priority sorting.
+- A CPA migrating from TaxDome can import 30 clients within 30 minutes at `P95 <= 30 minutes for a 30-client import`, with Drake, Karbon, and QuickBooks CSV exports also supported.
+- Import automatically recognizes client name, EIN, state, and entity type; fuzzy or missing fields get non-blocking suggestions and review rows.
 - A CPA can understand why a verified deadline exists and where it came from.
+- After import, matching Verified rules generate full-year deadline calendar/tasks immediately; needs-review and unsupported obligations stay visible but not official confirmed deadlines.
 - The product clearly marks unverified, source-changed, unsupported, and user-provided items.
 - The system design supports 24h official source change detection without auto-publishing unreviewed rules.
 - The product covers File In Time core workflow parity or better for client setup, import, obligation setup, task generation, triage, filters, status, extensions, recurrence, exports, urgency, and admin/settings boundaries.

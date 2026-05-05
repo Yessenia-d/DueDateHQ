@@ -2,29 +2,31 @@
 
 ## Goal
 
-为 CPA 提供快速的每周截止日期分诊工作台，并为每个官方或 user-provided deadline 提供清晰核验证据、urgency surfaces、filters/sorting、extension handling 和 export。
+为服务约 80 个多州客户的 solo/independent CPA 提供快速的每周截止日期分诊工作台，并为每个官方或 user-provided deadline 提供清晰核验证据、urgency surfaces、确定性智能优先级排序、filters/sorting、extension handling 和 export。
 
 ## User Flow
 
 1. 用户登录。
-2. 用户进入 dashboard。
-3. 用户查看 due today、`Due this week`、`This month`、`Long range`。
-4. 用户筛选并排序任务。
-5. 用户为可疑日期打开 evidence。
-6. 用户更新任务状态或标记 verified extension state。
-7. 用户导出当前 task view 进行 workload review。
+2. 用户进入默认 dashboard，分区为 `本周到期`、`本月预警`、`长期计划`。
+3. 登录并打开产品后 30 秒内，用户看到本周所有需要行动的截止日期，并显示按天倒计时。
+4. 用户查看 due today、`本周到期`、`本月预警`、`长期计划`。
+5. 用户按客户、州、表单/义务类型、实体类型、税种、任务状态和核验状态筛选并排序任务。
+6. 用户为可疑日期打开 evidence。
+7. 用户一键将截止日期标记为 `已完成`、`已延期` 或 `进行中`。
+8. 用户导出当前 task view 进行 workload review。
 
 ## Flow Diagram
 
 ```mermaid
 flowchart TD
-  A[Dashboard] --> B[Due this week]
-  A --> C[This month]
-  A --> D[Long range]
-  A --> L[Due today urgency]
+  A[Dashboard] --> B[本周到期]
+  A --> C[本月预警]
+  A --> D[长期计划]
+  A --> L[今日到期 urgency]
   B --> E[Open evidence drawer]
   B --> F[Update task status]
-  A --> G[Filter and sort by client/state/entity/tax/status/verification]
+  A --> G[Fast filters by client/state/form/entity/tax/status/verification]
+  A --> N[Smart priority sort]
   E --> H{Verification status}
   H -- Verified --> I[Show official source]
   H -- Source changed --> J[Show warning]
@@ -70,10 +72,12 @@ Task row fields：
 - Client。
 - Obligation。
 - Jurisdiction/state。
+- Form/obligation type。
 - Tax category。
 - Due date。
 - Days remaining。
 - Status。
+- Priority。
 - 支持时显示 extension status 和 extension due date。
 - Verification badge。
 
@@ -89,14 +93,20 @@ File In Time 支持 weekly task views、status updates、extension flags、start
 ## Acceptance Criteria
 
 - Dashboard 将任务分为三个时间区间。
+- 登录后，dashboard 默认分区为 `本周到期`、`本月预警`、`长期计划`。
+- 登录并打开产品后 30 秒内，服务约 80 个多州客户的 solo/independent CPA 能看到本周所有需要行动的截止日期。
 - Dashboard 内可见 due today、due this week、due this month urgency。
-- Task row 显示 due date、countdown、client、jurisdiction、tax category、task status、verification badge。
-- Filters 和 sorting 覆盖 date horizon、client、jurisdiction/state、entity type、tax type、task status 和 verification status。
+- 本周 task row 显示具体剩余天数倒计时。
+- Task row 显示 due date、countdown、client、jurisdiction、form/obligation type、tax category、task status、priority、verification badge。
+- Filters 和 sorting 覆盖 date horizon、client、jurisdiction/state、form/obligation type、entity type、tax type、task status 和 verification status。
+- 核心 dashboard filters 在 Beta 规模 solo CPA workspaces 内返回更新结果的目标时间为 `< 1 second`。
+- 支持 smart priority sorting，Beta 阶段可以用确定性规则优先级实现。
 - Verified tasks 可以打开 evidence drawer。
 - Source changed tasks 显示 warning。
 - User-provided tasks 显示 not verified label。
 - Rule evidence 支持时，verified extension dates 和 `extended` status 可见。
-- Task status 可以更新。
+- Task status 可以一键标记为 `已完成`、`已延期` 或 `进行中`。
+- 完整每周分诊流程可在 5 分钟内完成，对比当前 30-45 分钟的表格/日历流程。
 - Current task view 可以导出用于 workload sharing 或 review。
 
 ## Out of Scope

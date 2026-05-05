@@ -28,6 +28,30 @@ DueDateHQ 维护 50 州税务义务库，在 24 小时检测窗口内监听官�
 - 增加功能完成进度页，让产品、工程和评审者看到完成状态。
 - 覆盖 File In Time 有价值的 due-date 核心工作流，并做到 parity 或更好：client setup、CSV import review、obligation/service setup、task generation、weekly triage、filters/sorting、task status、extension handling、recurrence/upcoming tasks、exports、urgency surfaces，以及 admin/settings boundaries。
 
+## P0 用户故事验收目标
+
+每周申报季分诊：
+
+- Persona：服务约 80 个多州客户的 solo/independent CPA。
+- 登录后，默认 dashboard 打开 `本周到期`、`本月预警`、`长期计划`。
+- 登录并打开产品后 30 秒内，CPA 能看到本周所有需要行动的截止日期。
+- 本周行显示具体剩余天数倒计时。
+- 快速核心筛选覆盖客户、州、表单/义务类型、实体类型、税种、任务状态和核验状态；Beta 规模 solo CPA workspace 的目标响应时间为 `< 1 second`。
+- 每个截止日期可一键标记为 `已完成`、`已延期` 或 `进行中`。
+- 每周分诊流程可在 5 分钟内完成，对比当前 30-45 分钟的表格/日历流程。
+- 智能优先级排序是 P0，Beta 阶段可以用确定性规则优先级实现。
+
+从 TaxDome 导入接管 30 个客户：
+
+- Persona：从 TaxDome 迁移的 CPA；同时支持 Drake、Karbon、QuickBooks CSV 导出。
+- 用户可在 30 分钟内完成 30 个客户导入；可衡量目标是 `P95 <= 30 minutes for a 30-client import`。
+- 支持 TaxDome、Drake、Karbon、QuickBooks 导出的 CSV。
+- 字段映射自动识别 client name、EIN、state 和 entity type。
+- 模糊或缺失字段获得智能、非阻塞建议，不确定行进入 review，不阻塞整个导入。
+- 导入后，如果存在匹配的 Verified rules，立即为每个客户生成全年 deadline calendar/tasks。
+- Needs-review 和 unsupported obligations 保持可见，但不是官方已确认截止日期。
+- 相关 P0 能力包括 CSV import、field mapping、calendar/task auto-generation、entity type auto-recognition 和 intelligent field matching。
+
 ## 核心产品规则
 
 ```txt
@@ -78,7 +102,10 @@ Needs review、Source changed 和 Unsupported 规则必须透明展示，
 - 税务规则核验队列。
 - Cloudflare 部署计划。
 - 带 preview、mapping、review、duplicate handling 的来源专属 CSV adapters。
+- CSV import 字段映射覆盖 client name、EIN、state 和 entity type，并对不确定行提供非阻塞建议。
+- P0 工作流目标：30-client import 在 30 分钟内完成且达到 `P95 <= 30 minutes for a 30-client import`，每周分诊在 5 分钟内完成，核心 dashboard filters 在 Beta 规模 solo CPA workspace 内 `< 1 second` 响应。
 - Dashboard/task exports，以及 due today、this week、this month 的产品内 urgency surfaces。
+- 用于 dashboard triage 的确定性 smart priority sorting。
 
 Beta 阶段不做：
 

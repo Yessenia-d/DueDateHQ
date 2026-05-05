@@ -61,6 +61,7 @@ Better Auth owns its required tables. Business tables reference the authenticate
 - `id`
 - `firmId`
 - `name`
+- `ein`
 - `entityType`
 - `states`
 - `county`
@@ -228,7 +229,13 @@ Auth:
 Imports:
 
 - `imports.preview`
+  - Parses TaxDome, Drake, Karbon, and QuickBooks CSV exports with source-specific adapters.
+  - Automatically recognizes field mapping for client name, EIN, state, and entity type where possible.
+  - Returns mapping confidence, intelligent deterministic suggestions, accepted rows, review rows, duplicate candidates, and validation messages.
 - `imports.commit`
+  - Commits accepted rows, reviewed row corrections, and duplicate resolutions.
+  - Generates full-year official deadline tasks immediately only when matching `verified` rules exist.
+  - Returns generated task counts plus needs-review and unsupported obligation counts.
 
 Manual entry:
 
@@ -239,8 +246,12 @@ Manual entry:
 Dashboard:
 
 - `dashboard.summary`
+  - Returns default `Due this week`, `This month`, and `Long range` groups after login.
+  - Supports fast filters by client, state, form/obligation type, entity type, tax type, task status, and verification status.
+  - Supports deterministic smart priority sorting for Beta.
 - `dashboard.export`
 - `tasks.updateStatus`
+  - Supports one-click marking for `done`, `extended`, and `in_progress`.
 - `tasks.getEvidence`
 
 Coverage:
@@ -266,6 +277,15 @@ Source monitoring:
 Progress:
 
 - `progress.list`
+
+## Performance and Workflow Targets
+
+- A solo or independent CPA serving about 80 multi-state clients can see all deadlines needing action this week within 30 seconds of opening the dashboard after login.
+- Core dashboard filters return updated results in `< 1 second` for Beta-sized solo CPA workspaces.
+- Weekly triage is completable within 5 minutes, compared with the current 30-45 minute spreadsheet/calendar workflow.
+- A CPA migrating from TaxDome can complete a 30-client import within 30 minutes; measurable target is `P95 <= 30 minutes for a 30-client import`.
+- Import review is non-blocking at the batch level: fuzzy or missing fields route uncertain rows to review while accepted rows and duplicate resolutions can continue toward commit.
+- Deadline generation preserves the trust invariant: only `verified` tax rules create official full-year deadline tasks; needs-review and unsupported obligations stay visible but are not official confirmed deadlines.
 
 ## Source Monitoring Architecture
 
@@ -312,7 +332,7 @@ flowchart LR
 
 `/import`
 
-- CSV source selection, upload, mapping preview, review rows, commit.
+- CSV source selection, upload, automatic key-field mapping, mapping preview, intelligent non-blocking suggestions, review rows, duplicate review, commit.
 
 `/clients/new`
 
@@ -324,7 +344,7 @@ flowchart LR
 
 `/`
 
-- Monday triage dashboard with urgency sections, filters/sorting, task status updates, extension visibility, evidence access, and export.
+- Monday triage dashboard with default horizon groups, urgency sections, deterministic smart priority sorting, fast filters/sorting, task status updates, extension visibility, evidence access, and export.
 
 `/coverage`
 
@@ -382,17 +402,24 @@ Automated:
 - Type check.
 - Build.
 - API tests for imports, manual deadlines, verification rules, and source monitoring services.
+- Import tests covering TaxDome, Drake, Karbon, and QuickBooks CSV fixtures, auto-mapping for client name/EIN/state/entity type, review rows for fuzzy or missing fields, and Verified-only full-year task generation.
+- Dashboard tests covering default horizon grouping, countdown in days, core filter coverage, one-click `done`/`extended`/`in_progress` status updates, and deterministic priority sorting.
 
 Manual:
 
 - Register and log in.
 - Import representative CSV from each source.
+- Confirm a 30-client TaxDome import can complete within 30 minutes, with `P95 <= 30 minutes for a 30-client import` as the target.
 - Confirm import preview detects headers, mapping, review rows, and likely duplicates before commit.
+- Confirm fuzzy or missing import fields produce non-blocking suggestions and do not block the whole batch.
 - Manually create client and deadline.
 - Confirm only verified rules create official tasks.
+- Confirm imported clients with matching Verified rules receive full-year deadline calendar/tasks immediately, while needs-review and unsupported obligations stay visible but not official.
 - Confirm source changed rule cannot create new official task.
 - Confirm verified recurring obligations generate upcoming tasks without manual rollover.
-- Confirm dashboard filters/sorting, extension status, urgency surfaces, and export work.
+- Confirm dashboard opens after login with `Due this week`, `This month`, and `Long range`; this-week work is visible within 30 seconds and shows countdowns in days.
+- Confirm dashboard filters/sorting, extension status, urgency surfaces, smart priority sorting, and export work.
+- Confirm core dashboard filters respond in `< 1 second` for a Beta-sized solo CPA workspace and the weekly triage flow can be completed within 5 minutes.
 - Confirm coverage matrix shows monitor status.
 - Confirm evidence drawer shows last checked, last changed, and rule versions.
 - Confirm verification queue approval publishes a new version.

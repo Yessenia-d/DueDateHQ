@@ -69,6 +69,31 @@ DueDateHQ must be better than File In Time in these areas:
 - Cloud workflow: users should not manage desktop installs, shared drives, database files, optimization, or backups.
 - Onboarding: source-specific CSV adapters should improve on generic delimited-file mapping.
 
+## P0 Story Acceptance Criteria
+
+### Weekly filing-season triage
+
+- Persona is a solo or independent CPA serving about 80 clients across multiple states.
+- On login, the default dashboard groups deadlines into `Due this week`, `This month`, and `Long range`.
+- Within 30 seconds of opening the product after login, the CPA can see all deadlines needing action this week.
+- This-week items show a specific countdown in days.
+- Fast filters cover client, state, form/obligation type, entity type, tax type, task status, and verification status.
+- Core dashboard filters target `< 1 second` response for Beta-sized solo CPA workspaces.
+- Each deadline supports one-click status marking for `Done`, `Extended`, and `In progress`.
+- The whole weekly triage flow can be completed within 5 minutes, compared with the current 30-45 minute spreadsheet/calendar workflow.
+- Intelligent priority sorting is included as a P0 dashboard capability; Beta can satisfy this with deterministic rule-based priority rather than live AI.
+
+### TaxDome/import 30 clients
+
+- Persona is a CPA migrating from TaxDome; Drake, Karbon, and QuickBooks CSV exports are also supported.
+- The user can complete import of 30 clients within 30 minutes, with `P95 <= 30 minutes for a 30-client import` as the measurable criterion.
+- The system supports TaxDome, Drake, Karbon, and QuickBooks exported CSVs.
+- The system automatically recognizes field mapping for client name, EIN, state, and entity type.
+- For fuzzy or missing fields, the system gives intelligent, non-blocking suggestions and sends uncertain rows to review instead of blocking the whole import.
+- After import, the system immediately generates each client's full-year deadline calendar/tasks when matching Verified rules exist.
+- Needs-review and unsupported obligations remain visible but are not official confirmed deadlines.
+- Related P0 features include CSV import, field mapping, calendar/task auto-generation, entity type auto-recognition, and intelligent field matching.
+
 ## Constraints
 
 - Do not implement code.

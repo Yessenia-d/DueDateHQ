@@ -69,6 +69,31 @@ DueDateHQ 必须在这些方面强于 File In Time：
 - Cloud workflow：用户不需要管理 desktop installs、shared drives、database files、optimization 或 backups。
 - Onboarding：source-specific CSV adapters 要优于通用 delimited-file mapping。
 
+## P0 用户故事验收标准
+
+### 每周申报季分诊
+
+- Persona 是服务约 80 个多州客户的 solo/independent CPA。
+- 登录后，默认 dashboard 将截止日期分为 `本周到期`、`本月预警`、`长期计划`。
+- 登录并打开产品后 30 秒内，CPA 能看到本周所有需要行动的截止日期。
+- 本周项目显示具体剩余天数倒计时。
+- 快速筛选覆盖客户、州、表单/义务类型、实体类型、税种、任务状态和核验状态。
+- 核心 dashboard 筛选在 Beta 规模 solo CPA workspace 内目标响应时间为 `< 1 second`。
+- 每个截止日期支持一键标记状态：`已完成`、`已延期`、`进行中`。
+- 完整每周分诊流程可在 5 分钟内完成，对比当前 30-45 分钟的表格/日历流程。
+- 智能优先级排序属于 P0 dashboard 能力；Beta 阶段可以用确定性规则排序实现，不要求实时 AI。
+
+### 从 TaxDome 导入接管 30 个客户
+
+- Persona 是从 TaxDome 迁移的 CPA；同时支持 Drake、Karbon、QuickBooks CSV 导出。
+- 用户可在 30 分钟内完成 30 个客户导入，并以 `P95 <= 30 minutes for a 30-client import` 作为可衡量标准。
+- 系统支持 TaxDome、Drake、Karbon、QuickBooks 导出的 CSV。
+- 系统自动识别 client name、EIN、state 和 entity type 字段映射。
+- 对模糊或缺失字段，系统给出智能、非阻塞建议，并将不确定行送入 review，而不是阻塞整个导入。
+- 导入后，当存在匹配的 Verified rules 时，系统立即生成每个客户的全年 deadline calendar/tasks。
+- Needs-review 和 unsupported obligations 保持可见，但不会成为官方已确认截止日期。
+- 相关 P0 能力包括 CSV import、field mapping、calendar/task auto-generation、entity type auto-recognition 和 intelligent field matching。
+
 ## Constraints
 
 - 不实现代码。

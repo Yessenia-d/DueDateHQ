@@ -27,6 +27,30 @@ Competitor framing: DueDateHQ Beta should reach parity or better with the useful
 - Add a feature progress page so product, engineering, and reviewers can see what is complete.
 - Cover File In Time's useful core due-date workflow areas at parity or better: client setup, CSV import review, obligation/service setup, task generation, weekly triage, filters/sorting, task status, extension handling, recurrence/upcoming tasks, exports, urgency surfaces, and admin/settings boundaries.
 
+## P0 Story Acceptance Targets
+
+Weekly filing-season triage:
+
+- Persona: solo or independent CPA with about 80 clients across multiple states.
+- On login, the default dashboard opens to `Due this week`, `This month`, and `Long range`.
+- Within 30 seconds of opening after login, the CPA can see every deadline needing action this week.
+- This-week rows show a specific countdown in days.
+- Fast core filters cover client, state, form/obligation type, entity type, tax type, task status, and verification status, with a `< 1 second` response target for Beta-sized solo CPA workspaces.
+- Each deadline can be one-click marked `Done`, `Extended`, or `In progress`.
+- The weekly triage flow is completable within 5 minutes versus the current 30-45 minute spreadsheet/calendar workflow.
+- Smart priority sorting is P0 and may be deterministic rule-based priority in Beta.
+
+TaxDome/import 30 clients:
+
+- Persona: CPA migrating from TaxDome; Drake, Karbon, and QuickBooks CSV exports are also supported.
+- User can complete import of 30 clients within 30 minutes; measurable target is `P95 <= 30 minutes for a 30-client import`.
+- TaxDome, Drake, Karbon, and QuickBooks exported CSVs are supported.
+- Field mapping automatically recognizes client name, EIN, state, and entity type.
+- Fuzzy or missing fields receive intelligent, non-blocking suggestions and uncertain rows go to review without blocking the full import.
+- After import, each client's full-year deadline calendar/tasks are generated immediately when matching Verified rules exist.
+- Needs-review and unsupported obligations stay visible but are not official confirmed deadlines.
+- Related P0 capabilities include CSV import, field mapping, calendar/task auto-generation, entity type auto-recognition, and intelligent field matching.
+
 ## Key Product Rule
 
 ```txt
@@ -68,7 +92,10 @@ In scope:
 - Verification queue for rule review and publishing.
 - Cloudflare deployment plan.
 - Source-specific CSV adapters with preview, mapping, review, and duplicate handling.
+- CSV import field mapping for client name, EIN, state, and entity type, with non-blocking suggestions for uncertain rows.
+- P0 workflow targets: 30-client import within 30 minutes at `P95 <= 30 minutes for a 30-client import`, weekly triage within 5 minutes, and core dashboard filters responding in `< 1 second` for Beta-sized solo CPA workspaces.
 - Dashboard/task exports and in-product urgency surfaces for due today, this week, and this month.
+- Deterministic smart priority sorting for dashboard triage.
 
 Out of scope for Beta:
 
