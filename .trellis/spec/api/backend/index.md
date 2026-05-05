@@ -343,11 +343,11 @@ export const deadlineTasksRouter = router({
 });
 ```
 
-## Scenario: Monday Triage Dashboard
+## Scenario: Dashboard
 
 ### 1. Scope / Trigger
 
-- Trigger: the Monday triage surface crosses deadline-domain tables, tRPC
+- Trigger: the dashboard surface crosses deadline-domain tables, tRPC
   read/write procedures, TanStack React Query consumers, task-table UI,
   evidence drawer UI, CSV export, and audit/date-event history.
 - Use this pattern for deadline task work surfaces. Do not add bulk official
