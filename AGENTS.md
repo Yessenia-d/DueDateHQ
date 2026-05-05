@@ -28,6 +28,10 @@ Managed by Trellis. Edits outside this block are preserved; edits inside may be 
 
 <!-- TRELLIS:END -->
 
+## Codex Subagent Defaults
+
+When spawning subagents, set `reasoning_effort` to `high` by default unless the user explicitly asks for a different level or the task is clearly latency-sensitive.
+
 ## Agent skills
 
 This repo uses project-scoped skills from `mattpocock/skills`.
@@ -54,3 +58,7 @@ This project maintains bilingual documentation. Every `.md` file under `docs/` a
 - `specs/*.md` ↔ `specs/*.zh.md`
 
 When updating Chinese translations, preserve the bilingual style used in this project: domain terms (e.g., `Verified`, `Coverage gap`, `filing/tax profile`) stay in English; explanatory text is in Chinese.
+
+### Design System
+
+Before building or modifying frontend UI, read `DESIGN.md` for color tokens, typography, layout, component patterns, and forbidden patterns.

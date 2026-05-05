@@ -1,0 +1,1565 @@
+{
+  "version": "6",
+  "dialect": "sqlite",
+  "id": "ce868b54-c3e0-470a-b2b7-627c788129b1",
+  "prevId": "142e5feb-db8f-43ca-b1fb-08dc4267462e",
+  "tables": {
+    "audit_logs": {
+      "name": "audit_logs",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "firm_id": {
+          "name": "firm_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "actor_type": {
+          "name": "actor_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "actor_user_id": {
+          "name": "actor_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "action": {
+          "name": "action",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "entity_type": {
+          "name": "entity_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "entity_id": {
+          "name": "entity_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "before_state": {
+          "name": "before_state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "after_state": {
+          "name": "after_state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "source_type": {
+          "name": "source_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "source_id": {
+          "name": "source_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "audit_logs_firm_entity_created_at_idx": {
+          "name": "audit_logs_firm_entity_created_at_idx",
+          "columns": [
+            "firm_id",
+            "entity_type",
+            "entity_id",
+            "created_at"
+          ],
+          "isUnique": false
+        },
+        "audit_logs_actor_user_id_idx": {
+          "name": "audit_logs_actor_user_id_idx",
+          "columns": [
+            "actor_user_id"
+          ],
+          "isUnique": false
+        },
+        "audit_logs_firm_id_id_unique": {
+          "name": "audit_logs_firm_id_id_unique",
+          "columns": [
+            "firm_id",
+            "id"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "audit_logs_firm_id_firms_id_fk": {
+          "name": "audit_logs_firm_id_firms_id_fk",
+          "tableFrom": "audit_logs",
+          "tableTo": "firms",
+          "columnsFrom": [
+            "firm_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "audit_logs_actor_user_id_auth_users_id_fk": {
+          "name": "audit_logs_actor_user_id_auth_users_id_fk",
+          "tableFrom": "audit_logs",
+          "tableTo": "auth_users",
+          "columnsFrom": [
+            "actor_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "audit_logs_actor_type_check": {
+          "name": "audit_logs_actor_type_check",
+          "value": "\"audit_logs\".\"actor_type\" in ('user', 'system', 'monitor')"
+        },
+        "audit_logs_source_type_check": {
+          "name": "audit_logs_source_type_check",
+          "value": "\"audit_logs\".\"source_type\" in ('manual_entry', 'csv_import', 'verified_rule', 'official_notice', 'system')"
+        },
+        "audit_logs_user_actor_check": {
+          "name": "audit_logs_user_actor_check",
+          "value": "\"audit_logs\".\"actor_type\" != 'user' or \"audit_logs\".\"actor_user_id\" is not null"
+        }
+      }
+    },
+    "auth_accounts": {
+      "name": "auth_accounts",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "account_id": {
+          "name": "account_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "provider_id": {
+          "name": "provider_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "access_token": {
+          "name": "access_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "refresh_token": {
+          "name": "refresh_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "id_token": {
+          "name": "id_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "access_token_expires_at": {
+          "name": "access_token_expires_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "refresh_token_expires_at": {
+          "name": "refresh_token_expires_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "scope": {
+          "name": "scope",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "password": {
+          "name": "password",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "auth_accounts_user_id_idx": {
+          "name": "auth_accounts_user_id_idx",
+          "columns": [
+            "user_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "auth_accounts_user_id_auth_users_id_fk": {
+          "name": "auth_accounts_user_id_auth_users_id_fk",
+          "tableFrom": "auth_accounts",
+          "tableTo": "auth_users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "auth_sessions": {
+      "name": "auth_sessions",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "token": {
+          "name": "token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "ip_address": {
+          "name": "ip_address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "user_agent": {
+          "name": "user_agent",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "auth_sessions_token_unique": {
+          "name": "auth_sessions_token_unique",
+          "columns": [
+            "token"
+          ],
+          "isUnique": true
+        },
+        "auth_sessions_user_id_idx": {
+          "name": "auth_sessions_user_id_idx",
+          "columns": [
+            "user_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "auth_sessions_user_id_auth_users_id_fk": {
+          "name": "auth_sessions_user_id_auth_users_id_fk",
+          "tableFrom": "auth_sessions",
+          "tableTo": "auth_users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "auth_users": {
+      "name": "auth_users",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "email_verified": {
+          "name": "email_verified",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "image": {
+          "name": "image",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "firm_name": {
+          "name": "firm_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "auth_users_email_unique": {
+          "name": "auth_users_email_unique",
+          "columns": [
+            "email"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "auth_verifications": {
+      "name": "auth_verifications",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "identifier": {
+          "name": "identifier",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "value": {
+          "name": "value",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "auth_verifications_identifier_idx": {
+          "name": "auth_verifications_identifier_idx",
+          "columns": [
+            "identifier"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "client_relationships": {
+      "name": "client_relationships",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "firm_id": {
+          "name": "firm_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "display_name": {
+          "name": "display_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "relationship_type": {
+          "name": "relationship_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "source_system": {
+          "name": "source_system",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'manual'"
+        },
+        "created_via": {
+          "name": "created_via",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "client_relationships_firm_display_name_idx": {
+          "name": "client_relationships_firm_display_name_idx",
+          "columns": [
+            "firm_id",
+            "display_name"
+          ],
+          "isUnique": false
+        },
+        "client_relationships_firm_id_id_unique": {
+          "name": "client_relationships_firm_id_id_unique",
+          "columns": [
+            "firm_id",
+            "id"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "client_relationships_firm_id_firms_id_fk": {
+          "name": "client_relationships_firm_id_firms_id_fk",
+          "tableFrom": "client_relationships",
+          "tableTo": "firms",
+          "columnsFrom": [
+            "firm_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "client_relationships_type_check": {
+          "name": "client_relationships_type_check",
+          "value": "\"client_relationships\".\"relationship_type\" in ('individual', 'business', 'household', 'related_group')"
+        },
+        "client_relationships_created_via_check": {
+          "name": "client_relationships_created_via_check",
+          "value": "\"client_relationships\".\"created_via\" in ('csv_import', 'manual')"
+        },
+        "client_relationships_source_system_check": {
+          "name": "client_relationships_source_system_check",
+          "value": "\"client_relationships\".\"source_system\" in ('manual', 'taxdome', 'drake', 'karbon', 'quickbooks', 'other')"
+        }
+      }
+    },
+    "deadline_date_events": {
+      "name": "deadline_date_events",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "firm_id": {
+          "name": "firm_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "deadline_task_id": {
+          "name": "deadline_task_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "event_type": {
+          "name": "event_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "previous_current_due_date": {
+          "name": "previous_current_due_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "new_current_due_date": {
+          "name": "new_current_due_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "previous_firm_target_date": {
+          "name": "previous_firm_target_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "new_firm_target_date": {
+          "name": "new_firm_target_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "source_name": {
+          "name": "source_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "source_url": {
+          "name": "source_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "source_snapshot_id": {
+          "name": "source_snapshot_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "audit_log_id": {
+          "name": "audit_log_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "deadline_date_events_task_created_at_idx": {
+          "name": "deadline_date_events_task_created_at_idx",
+          "columns": [
+            "deadline_task_id",
+            "created_at"
+          ],
+          "isUnique": false
+        },
+        "deadline_date_events_firm_event_type_idx": {
+          "name": "deadline_date_events_firm_event_type_idx",
+          "columns": [
+            "firm_id",
+            "event_type"
+          ],
+          "isUnique": false
+        },
+        "deadline_date_events_audit_log_id_idx": {
+          "name": "deadline_date_events_audit_log_id_idx",
+          "columns": [
+            "audit_log_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "deadline_date_events_firm_id_firms_id_fk": {
+          "name": "deadline_date_events_firm_id_firms_id_fk",
+          "tableFrom": "deadline_date_events",
+          "tableTo": "firms",
+          "columnsFrom": [
+            "firm_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "deadline_date_events_deadline_task_id_deadline_tasks_id_fk": {
+          "name": "deadline_date_events_deadline_task_id_deadline_tasks_id_fk",
+          "tableFrom": "deadline_date_events",
+          "tableTo": "deadline_tasks",
+          "columnsFrom": [
+            "deadline_task_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "deadline_date_events_created_by_auth_users_id_fk": {
+          "name": "deadline_date_events_created_by_auth_users_id_fk",
+          "tableFrom": "deadline_date_events",
+          "tableTo": "auth_users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "deadline_date_events_audit_log_id_audit_logs_id_fk": {
+          "name": "deadline_date_events_audit_log_id_audit_logs_id_fk",
+          "tableFrom": "deadline_date_events",
+          "tableTo": "audit_logs",
+          "columnsFrom": [
+            "audit_log_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "deadline_date_events_firm_deadline_task_fk": {
+          "name": "deadline_date_events_firm_deadline_task_fk",
+          "tableFrom": "deadline_date_events",
+          "tableTo": "deadline_tasks",
+          "columnsFrom": [
+            "firm_id",
+            "deadline_task_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "deadline_date_events_firm_audit_log_fk": {
+          "name": "deadline_date_events_firm_audit_log_fk",
+          "tableFrom": "deadline_date_events",
+          "tableTo": "audit_logs",
+          "columnsFrom": [
+            "firm_id",
+            "audit_log_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "deadline_date_events_type_check": {
+          "name": "deadline_date_events_type_check",
+          "value": "\"deadline_date_events\".\"event_type\" in ('official_original_due_date', 'official_extension', 'official_relief_change', 'user_provided_adjustment', 'firm_target_change')"
+        },
+        "deadline_date_events_due_date_payload_check": {
+          "name": "deadline_date_events_due_date_payload_check",
+          "value": "\"deadline_date_events\".\"event_type\" = 'firm_target_change' or \"deadline_date_events\".\"new_current_due_date\" is not null"
+        },
+        "deadline_date_events_due_date_previous_check": {
+          "name": "deadline_date_events_due_date_previous_check",
+          "value": "\"deadline_date_events\".\"event_type\" in ('official_original_due_date', 'firm_target_change') or \"deadline_date_events\".\"previous_current_due_date\" is not null"
+        },
+        "deadline_date_events_firm_target_payload_check": {
+          "name": "deadline_date_events_firm_target_payload_check",
+          "value": "\"deadline_date_events\".\"event_type\" != 'firm_target_change' or \"deadline_date_events\".\"previous_firm_target_date\" is not null or \"deadline_date_events\".\"new_firm_target_date\" is not null"
+        },
+        "deadline_date_events_current_due_date_separation_check": {
+          "name": "deadline_date_events_current_due_date_separation_check",
+          "value": "\"deadline_date_events\".\"event_type\" != 'firm_target_change' or (\"deadline_date_events\".\"previous_current_due_date\" is null and \"deadline_date_events\".\"new_current_due_date\" is null)"
+        },
+        "deadline_date_events_firm_target_separation_check": {
+          "name": "deadline_date_events_firm_target_separation_check",
+          "value": "\"deadline_date_events\".\"event_type\" = 'firm_target_change' or (\"deadline_date_events\".\"previous_firm_target_date\" is null and \"deadline_date_events\".\"new_firm_target_date\" is null)"
+        },
+        "deadline_date_events_official_source_check": {
+          "name": "deadline_date_events_official_source_check",
+          "value": "\"deadline_date_events\".\"event_type\" not in ('official_original_due_date', 'official_extension', 'official_relief_change') or \"deadline_date_events\".\"source_name\" is not null or \"deadline_date_events\".\"source_url\" is not null or \"deadline_date_events\".\"source_snapshot_id\" is not null"
+        }
+      }
+    },
+    "deadline_tasks": {
+      "name": "deadline_tasks",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "firm_id": {
+          "name": "firm_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "client_relationship_id": {
+          "name": "client_relationship_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "filing_profile_id": {
+          "name": "filing_profile_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "tax_rule_id": {
+          "name": "tax_rule_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "jurisdiction": {
+          "name": "jurisdiction",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "tax_category": {
+          "name": "tax_category",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "current_due_date": {
+          "name": "current_due_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "original_due_date": {
+          "name": "original_due_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "firm_target_date": {
+          "name": "firm_target_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "recurrence_key": {
+          "name": "recurrence_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'not_started'"
+        },
+        "priority": {
+          "name": "priority",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'normal'"
+        },
+        "source_type": {
+          "name": "source_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_via": {
+          "name": "created_via",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "user_provided_source_note": {
+          "name": "user_provided_source_note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "deadline_tasks_firm_due_date_idx": {
+          "name": "deadline_tasks_firm_due_date_idx",
+          "columns": [
+            "firm_id",
+            "current_due_date"
+          ],
+          "isUnique": false
+        },
+        "deadline_tasks_firm_status_idx": {
+          "name": "deadline_tasks_firm_status_idx",
+          "columns": [
+            "firm_id",
+            "status"
+          ],
+          "isUnique": false
+        },
+        "deadline_tasks_firm_priority_idx": {
+          "name": "deadline_tasks_firm_priority_idx",
+          "columns": [
+            "firm_id",
+            "priority"
+          ],
+          "isUnique": false
+        },
+        "deadline_tasks_client_relationship_idx": {
+          "name": "deadline_tasks_client_relationship_idx",
+          "columns": [
+            "client_relationship_id"
+          ],
+          "isUnique": false
+        },
+        "deadline_tasks_filing_profile_idx": {
+          "name": "deadline_tasks_filing_profile_idx",
+          "columns": [
+            "filing_profile_id"
+          ],
+          "isUnique": false
+        },
+        "deadline_tasks_tax_rule_idx": {
+          "name": "deadline_tasks_tax_rule_idx",
+          "columns": [
+            "tax_rule_id"
+          ],
+          "isUnique": false
+        },
+        "deadline_tasks_firm_id_id_unique": {
+          "name": "deadline_tasks_firm_id_id_unique",
+          "columns": [
+            "firm_id",
+            "id"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "deadline_tasks_firm_id_firms_id_fk": {
+          "name": "deadline_tasks_firm_id_firms_id_fk",
+          "tableFrom": "deadline_tasks",
+          "tableTo": "firms",
+          "columnsFrom": [
+            "firm_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "deadline_tasks_client_relationship_id_client_relationships_id_fk": {
+          "name": "deadline_tasks_client_relationship_id_client_relationships_id_fk",
+          "tableFrom": "deadline_tasks",
+          "tableTo": "client_relationships",
+          "columnsFrom": [
+            "client_relationship_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "deadline_tasks_filing_profile_id_filing_profiles_id_fk": {
+          "name": "deadline_tasks_filing_profile_id_filing_profiles_id_fk",
+          "tableFrom": "deadline_tasks",
+          "tableTo": "filing_profiles",
+          "columnsFrom": [
+            "filing_profile_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "deadline_tasks_firm_client_relationship_fk": {
+          "name": "deadline_tasks_firm_client_relationship_fk",
+          "tableFrom": "deadline_tasks",
+          "tableTo": "client_relationships",
+          "columnsFrom": [
+            "firm_id",
+            "client_relationship_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "deadline_tasks_firm_client_profile_fk": {
+          "name": "deadline_tasks_firm_client_profile_fk",
+          "tableFrom": "deadline_tasks",
+          "tableTo": "filing_profiles",
+          "columnsFrom": [
+            "firm_id",
+            "client_relationship_id",
+            "filing_profile_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "client_relationship_id",
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "deadline_tasks_status_check": {
+          "name": "deadline_tasks_status_check",
+          "value": "\"deadline_tasks\".\"status\" in ('not_started', 'in_progress', 'waiting_on_client', 'done')"
+        },
+        "deadline_tasks_priority_check": {
+          "name": "deadline_tasks_priority_check",
+          "value": "\"deadline_tasks\".\"priority\" in ('low', 'normal', 'high', 'urgent')"
+        },
+        "deadline_tasks_source_type_check": {
+          "name": "deadline_tasks_source_type_check",
+          "value": "\"deadline_tasks\".\"source_type\" in ('verified_rule', 'user_provided')"
+        },
+        "deadline_tasks_created_via_check": {
+          "name": "deadline_tasks_created_via_check",
+          "value": "\"deadline_tasks\".\"created_via\" in ('system_rule', 'manual')"
+        },
+        "deadline_tasks_source_created_via_check": {
+          "name": "deadline_tasks_source_created_via_check",
+          "value": "(\"deadline_tasks\".\"source_type\" = 'verified_rule' and \"deadline_tasks\".\"created_via\" = 'system_rule') or (\"deadline_tasks\".\"source_type\" = 'user_provided' and \"deadline_tasks\".\"created_via\" = 'manual')"
+        },
+        "deadline_tasks_verified_rule_tax_rule_check": {
+          "name": "deadline_tasks_verified_rule_tax_rule_check",
+          "value": "\"deadline_tasks\".\"source_type\" != 'verified_rule' or \"deadline_tasks\".\"tax_rule_id\" is not null"
+        },
+        "deadline_tasks_user_source_note_check": {
+          "name": "deadline_tasks_user_source_note_check",
+          "value": "\"deadline_tasks\".\"source_type\" != 'user_provided' or \"deadline_tasks\".\"user_provided_source_note\" is not null"
+        }
+      }
+    },
+    "filing_profiles": {
+      "name": "filing_profiles",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "firm_id": {
+          "name": "firm_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "client_relationship_id": {
+          "name": "client_relationship_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "display_name": {
+          "name": "display_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "ein": {
+          "name": "ein",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "ssn_last4": {
+          "name": "ssn_last4",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "entity_type": {
+          "name": "entity_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "states": {
+          "name": "states",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "county": {
+          "name": "county",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "fiscal_year_type": {
+          "name": "fiscal_year_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "coverage_state": {
+          "name": "coverage_state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'needs_review'"
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "source_system": {
+          "name": "source_system",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'manual'"
+        },
+        "source_row_id": {
+          "name": "source_row_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_via": {
+          "name": "created_via",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "filing_profiles_firm_client_relationship_idx": {
+          "name": "filing_profiles_firm_client_relationship_idx",
+          "columns": [
+            "firm_id",
+            "client_relationship_id"
+          ],
+          "isUnique": false
+        },
+        "filing_profiles_firm_entity_type_idx": {
+          "name": "filing_profiles_firm_entity_type_idx",
+          "columns": [
+            "firm_id",
+            "entity_type"
+          ],
+          "isUnique": false
+        },
+        "filing_profiles_firm_client_id_unique": {
+          "name": "filing_profiles_firm_client_id_unique",
+          "columns": [
+            "firm_id",
+            "client_relationship_id",
+            "id"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "filing_profiles_firm_id_firms_id_fk": {
+          "name": "filing_profiles_firm_id_firms_id_fk",
+          "tableFrom": "filing_profiles",
+          "tableTo": "firms",
+          "columnsFrom": [
+            "firm_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "filing_profiles_client_relationship_id_client_relationships_id_fk": {
+          "name": "filing_profiles_client_relationship_id_client_relationships_id_fk",
+          "tableFrom": "filing_profiles",
+          "tableTo": "client_relationships",
+          "columnsFrom": [
+            "client_relationship_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "filing_profiles_firm_client_relationship_fk": {
+          "name": "filing_profiles_firm_client_relationship_fk",
+          "tableFrom": "filing_profiles",
+          "tableTo": "client_relationships",
+          "columnsFrom": [
+            "firm_id",
+            "client_relationship_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "filing_profiles_entity_type_check": {
+          "name": "filing_profiles_entity_type_check",
+          "value": "\"filing_profiles\".\"entity_type\" in ('individual', 'sole_prop', 's_corp', 'c_corp', 'partnership', 'llc', 'trust_estate', 'nonprofit', 'other')"
+        },
+        "filing_profiles_fiscal_year_type_check": {
+          "name": "filing_profiles_fiscal_year_type_check",
+          "value": "\"filing_profiles\".\"fiscal_year_type\" in ('calendar_year', 'fiscal_year')"
+        },
+        "filing_profiles_coverage_state_check": {
+          "name": "filing_profiles_coverage_state_check",
+          "value": "\"filing_profiles\".\"coverage_state\" in ('ready', 'needs_review', 'coverage_gap', 'unsupported')"
+        },
+        "filing_profiles_created_via_check": {
+          "name": "filing_profiles_created_via_check",
+          "value": "\"filing_profiles\".\"created_via\" in ('csv_import', 'manual')"
+        },
+        "filing_profiles_source_system_check": {
+          "name": "filing_profiles_source_system_check",
+          "value": "\"filing_profiles\".\"source_system\" in ('manual', 'taxdome', 'drake', 'karbon', 'quickbooks', 'other')"
+        },
+        "filing_profiles_identity_check": {
+          "name": "filing_profiles_identity_check",
+          "value": "\"filing_profiles\".\"ein\" is null or \"filing_profiles\".\"ssn_last4\" is null"
+        }
+      }
+    },
+    "feature_items": {
+      "name": "feature_items",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "category": {
+          "name": "category",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "spec_path": {
+          "name": "spec_path",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'not_started'"
+        },
+        "priority": {
+          "name": "priority",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "firms": {
+      "name": "firms",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "owner_user_id": {
+          "name": "owner_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "firms_owner_user_id_unique": {
+          "name": "firms_owner_user_id_unique",
+          "columns": [
+            "owner_user_id"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "firms_owner_user_id_auth_users_id_fk": {
+          "name": "firms_owner_user_id_auth_users_id_fk",
+          "tableFrom": "firms",
+          "tableTo": "auth_users",
+          "columnsFrom": [
+            "owner_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    }
+  },
+  "views": {},
+  "enums": {},
+  "_meta": {
+    "schemas": {},
+    "tables": {},
+    "columns": {}
+  },
+  "internal": {
+    "indexes": {}
+  }
+}

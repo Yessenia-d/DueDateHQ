@@ -3,7 +3,7 @@
   "name": "core-deadline-domain-schema",
   "title": "Implement core deadline domain schema",
   "description": "Create the shared domain schema for client relationships, filing profiles, deadline tasks, date events, and audit logs.",
-  "status": "planning",
+  "status": "in_progress",
   "dev_type": null,
   "scope": null,
   "package": "server",
