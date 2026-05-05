@@ -4,6 +4,7 @@ import type {
   ImportReviewRowResponse,
 } from "@due-date-hq/api/routers/imports";
 import { Button } from "@due-date-hq/ui/components/button";
+import { Checkbox } from "@due-date-hq/ui/components/checkbox";
 import { Input } from "@due-date-hq/ui/components/input";
 import { Label } from "@due-date-hq/ui/components/label";
 import {
@@ -484,6 +485,50 @@ function ReviewRows({
   relationshipSuggestionsByItemId: ReadonlyMap<string, RelationshipSuggestion[]>;
   rows: ImportReviewRowResponse[];
 }) {
+  const [selectedRowIds, setSelectedRowIds] = React.useState<Set<string>>(new Set());
+
+  React.useEffect(() => {
+    const rowIds = new Set(rows.map((row) => row.id));
+    setSelectedRowIds((current) => new Set([...current].filter((id) => rowIds.has(id))));
+  }, [rows]);
+
+  const selectedRows = rows.filter((row) => selectedRowIds.has(row.id));
+  const selectedRelationshipSuggestions = selectedRows.flatMap(
+    (row) => relationshipSuggestionsByItemId.get(row.id) ?? [],
+  );
+  const selectedDuplicateCandidates = selectedRows
+    .map((row) => duplicateCandidatesByItemId.get(row.id))
+    .filter((candidate): candidate is DuplicateCandidate => Boolean(candidate));
+  const allRowsSelected = rows.length > 0 && rows.every((row) => selectedRowIds.has(row.id));
+
+  function toggleAllRows(checked: boolean) {
+    setSelectedRowIds(checked ? new Set(rows.map((row) => row.id)) : new Set());
+  }
+
+  function toggleRow(rowId: string, checked: boolean) {
+    setSelectedRowIds((current) => {
+      const next = new Set(current);
+      if (checked) {
+        next.add(rowId);
+      } else {
+        next.delete(rowId);
+      }
+      return next;
+    });
+  }
+
+  function applyRelationshipDecision(decision: RelationshipDecision | "pending") {
+    for (const suggestion of selectedRelationshipSuggestions) {
+      onRelationshipChange(suggestion.id, decision);
+    }
+  }
+
+  function applyDuplicateResolution(resolution: DuplicateResolution | "pending") {
+    for (const candidate of selectedDuplicateCandidates) {
+      onDuplicateChange(candidate.id, resolution);
+    }
+  }
+
   return (
     <section className="grid content-start gap-3">
       <div className="flex items-center gap-2">
@@ -491,20 +536,121 @@ function ReviewRows({
         <h2 className="text-base font-semibold">Filing profile review</h2>
       </div>
 
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-muted/20 px-3 py-2">
+        <div className="text-xs text-muted-foreground">
+          {selectedRowIds.size} selected
+          {selectedRelationshipSuggestions.length > 0
+            ? ` · ${selectedRelationshipSuggestions.length} relationship suggestion${selectedRelationshipSuggestions.length === 1 ? "" : "s"}`
+            : ""}
+          {selectedDuplicateCandidates.length > 0
+            ? ` · ${selectedDuplicateCandidates.length} duplicate candidate${selectedDuplicateCandidates.length === 1 ? "" : "s"}`
+            : ""}
+        </div>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Button
+            type="button"
+            size="xs"
+            variant="outline"
+            disabled={selectedRelationshipSuggestions.length === 0}
+            onClick={() => applyRelationshipDecision("accepted")}
+          >
+            Accept relationships
+          </Button>
+          <Button
+            type="button"
+            size="xs"
+            variant="outline"
+            disabled={selectedRelationshipSuggestions.length === 0}
+            onClick={() => applyRelationshipDecision("rejected")}
+          >
+            Reject relationships
+          </Button>
+          <Button
+            type="button"
+            size="xs"
+            variant="outline"
+            disabled={selectedDuplicateCandidates.length === 0}
+            onClick={() => applyDuplicateResolution("create")}
+          >
+            Create new
+          </Button>
+          <Button
+            type="button"
+            size="xs"
+            variant="outline"
+            disabled={selectedDuplicateCandidates.length === 0}
+            onClick={() => applyDuplicateResolution("update_existing")}
+          >
+            Update existing
+          </Button>
+          <Button
+            type="button"
+            size="xs"
+            variant="outline"
+            disabled={selectedDuplicateCandidates.length === 0}
+            onClick={() => applyDuplicateResolution("skip")}
+          >
+            Skip duplicates
+          </Button>
+        </div>
+      </div>
+
       <div className="overflow-hidden rounded-lg border">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[1320px] border-collapse text-left text-xs">
-            <thead className="border-b bg-muted/40 text-muted-foreground">
+        <div className="max-h-[520px] min-h-[220px] overflow-auto lg:max-h-[calc(100vh-20rem)]">
+          <table className="w-full min-w-[1280px] border-collapse text-left text-xs">
+            <thead className="sticky top-0 z-10 border-b bg-muted text-muted-foreground">
               <tr>
-                <th className="w-28 px-3 py-2 font-medium">Row</th>
-                <th className="px-3 py-2 font-medium">Client</th>
-                <th className="px-3 py-2 font-medium">Entity</th>
-                <th className="px-3 py-2 font-medium">State</th>
-                <th className="px-3 py-2 font-medium">EIN</th>
-                <th className="px-3 py-2 font-medium">SSN last 4</th>
-                <th className="px-3 py-2 font-medium">Problems</th>
-                <th className="w-44 px-3 py-2 font-medium">Duplicate</th>
-                <th className="w-72 px-3 py-2 font-medium">Relationship</th>
+                <th className="w-10 px-3 py-2 font-medium">
+                  <Checkbox
+                    aria-label="Select all review rows"
+                    checked={allRowsSelected}
+                    onCheckedChange={(checked) => toggleAllRows(checked === true)}
+                  />
+                </th>
+                <th className="w-28 px-3 py-2 font-medium">
+                  <MappedColumnHeader
+                    canonicalField="sourceRowId"
+                    highConfidenceMappedFields={highConfidenceMappedFields}
+                    label="Row"
+                  />
+                </th>
+                <th className="px-3 py-2 font-medium">
+                  <MappedColumnHeader
+                    canonicalField="clientName"
+                    highConfidenceMappedFields={highConfidenceMappedFields}
+                    label="Client"
+                  />
+                </th>
+                <th className="px-3 py-2 font-medium">
+                  <MappedColumnHeader
+                    canonicalField="entityType"
+                    highConfidenceMappedFields={highConfidenceMappedFields}
+                    label="Entity"
+                  />
+                </th>
+                <th className="px-3 py-2 font-medium">
+                  <MappedColumnHeader
+                    canonicalField="state"
+                    highConfidenceMappedFields={highConfidenceMappedFields}
+                    label="State"
+                  />
+                </th>
+                <th className="px-3 py-2 font-medium">
+                  <MappedColumnHeader
+                    canonicalField="ein"
+                    highConfidenceMappedFields={highConfidenceMappedFields}
+                    label="EIN"
+                  />
+                </th>
+                <th className="px-3 py-2 font-medium">
+                  <MappedColumnHeader
+                    canonicalField="ssnLast4"
+                    highConfidenceMappedFields={highConfidenceMappedFields}
+                    label="SSN last 4"
+                  />
+                </th>
+                <th className="w-72 px-3 py-2 font-medium">Review</th>
+                <th className="w-72 px-3 py-2 font-medium">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -512,19 +658,30 @@ function ReviewRows({
               const correction = corrections[row.id] ?? {};
               const duplicateCandidate = duplicateCandidatesByItemId.get(row.id) ?? null;
               const relationshipSuggestions = relationshipSuggestionsByItemId.get(row.id) ?? [];
+              const isSelected = selectedRowIds.has(row.id);
               return (
-                <tr key={row.id} className="border-b align-top last:border-b-0">
-                  <td className={`px-3 py-3 font-mono text-muted-foreground ${mappedCellClass("sourceRowId", highConfidenceMappedFields)}`}>
+                <tr
+                  key={row.id}
+                  className={`border-b align-top last:border-b-0 ${isSelected ? "bg-primary/5" : ""}`}
+                >
+                  <td className="px-3 py-3">
+                    <Checkbox
+                      aria-label={`Select import row ${row.sourceRowId}`}
+                      checked={isSelected}
+                      onCheckedChange={(checked) => toggleRow(row.id, checked === true)}
+                    />
+                  </td>
+                  <td className="px-3 py-3 font-mono text-muted-foreground">
                     {row.sourceRowId}
                   </td>
-                  <td className={`px-3 py-2 ${mappedCellClass("clientName", highConfidenceMappedFields)}`}>
+                  <td className="px-3 py-2">
                     <Input
                       className="rounded-[6px]"
                       value={correction.clientName ?? row.canonicalProfile.clientName ?? ""}
                       onChange={(event) => onChange(row.id, { clientName: event.target.value })}
                     />
                   </td>
-                  <td className={`px-3 py-2 ${mappedCellClass("entityType", highConfidenceMappedFields)}`}>
+                  <td className="px-3 py-2">
                     <Select
                       value={correction.entityType ?? row.canonicalProfile.entityType ?? ""}
                       onValueChange={(value) =>
@@ -536,7 +693,7 @@ function ReviewRows({
                       }
                     >
                       <SelectTrigger
-                        className={`h-8 w-full rounded-[6px] ${mappedControlClass("entityType", highConfidenceMappedFields)}`}
+                        className="h-8 w-full rounded-[6px] bg-background"
                       >
                         <SelectValue placeholder="Needs review" />
                       </SelectTrigger>
@@ -552,21 +709,21 @@ function ReviewRows({
                       </SelectContent>
                     </Select>
                   </td>
-                  <td className={`px-3 py-2 ${mappedCellClass("state", highConfidenceMappedFields)}`}>
+                  <td className="px-3 py-2">
                     <Input
                       className="rounded-[6px]"
                       value={correction.state ?? row.canonicalProfile.state ?? ""}
                       onChange={(event) => onChange(row.id, { state: event.target.value })}
                     />
                   </td>
-                  <td className={`px-3 py-2 ${mappedCellClass("ein", highConfidenceMappedFields)}`}>
+                  <td className="px-3 py-2">
                     <Input
                       className="rounded-[6px]"
                       value={correction.ein ?? row.canonicalProfile.ein ?? ""}
                       onChange={(event) => onChange(row.id, { ein: event.target.value })}
                     />
                   </td>
-                  <td className={`px-3 py-2 ${mappedCellClass("ssnLast4", highConfidenceMappedFields)}`}>
+                  <td className="px-3 py-2">
                     <Input
                       className="rounded-[6px]"
                       value={correction.ssnLast4 ?? row.canonicalProfile.ssnLast4 ?? ""}
@@ -574,33 +731,25 @@ function ReviewRows({
                     />
                   </td>
                   <td className="px-3 py-2">
-                    <div className="flex flex-wrap gap-1.5">
-                      {row.problemTypes.length > 0 ? (
-                        row.problemTypes.map((problem) => (
-                          <StatusBadge key={problem} tone="review">
-                            {formatProblem(problem)}
-                          </StatusBadge>
-                        ))
-                      ) : (
-                        <StatusBadge tone="verified">Ready</StatusBadge>
-                      )}
-                    </div>
+                    <ReviewSummaryCell
+                      candidate={duplicateCandidate}
+                      decisions={relationshipDecisions}
+                      problems={row.problemTypes}
+                      suggestions={relationshipSuggestions}
+                    />
                   </td>
                   <td className="px-3 py-2">
-                    <DuplicateDecisionCell
+                    <ReviewActionsCell
                       candidate={duplicateCandidate}
-                      onChange={onDuplicateChange}
+                      decisions={relationshipDecisions}
+                      onDuplicateChange={onDuplicateChange}
+                      onRelationshipChange={onRelationshipChange}
+                      problems={row.problemTypes}
                       resolution={
                         duplicateCandidate
                           ? (duplicateResolutions[duplicateCandidate.id] ?? "pending")
                           : "pending"
                       }
-                    />
-                  </td>
-                  <td className="px-3 py-2">
-                    <RelationshipDecisionCell
-                      decisions={relationshipDecisions}
-                      onChange={onRelationshipChange}
                       suggestions={relationshipSuggestions}
                     />
                   </td>
@@ -615,101 +764,191 @@ function ReviewRows({
   );
 }
 
-function mappedCellClass(canonicalField: string, highConfidenceMappedFields: ReadonlySet<string>) {
-  return highConfidenceMappedFields.has(canonicalField)
-    ? "bg-emerald-500/5"
-    : "";
+function MappedColumnHeader({
+  canonicalField,
+  highConfidenceMappedFields,
+  label,
+}: {
+  canonicalField: string;
+  highConfidenceMappedFields: ReadonlySet<string>;
+  label: string;
+}) {
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      {label}
+      {highConfidenceMappedFields.has(canonicalField) ? (
+        <StatusBadge tone="verified">Confident</StatusBadge>
+      ) : null}
+    </span>
+  );
 }
 
-function mappedControlClass(canonicalField: string, highConfidenceMappedFields: ReadonlySet<string>) {
-  return highConfidenceMappedFields.has(canonicalField)
-    ? "bg-transparent"
-    : "bg-background";
-}
-
-function DuplicateDecisionCell({
+function ReviewSummaryCell({
   candidate,
-  onChange,
-  resolution,
+  decisions,
+  problems,
+  suggestions,
 }: {
   candidate: DuplicateCandidate | null;
-  onChange: (id: string, resolution: DuplicateResolution | "pending") => void;
-  resolution: DuplicateResolution | "pending";
+  decisions: Record<string, RelationshipDecision | "pending">;
+  problems: string[];
+  suggestions: RelationshipSuggestion[];
 }) {
-  if (!candidate) {
-    return <span className="text-xs text-muted-foreground">No duplicate</span>;
-  }
+  const hasReviewItems = problems.length > 0 || candidate || suggestions.length > 0;
 
   return (
-    <div className="grid gap-1.5">
+    <div className="grid gap-2">
       <div className="flex flex-wrap gap-1.5">
-        {candidate.matchedFields.map((field) => (
-          <StatusBadge key={field} tone="neutral">
-            {field}
-          </StatusBadge>
-        ))}
+        {problems.length > 0 ? (
+          problems.map((problem) => (
+            <StatusBadge key={problem} tone="review">
+              {formatProblem(problem)}
+            </StatusBadge>
+          ))
+        ) : hasReviewItems ? (
+          <StatusBadge tone="review">Review required</StatusBadge>
+        ) : (
+          <StatusBadge tone="verified">Ready</StatusBadge>
+        )}
       </div>
-      <Select
-        value={resolution}
-        onValueChange={(value) =>
-          onChange(candidate.id, (value ?? "pending") as DuplicateResolution | "pending")
-        }
-      >
-        <SelectTrigger className={importSelectTriggerClassName}>
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent className={importSelectContentClassName}>
-          <SelectItem className={importSelectItemClassName} value="pending">
-            Pending
-          </SelectItem>
-          <SelectItem className={importSelectItemClassName} value="create">
-            Create new
-          </SelectItem>
-          <SelectItem className={importSelectItemClassName} value="update_existing">
-            Update existing
-          </SelectItem>
-          <SelectItem className={importSelectItemClassName} value="skip">
-            Skip row
-          </SelectItem>
-        </SelectContent>
-      </Select>
+
+      {hasReviewItems ? (
+        <div className="grid gap-1.5">
+          {candidate ? (
+            <div className="grid gap-1">
+              <div className="min-w-0">
+                <div className="text-[11px] font-semibold text-foreground">Likely duplicate</div>
+                <div className="mt-1 flex flex-wrap gap-1.5">
+                  {candidate.matchedFields.map((field) => (
+                    <StatusBadge key={field} tone="neutral">
+                      {field}
+                    </StatusBadge>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          {suggestions.map((suggestion) => {
+            const activeDecision = decisions[suggestion.id] ?? "pending";
+
+            return (
+              <div
+                key={suggestion.id}
+                className="grid gap-1"
+              >
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-[11px] font-semibold text-foreground">
+                      Linked relationship
+                    </span>
+                    <StatusBadge tone={activeDecision === "accepted" ? "verified" : "review"}>
+                      {decisionLabel(activeDecision)}
+                    </StatusBadge>
+                  </div>
+                  <p className="mt-0.5 truncate text-xs text-muted-foreground" title={suggestion.reason}>
+                    CPA confirmation required before commit.
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+          {!candidate && suggestions.length === 0 && problems.length > 0 ? (
+            <div className="text-xs leading-5 text-muted-foreground">
+              Edit the profile fields in this row before commit.
+            </div>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }
 
-function RelationshipDecisionCell({
+function ReviewActionsCell({
+  candidate,
   decisions,
-  onChange,
+  onDuplicateChange,
+  onRelationshipChange,
+  problems,
+  resolution,
   suggestions,
 }: {
+  candidate: DuplicateCandidate | null;
   decisions: Record<string, RelationshipDecision | "pending">;
-  onChange: (id: string, decision: RelationshipDecision | "pending") => void;
+  onDuplicateChange: (id: string, resolution: DuplicateResolution | "pending") => void;
+  onRelationshipChange: (id: string, decision: RelationshipDecision | "pending") => void;
+  problems: string[];
+  resolution: DuplicateResolution | "pending";
   suggestions: RelationshipSuggestion[];
 }) {
-  if (suggestions.length === 0) {
-    return <span className="text-xs text-muted-foreground">No suggestion</span>;
+  const hasReviewItems = problems.length > 0 || candidate || suggestions.length > 0;
+
+  if (!hasReviewItems) {
+    return <span className="text-xs text-muted-foreground">No action</span>;
   }
 
   return (
     <div className="grid gap-2">
-      {suggestions.map((suggestion) => (
-        <div key={suggestion.id} className="grid gap-1.5">
-          <p className="text-xs leading-5 text-muted-foreground">{suggestion.reason}</p>
-          <div className="grid grid-cols-3 gap-1">
-            {(["pending", "accepted", "rejected"] as const).map((decision) => (
-              <Button
-                key={decision}
-                type="button"
-                size="xs"
-                variant={(decisions[suggestion.id] ?? "pending") === decision ? "default" : "outline"}
-                onClick={() => onChange(suggestion.id, decision)}
-              >
-                {decisionLabel(decision)}
-              </Button>
-            ))}
-          </div>
+      {candidate ? (
+        <div className="grid gap-1">
+          <div className="text-[11px] font-semibold text-muted-foreground">Duplicate</div>
+          <Select
+            value={resolution}
+            onValueChange={(value) =>
+              onDuplicateChange(
+                candidate.id,
+                (value ?? "pending") as DuplicateResolution | "pending",
+              )
+            }
+          >
+            <SelectTrigger className={importSelectTriggerClassName}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className={importSelectContentClassName}>
+              <SelectItem className={importSelectItemClassName} value="pending">
+                Pending
+              </SelectItem>
+              <SelectItem className={importSelectItemClassName} value="create">
+                Create new
+              </SelectItem>
+              <SelectItem className={importSelectItemClassName} value="update_existing">
+                Update existing
+              </SelectItem>
+              <SelectItem className={importSelectItemClassName} value="skip">
+                Skip row
+              </SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-      ))}
+      ) : null}
+
+      {suggestions.map((suggestion) => {
+        const activeDecision = decisions[suggestion.id] ?? "pending";
+
+        return (
+          <div key={suggestion.id} className="grid gap-1">
+            <div className="text-[11px] font-semibold text-muted-foreground">Relationship</div>
+            <div className="grid grid-cols-3 gap-1.5">
+              {(["pending", "accepted", "rejected"] as const).map((decision) => (
+                <Button
+                  key={decision}
+                  type="button"
+                  size="xs"
+                  className="min-w-16 px-2.5"
+                  variant={activeDecision === decision ? "default" : "outline"}
+                  onClick={() => onRelationshipChange(suggestion.id, decision)}
+                >
+                  {decisionLabel(decision)}
+                </Button>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+
+      {!candidate && suggestions.length === 0 && problems.length > 0 ? (
+        <span className="text-xs leading-5 text-muted-foreground">Edit fields in row</span>
+      ) : null}
     </div>
   );
 }
