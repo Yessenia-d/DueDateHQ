@@ -48,7 +48,7 @@ Use `CONTEXT.md` vocabulary when naming domain concepts in issues, PRDs, tests, 
 
 ### Documentation Source of Truth
 
-If implementation code and project documentation/specifications disagree, treat the documentation/specification as the source of truth. Update the code to match the docs unless the user explicitly confirms that the docs are outdated and should be changed.
+If implementation code and project documentation/specifications disagree, treat the implementation code as the source of truth. Update the documentation/specification to match the code unless the user explicitly confirms that the code is wrong and should be changed.
 
 ### Bilingual Documentation Sync
 
