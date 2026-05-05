@@ -1,0 +1,1219 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DueDateHQ Style Sample</title>
+    <style>
+      :root {
+        --bg: oklch(0.985 0.006 92);
+        --surface: oklch(0.998 0.004 92);
+        --surface-muted: oklch(0.962 0.008 92);
+        --border-subtle: oklch(0.88 0.012 92);
+        --border-strong: oklch(0.76 0.018 92);
+        --ink: oklch(0.22 0.018 78);
+        --ink-muted: oklch(0.46 0.016 78);
+        --ink-soft: oklch(0.62 0.014 78);
+        --accent: oklch(0.56 0.105 205);
+        --accent-soft: oklch(0.92 0.04 205);
+        --verified: oklch(0.55 0.115 150);
+        --verified-soft: oklch(0.93 0.045 150);
+        --review: oklch(0.66 0.13 78);
+        --review-soft: oklch(0.94 0.055 78);
+        --risk: oklch(0.57 0.16 28);
+        --risk-soft: oklch(0.94 0.055 28);
+        --gap: oklch(0.53 0.045 240);
+        --gap-soft: oklch(0.93 0.025 240);
+        --shadow: 0 1px 2px rgb(38 31 20 / 0.05), 0 8px 32px rgb(38 31 20 / 0.04);
+        color-scheme: light;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        min-height: 100%;
+        background: var(--bg);
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        background:
+          linear-gradient(180deg, rgb(255 255 255 / 0.68), rgb(255 255 255 / 0) 320px),
+          radial-gradient(circle at 18% 0%, oklch(0.94 0.04 205 / 0.35), transparent 32rem),
+          var(--bg);
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+        font-size: 14px;
+        line-height: 1.45;
+        letter-spacing: 0;
+      }
+
+      button,
+      input,
+      select {
+        font: inherit;
+      }
+
+      button {
+        cursor: pointer;
+      }
+
+      button:focus-visible,
+      .nav-item:focus-visible,
+      .filter:focus-visible,
+      .icon-button:focus-visible {
+        outline: 2px solid oklch(0.58 0.12 205);
+        outline-offset: 2px;
+      }
+
+      button:disabled {
+        cursor: default;
+        opacity: 0.64;
+      }
+
+      .app {
+        display: grid;
+        min-height: 100vh;
+        grid-template-columns: 236px minmax(0, 1fr);
+      }
+
+      .sidebar {
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        border-right: 1px solid var(--border-subtle);
+        background: oklch(0.995 0.004 92 / 0.86);
+        padding: 18px 14px;
+        backdrop-filter: blur(14px);
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 4px 8px 18px;
+      }
+
+      .mark {
+        display: grid;
+        width: 30px;
+        height: 30px;
+        place-items: center;
+        border: 1px solid var(--border-strong);
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--accent);
+        font-weight: 750;
+      }
+
+      .brand strong {
+        display: block;
+        font-size: 15px;
+        line-height: 1.1;
+      }
+
+      .brand span {
+        color: var(--ink-soft);
+        font-size: 12px;
+      }
+
+      .nav-label {
+        margin: 16px 8px 8px;
+        color: var(--ink-soft);
+        font-size: 11px;
+        font-weight: 650;
+        text-transform: uppercase;
+      }
+
+      .nav-item {
+        display: flex;
+        width: 100%;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 34px;
+        margin: 2px 0;
+        border: 1px solid transparent;
+        border-radius: 8px;
+        background: transparent;
+        padding: 0 8px;
+        color: var(--ink-muted);
+        text-align: left;
+      }
+
+      .nav-item:hover {
+        border-color: oklch(0.9 0.014 92);
+        background: oklch(0.982 0.006 92 / 0.72);
+      }
+
+      .nav-item[aria-current="page"] {
+        border-color: var(--border-subtle);
+        background: var(--surface);
+        color: var(--ink);
+        box-shadow: 0 1px 1px rgb(38 31 20 / 0.03);
+      }
+
+      .nav-count {
+        border-radius: 999px;
+        background: var(--surface-muted);
+        padding: 1px 6px;
+        color: var(--ink-soft);
+        font-size: 11px;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .main {
+        min-width: 0;
+        padding: 20px 24px 32px;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin: 0 auto 16px;
+        max-width: 1440px;
+      }
+
+      .title h1 {
+        margin: 0;
+        font-size: 24px;
+        font-weight: 700;
+        line-height: 1.2;
+      }
+
+      .title p {
+        margin: 3px 0 0;
+        color: var(--ink-muted);
+      }
+
+      .top-actions {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .button {
+        min-height: 34px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--ink);
+        padding: 0 12px;
+        box-shadow: 0 1px 1px rgb(38 31 20 / 0.03);
+      }
+
+      .button.primary {
+        border-color: oklch(0.5 0.095 205);
+        background: var(--accent);
+        color: oklch(0.985 0.006 92);
+      }
+
+      .button.danger {
+        border-color: oklch(0.78 0.08 28);
+        color: var(--risk);
+      }
+
+      .status-strip {
+        display: flex;
+        align-items: center;
+        min-height: 34px;
+        max-width: 1440px;
+        margin: -6px auto 16px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 10px;
+        background: oklch(0.998 0.004 92 / 0.74);
+        padding: 0 12px;
+        color: var(--ink-muted);
+        font-size: 12px;
+      }
+
+      .status-dot {
+        width: 7px;
+        height: 7px;
+        margin-right: 8px;
+        border-radius: 999px;
+        background: var(--verified);
+      }
+
+      .workspace {
+        display: grid;
+        max-width: 1440px;
+        margin: 0 auto;
+        grid-template-columns: minmax(0, 1fr) 360px;
+        gap: 18px;
+      }
+
+      .notice-banner {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 16px;
+        align-items: center;
+        margin-bottom: 14px;
+        border: 1px solid oklch(0.82 0.065 78);
+        border-radius: 10px;
+        background: linear-gradient(180deg, var(--review-soft), oklch(0.975 0.025 78));
+        padding: 12px 14px;
+      }
+
+      .notice-banner strong {
+        display: block;
+        margin-bottom: 2px;
+      }
+
+      .notice-banner p {
+        margin: 0;
+        color: var(--ink-muted);
+      }
+
+      .metric-strip {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+        margin-bottom: 14px;
+      }
+
+      .metric {
+        border: 1px solid var(--border-subtle);
+        border-radius: 10px;
+        background: oklch(0.998 0.004 92 / 0.82);
+        padding: 12px;
+        box-shadow: 0 1px 1px rgb(38 31 20 / 0.03);
+      }
+
+      .metric span {
+        color: var(--ink-soft);
+        font-size: 12px;
+      }
+
+      .metric strong {
+        display: block;
+        margin-top: 4px;
+        font-size: 22px;
+        line-height: 1;
+      }
+
+      .metric small {
+        display: block;
+        margin-top: 5px;
+        color: var(--ink-muted);
+        font-size: 12px;
+      }
+
+      .panel {
+        overflow: hidden;
+        border: 1px solid var(--border-subtle);
+        border-radius: 12px;
+        background: oklch(0.998 0.004 92 / 0.88);
+        box-shadow: var(--shadow);
+      }
+
+      .panel + .panel {
+        margin-top: 14px;
+      }
+
+      .panel[tabindex="-1"]:focus {
+        outline: none;
+      }
+
+      .panel.is-focused {
+        border-color: oklch(0.66 0.09 205);
+        box-shadow:
+          0 0 0 3px oklch(0.92 0.04 205 / 0.92),
+          var(--shadow);
+      }
+
+      .panel-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        min-height: 48px;
+        border-bottom: 1px solid var(--border-subtle);
+        padding: 0 14px;
+      }
+
+      .panel-header h2 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 700;
+      }
+
+      .panel-header p {
+        margin: 2px 0 0;
+        color: var(--ink-muted);
+        font-size: 12px;
+      }
+
+      .header-actions {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 8px;
+      }
+
+      .filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--border-subtle);
+        background: oklch(0.982 0.006 92 / 0.72);
+      }
+
+      .filter {
+        min-height: 30px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 999px;
+        background: var(--surface);
+        padding: 0 10px;
+        color: var(--ink-muted);
+        font-size: 12px;
+      }
+
+      .filter.active {
+        border-color: oklch(0.76 0.055 205);
+        background: var(--accent-soft);
+        color: var(--accent);
+      }
+
+      .workstream {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+        padding: 14px;
+      }
+
+      .work-card {
+        min-height: 104px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 10px;
+        background: var(--surface);
+        padding: 12px;
+      }
+
+      .work-card strong {
+        display: block;
+        font-size: 13px;
+      }
+
+      .work-card p {
+        margin: 6px 0 10px;
+        color: var(--ink-muted);
+        font-size: 12px;
+      }
+
+      .status-line {
+        display: block;
+        color: var(--ink-soft);
+        font-size: 12px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      th {
+        height: 34px;
+        border-bottom: 1px solid var(--border-subtle);
+        color: var(--ink-soft);
+        font-size: 11px;
+        font-weight: 700;
+        text-align: left;
+        text-transform: uppercase;
+      }
+
+      td {
+        height: 54px;
+        border-bottom: 1px solid oklch(0.91 0.01 92);
+        vertical-align: middle;
+      }
+
+      th,
+      td {
+        padding: 0 12px;
+      }
+
+      tr:last-child td {
+        border-bottom: 0;
+      }
+
+      .client {
+        display: grid;
+        gap: 2px;
+      }
+
+      .client strong {
+        font-size: 14px;
+      }
+
+      .client span {
+        color: var(--ink-muted);
+        font-size: 12px;
+      }
+
+      .date {
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
+
+      .date small {
+        display: block;
+        color: var(--ink-soft);
+        font-size: 11px;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        min-height: 20px;
+        border: 1px solid transparent;
+        border-radius: 6px;
+        padding: 0 6px;
+        font-size: 11px;
+        font-weight: 700;
+        line-height: 1;
+        white-space: nowrap;
+      }
+
+      .badge.verified {
+        background: var(--verified-soft);
+        color: var(--verified);
+      }
+
+      .badge.review {
+        border-color: oklch(0.84 0.065 78);
+        background: var(--review-soft);
+        color: var(--review);
+      }
+
+      .badge.risk {
+        background: var(--risk-soft);
+        color: var(--risk);
+      }
+
+      .badge.gap {
+        background: var(--gap-soft);
+        color: var(--gap);
+      }
+
+      .badge.neutral {
+        border-color: var(--border-subtle);
+        background: var(--surface-muted);
+        color: var(--ink-muted);
+      }
+
+      .actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 6px;
+      }
+
+      .icon-button {
+        display: grid;
+        width: 30px;
+        height: 30px;
+        place-items: center;
+        border: 1px solid var(--border-subtle);
+        border-radius: 7px;
+        background: var(--surface);
+        color: var(--ink-muted);
+      }
+
+      .drawer {
+        position: sticky;
+        top: 20px;
+        align-self: start;
+      }
+
+      .drawer .panel {
+        margin: 0;
+      }
+
+      .evidence {
+        display: grid;
+        gap: 12px;
+        padding: 14px;
+      }
+
+      .kv {
+        display: grid;
+        grid-template-columns: 118px minmax(0, 1fr);
+        gap: 10px;
+        font-size: 12px;
+      }
+
+      .kv span:first-child {
+        color: var(--ink-soft);
+      }
+
+      .mono {
+        font-family: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+          monospace;
+        font-size: 12px;
+        overflow-wrap: anywhere;
+      }
+
+      .event-list {
+        display: grid;
+        gap: 8px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .event {
+        border: 1px solid var(--border-subtle);
+        border-radius: 8px;
+        background: var(--surface);
+        padding: 8px;
+      }
+
+      .event strong {
+        display: block;
+        font-size: 12px;
+      }
+
+      .event span {
+        display: block;
+        margin-top: 2px;
+        color: var(--ink-muted);
+        font-size: 12px;
+      }
+
+      .diff-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        padding: 14px;
+      }
+
+      .diff-box {
+        border: 1px solid var(--border-subtle);
+        border-radius: 10px;
+        background: var(--surface);
+        padding: 12px;
+      }
+
+      .diff-box.proposed {
+        border-color: oklch(0.78 0.055 205);
+        background: var(--accent-soft);
+      }
+
+      .diff-box span {
+        color: var(--ink-soft);
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+
+      .diff-box strong {
+        display: block;
+        margin-top: 7px;
+        font-size: 18px;
+      }
+
+      .diff-box p {
+        margin: 4px 0 0;
+        color: var(--ink-muted);
+      }
+
+      .proposal-actions {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 0 14px 14px;
+      }
+
+      .selection-note {
+        color: var(--ink-muted);
+        font-size: 12px;
+      }
+
+      .proposal-list {
+        display: grid;
+        gap: 8px;
+        padding: 0 14px 14px;
+      }
+
+      .proposal-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 12px;
+        align-items: center;
+        min-height: 44px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 9px;
+        background: var(--surface);
+        padding: 8px 10px;
+      }
+
+      .proposal-row strong {
+        display: block;
+        font-size: 13px;
+      }
+
+      .proposal-row span {
+        color: var(--ink-muted);
+        font-size: 12px;
+      }
+
+      .proposal-row.approved {
+        border-color: oklch(0.78 0.08 150);
+        background: var(--verified-soft);
+      }
+
+      .proposal-row.rejected {
+        border-color: oklch(0.82 0.08 28);
+        background: var(--risk-soft);
+      }
+
+      .proposal-row.deferred {
+        background: var(--surface-muted);
+      }
+
+      .toast {
+        position: fixed;
+        right: 24px;
+        bottom: 24px;
+        z-index: 20;
+        max-width: min(420px, calc(100vw - 32px));
+        border: 1px solid var(--border-subtle);
+        border-radius: 10px;
+        background: var(--surface);
+        box-shadow: var(--shadow);
+        padding: 10px 12px;
+        color: var(--ink);
+        font-size: 13px;
+        opacity: 0;
+        pointer-events: none;
+        transform: translateY(8px);
+        transition:
+          opacity 160ms ease,
+          transform 160ms ease;
+      }
+
+      .toast.is-visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+      }
+
+      @media (max-width: 1120px) {
+        .app {
+          grid-template-columns: 1fr;
+        }
+
+        .sidebar {
+          position: static;
+          height: auto;
+          border-right: 0;
+          border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .workspace {
+          grid-template-columns: 1fr;
+        }
+
+        .drawer {
+          position: static;
+        }
+      }
+
+      @media (max-width: 760px) {
+        .main {
+          padding: 16px;
+        }
+
+        .topbar,
+        .notice-banner,
+        .proposal-actions {
+          align-items: stretch;
+          flex-direction: column;
+        }
+
+        .topbar {
+          display: grid;
+        }
+
+        .metric-strip,
+        .diff-grid,
+        .workstream {
+          grid-template-columns: 1fr;
+        }
+
+        .panel {
+          overflow-x: auto;
+        }
+
+        table {
+          min-width: 760px;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .toast {
+          transition: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar" aria-label="Main navigation">
+        <div class="brand">
+          <div class="mark" aria-hidden="true">D</div>
+          <div>
+            <strong>DueDateHQ</strong>
+            <span>Verified operations</span>
+          </div>
+        </div>
+
+        <div class="nav-label">Workspace</div>
+        <button class="nav-item" type="button" data-nav="triage" data-target="triage-panel" aria-current="page">
+          <span>Monday triage</span>
+          <span class="nav-count">18</span>
+        </button>
+        <button class="nav-item" type="button" data-nav="imports" data-target="import-panel">
+          <span>Imports</span>
+          <span class="nav-count">3</span>
+        </button>
+        <button class="nav-item" type="button" data-nav="coverage" data-target="coverage-panel">
+          <span>Coverage</span>
+          <span class="nav-count">12</span>
+        </button>
+        <button class="nav-item" type="button" data-nav="notices" data-target="notice-proposal-panel">
+          <span>Official notices</span>
+          <span class="nav-count">2</span>
+        </button>
+
+        <div class="nav-label">Review queues</div>
+        <button class="nav-item" type="button" data-nav="profileReview" data-target="import-panel">
+          <span>Needs profile review</span>
+          <span class="nav-count">7</span>
+        </button>
+        <button class="nav-item" type="button" data-nav="coverageGaps" data-target="coverage-panel">
+          <span>Coverage gaps</span>
+          <span class="nav-count">5</span>
+        </button>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <div class="title">
+            <h1 id="page-title">Monday triage</h1>
+            <p id="page-context">Sarah Mitchell CPA, 80 mixed individual and business clients</p>
+          </div>
+          <div class="top-actions">
+            <button class="button" id="quick-import-button" type="button">Quick import</button>
+            <button class="button" id="review-proposals-button" type="button">Review proposals</button>
+            <button class="button" id="export-summary-button" type="button">Export current view</button>
+            <button class="button primary" id="top-apply-button" type="button">Apply selected updates</button>
+          </div>
+        </header>
+
+        <div class="status-strip" id="status-strip" role="status" aria-live="polite" aria-atomic="true">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span id="status-message">Ready. Verified triage dashboard loaded with 18 this-week tasks.</span>
+        </div>
+
+        <section class="workspace" aria-label="Dashboard sample">
+          <div>
+            <div class="notice-banner">
+              <div>
+                <strong>IRS notice may affect 6 filing profiles</strong>
+                <p>
+                  AI-detected, high confidence. Review the before/after diff before updating
+                  workspace data.
+                </p>
+              </div>
+              <button class="button" id="notice-review-button" type="button">Review proposals</button>
+            </div>
+
+            <div class="metric-strip" aria-label="Triage summary">
+              <div class="metric">
+                <span>Due this week</span>
+                <strong>18</strong>
+                <small>4 waiting on client</small>
+              </div>
+              <div class="metric">
+                <span>Verified</span>
+                <strong>64</strong>
+                <small>source evidence attached</small>
+              </div>
+              <div class="metric">
+                <span>Needs review</span>
+                <strong>7</strong>
+                <small>profile fields missing</small>
+              </div>
+              <div class="metric">
+                <span>Coverage gaps</span>
+                <strong>5</strong>
+                <small>request verification</small>
+              </div>
+            </div>
+
+            <section class="panel" id="import-panel" tabindex="-1" aria-labelledby="import-panel-title">
+              <div class="panel-header">
+                <div>
+                  <h2 id="import-panel-title">Import status</h2>
+                  <p>TaxDome adapter preview grouped by filing profile and review issue</p>
+                </div>
+                <span class="badge review" id="import-status-badge">3 review items</span>
+              </div>
+              <div class="workstream">
+                <div class="work-card">
+                  <strong>TaxDome accounts</strong>
+                  <p>30 rows detected. Client name, state, and account type recognized.</p>
+                  <span class="status-line" id="import-ready-line">24 ready profiles</span>
+                </div>
+                <div class="work-card">
+                  <strong>Review before commit</strong>
+                  <p>Missing EIN or uncertain entity type stays visible without blocking the batch.</p>
+                  <span class="status-line" id="import-review-line">7 profile fields need CPA review</span>
+                </div>
+                <div class="work-card">
+                  <strong>Verified task generation</strong>
+                  <p>Official tasks generate only where matching Verified rules exist.</p>
+                  <span class="status-line" id="import-generated-line">64 verified tasks ready after commit</span>
+                </div>
+              </div>
+            </section>
+
+            <section class="panel" id="coverage-panel" tabindex="-1" aria-labelledby="coverage-panel-title">
+              <div class="panel-header">
+                <div>
+                  <h2 id="coverage-panel-title">Coverage queue</h2>
+                  <p>Transparent support status for supported sources and open gaps</p>
+                </div>
+                <span class="badge gap" id="coverage-status-badge">5 coverage gaps</span>
+              </div>
+              <div class="workstream">
+                <div class="work-card">
+                  <strong>California FTB</strong>
+                  <p>Personal income and franchise rules are monitored and verified.</p>
+                  <span class="status-line">Last source check: today</span>
+                </div>
+                <div class="work-card">
+                  <strong>Texas Comptroller</strong>
+                  <p>Sales/use profile needs a user decision before official scheduling.</p>
+                  <button class="button" id="request-verification-button" type="button">
+                    Request verification
+                  </button>
+                </div>
+                <div class="work-card">
+                  <strong>Florida reemployment</strong>
+                  <p>Known obligation, not schedulable by DueDateHQ yet.</p>
+                  <span class="status-line">Unsupported items stay visible</span>
+                </div>
+              </div>
+            </section>
+
+            <section class="panel" id="triage-panel" tabindex="-1" aria-labelledby="triage-panel-title">
+              <div class="panel-header">
+                <div>
+                  <h2 id="triage-panel-title">Due this week</h2>
+                  <p>Sorted by firm target date, official due date, and verification risk</p>
+                </div>
+                <span class="badge review">4 waiting on client</span>
+              </div>
+
+              <div class="filters" aria-label="Dashboard filters">
+                <button class="filter active" type="button">This week</button>
+                <button class="filter" type="button">Federal</button>
+                <button class="filter" type="button">California</button>
+                <button class="filter" type="button">1040</button>
+                <button class="filter" type="button">S corp</button>
+                <button class="filter" type="button">Verified</button>
+                <button class="filter" type="button">Needs review</button>
+              </div>
+
+              <table aria-label="Due this week tasks">
+                <thead>
+                  <tr>
+                    <th>Client</th>
+                    <th>Obligation</th>
+                    <th>Current due</th>
+                    <th>Target</th>
+                    <th>Status</th>
+                    <th>Trust</th>
+                    <th style="text-align: right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>
+                      <div class="client">
+                        <strong>Zhang Family</strong>
+                        <span>Individual 1040</span>
+                      </div>
+                    </td>
+                    <td>Federal filing</td>
+                    <td class="date">Apr 15 <small>5 days left</small></td>
+                    <td class="date">Apr 08 <small>firm target</small></td>
+                    <td><span class="badge review">Waiting on client</span></td>
+                    <td><span class="badge verified">Verified</span></td>
+                    <td>
+                      <div class="actions">
+                        <button
+                          class="icon-button"
+                          type="button"
+                          data-row-action="evidence"
+                          aria-label="Open evidence"
+                        >
+                          E
+                        </button>
+                        <button
+                          class="icon-button"
+                          type="button"
+                          data-row-action="done"
+                          aria-label="Mark done"
+                        >
+                          D
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <div class="client">
+                        <strong>Zhang Consulting LLC</strong>
+                        <span>S corp filing profile</span>
+                      </div>
+                    </td>
+                    <td>CA franchise tax</td>
+                    <td class="date">Apr 15 <small>5 days left</small></td>
+                    <td class="date">Apr 10 <small>firm target</small></td>
+                    <td><span class="badge neutral">In progress</span></td>
+                    <td><span class="badge review">Source changed</span></td>
+                    <td>
+                      <div class="actions">
+                        <button
+                          class="icon-button"
+                          type="button"
+                          data-row-action="evidence"
+                          aria-label="Open evidence"
+                        >
+                          E
+                        </button>
+                        <button
+                          class="icon-button"
+                          type="button"
+                          data-row-action="source"
+                          aria-label="Review source"
+                        >
+                          R
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <div class="client">
+                        <strong>Northlake Dental PC</strong>
+                        <span>C corp filing profile</span>
+                      </div>
+                    </td>
+                    <td>Federal extension</td>
+                    <td class="date">Apr 15 <small>5 days left</small></td>
+                    <td class="date">Apr 12 <small>firm target</small></td>
+                    <td><span class="badge neutral">Not started</span></td>
+                    <td><span class="badge verified">Verified</span></td>
+                    <td>
+                      <div class="actions">
+                        <button
+                          class="icon-button"
+                          type="button"
+                          data-row-action="evidence"
+                          aria-label="Open evidence"
+                        >
+                          E
+                        </button>
+                        <button
+                          class="icon-button"
+                          type="button"
+                          data-row-action="done"
+                          aria-label="Mark done"
+                        >
+                          D
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <div class="client">
+                        <strong>Martinez Retail Group</strong>
+                        <span>Sales tax account</span>
+                      </div>
+                    </td>
+                    <td>TX sales use notice</td>
+                    <td class="date">Unknown <small>needs review</small></td>
+                    <td class="date">Apr 11 <small>firm target</small></td>
+                    <td><span class="badge review">Needs review</span></td>
+                    <td><span class="badge gap">Coverage gap</span></td>
+                    <td>
+                      <div class="actions">
+                        <button
+                          class="icon-button"
+                          type="button"
+                          data-row-action="verification"
+                          aria-label="Request verification"
+                        >
+                          V
+                        </button>
+                        <button
+                          class="icon-button"
+                          type="button"
+                          data-row-action="manual"
+                          aria-label="Add manual deadline"
+                        >
+                          M
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+
+            <section
+              class="panel"
+              id="notice-proposal-panel"
+              tabindex="-1"
+              aria-label="Official notice proposal"
+            >
+              <div class="panel-header">
+                <div>
+                  <h2>Notice proposal</h2>
+                  <p>IRS disaster relief notice, Los Angeles County</p>
+                </div>
+                <span class="badge review" id="proposal-status-badge">Pending CPA decision</span>
+              </div>
+              <div class="diff-grid">
+                <div class="diff-box">
+                  <span>Current</span>
+                  <strong>Apr 15</strong>
+                  <p>Official due date for Zhang Family, Individual 1040.</p>
+                </div>
+                <div class="diff-box proposed">
+                  <span>Proposed</span>
+                  <strong>Oct 15</strong>
+                  <p>Based on IRS disaster relief notice. No change will apply until approved.</p>
+                </div>
+              </div>
+              <div class="proposal-list" aria-label="Affected task proposals">
+                <div class="proposal-row" data-proposal-row>
+                  <div>
+                    <strong>Zhang Family</strong>
+                    <span>Federal filing: Apr 15 to Oct 15</span>
+                  </div>
+                  <span class="badge review">Pending</span>
+                </div>
+                <div class="proposal-row" data-proposal-row>
+                  <div>
+                    <strong>Northlake Dental PC</strong>
+                    <span>Federal extension: Apr 15 to Oct 15</span>
+                  </div>
+                  <span class="badge review">Pending</span>
+                </div>
+                <div class="proposal-row" data-proposal-row>
+                  <div>
+                    <strong>6 matched filing profiles</strong>
+                    <span>Workspace data waits for CPA confirmation</span>
+                  </div>
+                  <span class="badge review">Pending</span>
+                </div>
+              </div>
+              <div class="proposal-actions">
+                <span class="selection-note" id="selection-note">
+                  6 affected tasks selected. Each action is audit logged.
+                </span>
+                <div class="top-actions">
+                  <button class="button danger" id="reject-selected-button" type="button">
+                    Reject selected
+                  </button>
+                  <button class="button" id="decide-later-button" type="button">Decide later</button>
+                  <button class="button primary" id="apply-selected-button" type="button">
+                    Apply selected
+                  </button>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <aside class="drawer" aria-label="Evidence drawer sample">
+            <section class="panel" id="evidence-panel" tabindex="-1">
+              <div class="panel-header">
+                <div>
+                  <h2>Evidence</h2>
+                  <p>Zhang Family, Individual 1040</p>
+                </div>
+                <div class="header-actions">
+                  <span class="badge verified" id="evidence-status-badge">Verified</span>
+                  <button class="button" id="source-check-button" type="button">Source check</button>
+                </div>
+              </div>
+              <div class="evidence">
+                <div class="kv">
+                  <span>Current due</span>
+                  <strong>Apr 15, 2026</strong>
+                </div>
+                <div class="kv">
+                  <span>Original due</span>
+                  <span>Apr 15, 2026</span>
+                </div>
+                <div class="kv">
+                  <span>Firm target</span>
+                  <span>Apr 08, 2026</span>
+                </div>
+                <div class="kv">
+                  <span>Source</span>
+                  <span class="mono">irs.gov/newsroom/tax-relief-in-disaster-situations</span>
+                </div>
+                <div class="kv">
+                  <span>Rule version</span>
+                  <span class="mono">federal-1040-v2026.2</span>
+                </div>
+                <div class="kv">
+                  <span>Last checked</span>
+                  <span id="last-checked-line">Today, 8:12 AM by source monitor</span>
+                </div>
+
+                <ul class="event-list" id="audit-event-list" aria-label="Date event history">
+                  <li class="event">
+                    <strong>Official rule verified</strong>
+                    <span>Reviewed Jan 12, 2026 by DueDateHQ.</span>
+                  </li>
+                  <li class="event">
+                    <strong>Firm target set</strong>
+                    <span>Sarah Mitchell set Apr 08 for internal preparation.</span>
+                  </li>
+                  <li class="event">
+                    <strong>Notice proposal pending</strong>
+                    <span>IRS notice may move current due date to Oct 15.</span>
+                  </li>
+                </ul>
+              </div>
+            </section>
+          </aside>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>
