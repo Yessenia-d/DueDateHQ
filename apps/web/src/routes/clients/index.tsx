@@ -9,7 +9,7 @@ import {
 } from "@due-date-hq/ui/components/table";
 import { useQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { Building2, CircleDashed, ExternalLink, Upload, UserPlus, Users } from "lucide-react";
+import { Building2, CircleDashed, ExternalLink, UserPlus, Users } from "lucide-react";
 
 import { StatusBadge } from "@/components/status-badge";
 import { trpc } from "@/utils/trpc";
@@ -69,10 +69,10 @@ function ClientsIndexComponent() {
             </div>
             <h1 className="text-2xl font-semibold tracking-normal">Clients</h1>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Firm-owned client relationships with filing profile and deadline task coverage.
+              Maintain customer records. Tax information, imports, and deadline tasks live in Tax Work.
             </p>
           </div>
-          <ClientPageActions />
+          <NewClientLink />
         </section>
 
         {clientRows.length === 0 ? (
@@ -95,12 +95,6 @@ function ClientsIndexComponent() {
                   </TableHead>
                   <TableHead className="w-36 text-[11px] font-semibold uppercase text-muted-foreground">
                     Type
-                  </TableHead>
-                  <TableHead className="w-40 text-[11px] font-semibold uppercase text-muted-foreground">
-                    Filing profiles
-                  </TableHead>
-                  <TableHead className="w-40 text-[11px] font-semibold uppercase text-muted-foreground">
-                    Deadline tasks
                   </TableHead>
                   <TableHead className="w-36 text-[11px] font-semibold uppercase text-muted-foreground">
                     Source
@@ -149,12 +143,6 @@ function ClientRow({ client }: { client: ClientListItemResponse }) {
           {relationshipTypeLabels[client.relationshipType]}
         </StatusBadge>
       </TableCell>
-      <TableCell className="text-xs text-muted-foreground">
-        <CountWithLabel count={client.filingProfileCount} singular="profile" plural="profiles" />
-      </TableCell>
-      <TableCell className="text-xs text-muted-foreground">
-        <CountWithLabel count={client.deadlineTaskCount} singular="task" plural="tasks" />
-      </TableCell>
       <TableCell>
         <StatusBadge status="neutral">{createdViaLabels[client.createdVia]}</StatusBadge>
       </TableCell>
@@ -176,23 +164,6 @@ function ClientRow({ client }: { client: ClientListItemResponse }) {
   );
 }
 
-function CountWithLabel({
-  count,
-  plural,
-  singular,
-}: {
-  count: number;
-  plural: string;
-  singular: string;
-}) {
-  return (
-    <span>
-      <span className="font-medium text-foreground">{count}</span>{" "}
-      {count === 1 ? singular : plural}
-    </span>
-  );
-}
-
 function EmptyClientsState() {
   return (
     <section className="rounded-xl border border-border bg-muted/20 p-5">
@@ -201,21 +172,12 @@ function EmptyClientsState() {
         No client relationships
       </div>
       <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-        Add a client relationship before creating filing profiles or entered deadline tasks.
+        Add a client relationship before importing tax information or reviewing deadline tasks in Tax Work.
       </p>
-      <div className="mt-4 flex flex-wrap gap-2">
-        <ClientPageActions />
+      <div className="mt-4">
+        <NewClientLink />
       </div>
     </section>
-  );
-}
-
-function ClientPageActions() {
-  return (
-    <div className="flex flex-wrap gap-2">
-      <NewClientLink />
-      <ImportCsvLink />
-    </div>
   );
 }
 
@@ -228,18 +190,6 @@ function NewClientLink() {
     >
       <UserPlus className="size-3.5" />
       New client relationship
-    </Link>
-  );
-}
-
-function ImportCsvLink() {
-  return (
-    <Link
-      to="/import"
-      className="inline-flex h-8 items-center justify-center gap-1.5 rounded-[6px] border border-input bg-card px-2.5 text-xs font-medium text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-    >
-      <Upload className="size-3.5" />
-      Import CSV
     </Link>
   );
 }

@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TaxWorkRouteImport } from './routes/tax-work'
 import { Route as ProgressRouteImport } from './routes/progress'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ImportRouteImport } from './routes/import'
@@ -19,6 +20,11 @@ import { Route as ClientsNewRouteImport } from './routes/clients/new'
 import { Route as ClientsClientIdRouteImport } from './routes/clients/$clientId'
 import { Route as ClientsClientIdDeadlinesNewRouteImport } from './routes/clients/$clientId/deadlines/new'
 
+const TaxWorkRoute = TaxWorkRouteImport.update({
+  id: '/tax-work',
+  path: '/tax-work',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProgressRoute = ProgressRouteImport.update({
   id: '/progress',
   path: '/progress',
@@ -72,6 +78,7 @@ export interface FileRoutesByFullPath {
   '/import': typeof ImportRoute
   '/login': typeof LoginRoute
   '/progress': typeof ProgressRoute
+  '/tax-work': typeof TaxWorkRoute
   '/clients/$clientId': typeof ClientsClientIdRouteWithChildren
   '/clients/new': typeof ClientsNewRoute
   '/clients/': typeof ClientsIndexRoute
@@ -83,6 +90,7 @@ export interface FileRoutesByTo {
   '/import': typeof ImportRoute
   '/login': typeof LoginRoute
   '/progress': typeof ProgressRoute
+  '/tax-work': typeof TaxWorkRoute
   '/clients/$clientId': typeof ClientsClientIdRouteWithChildren
   '/clients/new': typeof ClientsNewRoute
   '/clients': typeof ClientsIndexRoute
@@ -95,6 +103,7 @@ export interface FileRoutesById {
   '/import': typeof ImportRoute
   '/login': typeof LoginRoute
   '/progress': typeof ProgressRoute
+  '/tax-work': typeof TaxWorkRoute
   '/clients/$clientId': typeof ClientsClientIdRouteWithChildren
   '/clients/new': typeof ClientsNewRoute
   '/clients/': typeof ClientsIndexRoute
@@ -108,6 +117,7 @@ export interface FileRouteTypes {
     | '/import'
     | '/login'
     | '/progress'
+    | '/tax-work'
     | '/clients/$clientId'
     | '/clients/new'
     | '/clients/'
@@ -119,6 +129,7 @@ export interface FileRouteTypes {
     | '/import'
     | '/login'
     | '/progress'
+    | '/tax-work'
     | '/clients/$clientId'
     | '/clients/new'
     | '/clients'
@@ -130,6 +141,7 @@ export interface FileRouteTypes {
     | '/import'
     | '/login'
     | '/progress'
+    | '/tax-work'
     | '/clients/$clientId'
     | '/clients/new'
     | '/clients/'
@@ -142,6 +154,7 @@ export interface RootRouteChildren {
   ImportRoute: typeof ImportRoute
   LoginRoute: typeof LoginRoute
   ProgressRoute: typeof ProgressRoute
+  TaxWorkRoute: typeof TaxWorkRoute
   ClientsClientIdRoute: typeof ClientsClientIdRouteWithChildren
   ClientsNewRoute: typeof ClientsNewRoute
   ClientsIndexRoute: typeof ClientsIndexRoute
@@ -149,6 +162,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/tax-work': {
+      id: '/tax-work'
+      path: '/tax-work'
+      fullPath: '/tax-work'
+      preLoaderRoute: typeof TaxWorkRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/progress': {
       id: '/progress'
       path: '/progress'
@@ -233,6 +253,7 @@ const rootRouteChildren: RootRouteChildren = {
   ImportRoute: ImportRoute,
   LoginRoute: LoginRoute,
   ProgressRoute: ProgressRoute,
+  TaxWorkRoute: TaxWorkRoute,
   ClientsClientIdRoute: ClientsClientIdRouteWithChildren,
   ClientsNewRoute: ClientsNewRoute,
   ClientsIndexRoute: ClientsIndexRoute,
