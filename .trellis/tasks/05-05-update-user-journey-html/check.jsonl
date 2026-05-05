@@ -1,0 +1,8 @@
+{"file": ".trellis/spec/guides/due-date-hq-project-conventions.md", "reason": "Check product invariants and verification expectations"}
+{"file": "docs/due-date-hq-beta-plan.md", "reason": "Check journey coverage against latest beta scope"}
+{"file": "docs/product/due-date-hq-product-plan.md", "reason": "Check product-plan alignment"}
+{"file": "specs/csv-imports.md", "reason": "Check CSV journey alignment"}
+{"file": "specs/monday-triage-dashboard.md", "reason": "Check dashboard journey alignment"}
+{"file": "specs/official-source-monitoring.md", "reason": "Check notice review journey alignment"}
+{"file": "specs/coverage-matrix.md", "reason": "Check coverage and trust status alignment"}
+{"file": "specs/feature-progress-page.md", "reason": "Check progress page alignment"}

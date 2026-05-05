@@ -7,23 +7,27 @@
     <style>
       :root {
         color-scheme: light;
-        --paper: #f8faf6;
-        --surface: #ffffff;
-        --surface-strong: #eef5ef;
-        --ink: #1e2622;
-        --muted: #5f6f68;
-        --line: #d8e0d7;
-        --line-strong: #9aa99d;
-        --teal: #0b6f64;
-        --teal-deep: #064a45;
-        --leaf: #3e7c3f;
-        --amber: #7a4700;
-        --rust: #b6432d;
-        --blue: #2d5f9a;
-        --violet: #6652a3;
-        --shadow: 0 20px 60px rgba(29, 45, 40, 0.11);
-        --radius: 8px;
-        --max: 1180px;
+        --bg: oklch(0.982 0.009 82);
+        --surface: oklch(0.996 0.003 88);
+        --surface-muted: oklch(0.962 0.01 84);
+        --line: oklch(0.858 0.017 82);
+        --line-strong: oklch(0.72 0.026 76);
+        --ink: oklch(0.222 0.028 255);
+        --muted: oklch(0.46 0.025 255);
+        --subtle: oklch(0.58 0.024 255);
+        --accent: oklch(0.52 0.115 244);
+        --accent-soft: oklch(0.93 0.035 245);
+        --verified: oklch(0.48 0.106 154);
+        --verified-soft: oklch(0.93 0.04 154);
+        --review: oklch(0.62 0.116 72);
+        --review-soft: oklch(0.94 0.048 77);
+        --risk: oklch(0.54 0.15 27);
+        --risk-soft: oklch(0.94 0.043 31);
+        --gap: oklch(0.48 0.055 228);
+        --gap-soft: oklch(0.92 0.026 226);
+        --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+        --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
       }
 
       * {
@@ -36,25 +40,19 @@
 
       body {
         margin: 0;
-        background:
-          linear-gradient(90deg, rgba(216, 224, 215, 0.42) 1px, transparent 1px),
-          linear-gradient(rgba(216, 224, 215, 0.42) 1px, transparent 1px),
-          var(--paper);
-        background-size: 40px 40px;
+        min-width: 320px;
+        overflow-x: hidden;
+        background: var(--bg);
         color: var(--ink);
-        font-family:
-          "PingFang SC",
-          "Hiragino Sans GB",
-          "Microsoft YaHei",
-          "Noto Sans CJK SC",
-          sans-serif;
-        line-height: 1.65;
+        font-family: var(--sans);
+        font-size: 14px;
+        line-height: 1.55;
+        letter-spacing: 0;
+        text-rendering: optimizeLegibility;
       }
 
       a {
-        color: var(--teal-deep);
-        text-decoration-thickness: 0.08em;
-        text-underline-offset: 0.2em;
+        color: inherit;
       }
 
       .skip-link {
@@ -63,10 +61,12 @@
         top: 12px;
         z-index: 20;
         transform: translateY(-140%);
-        background: var(--ink);
-        color: #fff;
-        padding: 8px 12px;
+        border: 1px solid var(--accent);
         border-radius: 6px;
+        background: var(--surface);
+        padding: 8px 12px;
+        color: var(--accent);
+        text-decoration: none;
       }
 
       .skip-link:focus {
@@ -74,388 +74,531 @@
       }
 
       .page-shell {
-        max-width: var(--max);
+        width: calc(100% - 40px);
+        max-width: 1180px;
         margin: 0 auto;
-        padding: 28px 22px 64px;
+        min-width: 0;
+      }
+
+      .topbar {
+        border-bottom: 1px solid var(--line);
+        background: color-mix(in oklch, var(--surface) 92%, var(--bg));
+      }
+
+      .topbar-inner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        min-height: 58px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+        font-weight: 700;
+      }
+
+      .brand-mark {
+        display: grid;
+        width: 28px;
+        height: 28px;
+        place-items: center;
+        border: 1px solid var(--line-strong);
+        border-radius: 7px;
+        background: var(--surface);
+        color: var(--accent);
+        font-family: var(--mono);
+        font-size: 12px;
+      }
+
+      .doc-meta {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 8px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .doc-meta span {
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--surface);
+        padding: 3px 9px;
       }
 
       .hero {
-        position: relative;
-        overflow: hidden;
-        border: 1px solid var(--line);
-        border-radius: var(--radius);
-        background:
-          linear-gradient(135deg, rgba(11, 111, 100, 0.12), transparent 34%),
-          linear-gradient(90deg, rgba(182, 67, 45, 0.11), transparent 48%),
-          var(--surface);
-        box-shadow: var(--shadow);
-      }
-
-      .hero::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background:
-          repeating-linear-gradient(
-            135deg,
-            transparent 0,
-            transparent 18px,
-            rgba(11, 111, 100, 0.07) 18px,
-            rgba(11, 111, 100, 0.07) 20px
-          );
-        pointer-events: none;
-      }
-
-      .hero-inner {
-        position: relative;
         display: grid;
-        grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr);
+        grid-template-columns: minmax(0, 0.96fr) minmax(440px, 1.04fr);
         gap: 32px;
-        padding: clamp(28px, 5vw, 58px);
+        align-items: start;
+        padding: 34px 0 30px;
       }
 
-      .eyebrow {
-        display: inline-flex;
-        align-items: center;
-        gap: 10px;
-        margin: 0 0 16px;
-        color: var(--teal-deep);
-        font-size: 0.88rem;
-        font-weight: 800;
+      .eyebrow,
+      .section-kicker,
+      .table-label {
+        margin: 0 0 8px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
         letter-spacing: 0;
-        text-transform: uppercase;
-      }
-
-      .eyebrow::before {
-        content: "";
-        width: 30px;
-        height: 3px;
-        background: var(--rust);
       }
 
       h1,
       h2,
-      h3 {
-        margin: 0;
-        font-family:
-          "Noto Serif CJK SC",
-          "Source Han Serif SC",
-          "Songti SC",
-          Georgia,
-          serif;
-        line-height: 1.15;
-        letter-spacing: 0;
+      h3,
+      p {
+        margin-top: 0;
       }
 
       h1 {
-        max-width: 760px;
-        font-size: clamp(2.45rem, 7vw, 5.6rem);
-        font-weight: 900;
+        margin-bottom: 12px;
+        max-width: 680px;
+        font-size: 32px;
+        line-height: 1.14;
+        letter-spacing: 0;
+        overflow-wrap: anywhere;
+        word-break: break-word;
       }
 
-      .hero-lede {
+      h2 {
+        margin-bottom: 10px;
+        font-size: 21px;
+        line-height: 1.25;
+        letter-spacing: 0;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+      }
+
+      h3 {
+        margin-bottom: 8px;
+        font-size: 15px;
+        line-height: 1.35;
+        letter-spacing: 0;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+      }
+
+      .lead {
         max-width: 720px;
-        margin: 22px 0 0;
-        color: #31413a;
-        font-size: clamp(1.05rem, 2vw, 1.32rem);
+        margin-bottom: 18px;
+        color: var(--muted);
+        font-size: 15px;
       }
 
       .promise {
-        display: grid;
-        gap: 14px;
-        align-content: start;
-        padding: 20px;
-        border-left: 5px solid var(--teal);
-        background: rgba(255, 255, 255, 0.72);
+        border-left: 3px solid var(--accent);
+        padding: 6px 0 6px 14px;
+        color: var(--ink);
+        font-weight: 650;
       }
 
-      .promise strong {
-        display: block;
-        font-family:
-          "Noto Serif CJK SC",
-          "Songti SC",
-          Georgia,
-          serif;
-        font-size: 1.35rem;
-        line-height: 1.25;
-      }
-
-      .metric-row {
+      .hero-facts {
         display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 10px;
-        margin-top: 26px;
+        margin-top: 22px;
       }
 
-      .metric {
-        min-height: 112px;
+      .fact {
+        min-height: 86px;
+        min-width: 0;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
         padding: 14px;
-        border: 1px solid rgba(6, 74, 69, 0.18);
-        background: rgba(255, 255, 255, 0.76);
       }
 
-      .metric b {
+      .fact span {
         display: block;
-        color: var(--teal-deep);
-        font-size: clamp(1.55rem, 4vw, 2.4rem);
-        line-height: 1;
+        margin-bottom: 6px;
+        color: var(--subtle);
+        font-size: 12px;
       }
 
-      .metric span {
+      .fact strong {
         display: block;
-        margin-top: 8px;
+        font-size: 14px;
+        line-height: 1.35;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+      }
+
+      .console-preview {
+        min-width: 0;
+        border: 1px solid var(--line-strong);
+        border-radius: 8px;
+        background: var(--surface);
+        box-shadow: 0 18px 40px color-mix(in oklch, var(--ink) 10%, transparent);
+        overflow: hidden;
+      }
+
+      .console-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        border-bottom: 1px solid var(--line);
+        padding: 12px 14px;
+        background: var(--surface-muted);
+      }
+
+      .console-title {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+      }
+
+      .console-title strong {
+        font-size: 14px;
+      }
+
+      .console-title span {
         color: var(--muted);
-        font-size: 0.92rem;
+        font-size: 12px;
+      }
+
+      .segmented {
+        display: inline-flex;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        background: var(--surface);
+        padding: 2px;
+      }
+
+      .segmented span {
+        border-radius: 5px;
+        padding: 5px 8px;
+        color: var(--muted);
+        font-size: 12px;
+        white-space: nowrap;
+      }
+
+      .segmented .active {
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-weight: 700;
+      }
+
+      .console-body {
+        padding: 14px;
+      }
+
+      .filter-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1.25fr) repeat(3, minmax(92px, 0.4fr));
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+
+      .filter-row div {
+        min-height: 34px;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        background: var(--surface);
+        padding: 7px 9px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      th,
+      td {
+        border-bottom: 1px solid var(--line);
+        padding: 10px 8px;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      th {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      td {
+        color: var(--ink);
+        font-size: 13px;
+      }
+
+      tbody tr:last-child td {
+        border-bottom: 0;
+      }
+
+      .mono {
+        font-family: var(--mono);
+        font-size: 12px;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        min-height: 22px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 2px 8px;
+        font-size: 11px;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+
+      .badge.verified {
+        border-color: color-mix(in oklch, var(--verified) 42%, var(--line));
+        background: var(--verified-soft);
+        color: var(--verified);
+      }
+
+      .badge.review {
+        border-color: color-mix(in oklch, var(--review) 42%, var(--line));
+        background: var(--review-soft);
+        color: oklch(0.42 0.094 67);
+      }
+
+      .badge.risk {
+        border-color: color-mix(in oklch, var(--risk) 38%, var(--line));
+        background: var(--risk-soft);
+        color: var(--risk);
+      }
+
+      .badge.gap {
+        border-color: color-mix(in oklch, var(--gap) 38%, var(--line));
+        background: var(--gap-soft);
+        color: var(--gap);
+      }
+
+      .badge.neutral {
+        background: var(--surface-muted);
+        color: var(--muted);
       }
 
       .nav-strip {
         position: sticky;
         top: 0;
         z-index: 10;
-        margin: 18px 0 0;
-        border: 1px solid var(--line);
-        border-radius: var(--radius);
-        background: rgba(248, 250, 246, 0.94);
-        backdrop-filter: blur(16px);
+        border-top: 1px solid var(--line);
+        border-bottom: 1px solid var(--line);
+        background: color-mix(in oklch, var(--surface) 94%, var(--bg));
       }
 
       .nav-strip ul {
         display: flex;
+        flex-wrap: wrap;
         gap: 6px;
-        align-items: center;
         margin: 0;
-        padding: 8px;
+        padding: 10px 0;
         list-style: none;
-        overflow-x: auto;
       }
 
       .nav-strip a {
-        display: block;
-        min-width: max-content;
-        padding: 8px 12px;
-        border-radius: 6px;
-        color: var(--ink);
-        font-size: 0.9rem;
-        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        min-height: 32px;
+        border: 1px solid transparent;
+        border-radius: 7px;
+        padding: 5px 10px;
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 650;
         text-decoration: none;
       }
 
       .nav-strip a:hover,
       .nav-strip a:focus {
-        background: var(--surface-strong);
+        border-color: var(--line);
+        background: var(--surface);
+        color: var(--ink);
         outline: none;
       }
 
-      main {
-        display: grid;
-        gap: 42px;
-        margin-top: 42px;
+      section {
+        padding: 42px 0;
+        border-bottom: 1px solid var(--line);
       }
 
       .section-head {
         display: grid;
-        grid-template-columns: minmax(0, 0.68fr) minmax(280px, 0.32fr);
-        gap: 22px;
-        align-items: end;
-        margin-bottom: 18px;
+        grid-template-columns: minmax(0, 0.72fr) minmax(280px, 0.28fr);
+        gap: 26px;
+        align-items: start;
+        margin-bottom: 22px;
       }
 
-      .section-kicker {
-        margin: 0 0 8px;
-        color: var(--rust);
-        font-size: 0.82rem;
-        font-weight: 900;
+      .section-head p {
+        margin-bottom: 0;
+        color: var(--muted);
       }
 
-      h2 {
-        font-size: clamp(1.85rem, 4vw, 3.15rem);
+      .note {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+        padding: 13px 14px;
+        color: var(--muted);
+        font-size: 13px;
       }
 
-      .section-note {
+      .model-chain {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+        margin-bottom: 16px;
+      }
+
+      .model-item {
+        min-width: 0;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+        padding: 14px;
+      }
+
+      .model-item span {
+        display: inline-flex;
+        margin-bottom: 8px;
+        color: var(--accent);
+        font-family: var(--mono);
+        font-size: 12px;
+      }
+
+      .model-item p {
         margin: 0;
         color: var(--muted);
+        font-size: 13px;
       }
 
-      .map-grid {
+      .principle-grid {
         display: grid;
-        grid-template-columns: repeat(5, minmax(0, 1fr));
-        gap: 12px;
-        padding: 4px 0 10px;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
       }
 
-      .map-step {
-        position: relative;
-        min-height: 190px;
-        padding: 14px;
+      .principle {
+        min-width: 0;
         border: 1px solid var(--line);
-        border-top: 5px solid var(--teal);
+        border-radius: 8px;
         background: var(--surface);
+        padding: 14px;
       }
 
-      .map-step:nth-child(3n) {
-        border-top-color: var(--amber);
-      }
-
-      .map-step:nth-child(4n) {
-        border-top-color: var(--blue);
-      }
-
-      .map-step b {
-        display: inline-grid;
-        place-items: center;
-        width: 34px;
-        height: 34px;
-        margin-bottom: 12px;
-        border: 1px solid var(--line-strong);
-        border-radius: 50%;
-        color: var(--teal-deep);
-        font-size: 0.92rem;
-      }
-
-      .map-step h3 {
-        font-size: 1.05rem;
-      }
-
-      .map-step p {
-        margin: 10px 0 0;
+      .principle p {
+        margin: 0;
         color: var(--muted);
-        font-size: 0.92rem;
+        font-size: 13px;
       }
 
-      .stage-stack {
+      .journey-board {
+        border: 1px solid var(--line-strong);
+        border-radius: 8px;
+        background: var(--surface);
+        overflow: hidden;
+      }
+
+      .journey-row {
         display: grid;
-        gap: 22px;
+        grid-template-columns: 150px minmax(0, 1fr) minmax(0, 1.08fr) minmax(0, 0.92fr);
+        min-height: 124px;
+        border-bottom: 1px solid var(--line);
       }
 
-      .stage {
+      .journey-row:last-child {
+        border-bottom: 0;
+      }
+
+      .journey-index,
+      .journey-cell {
+        padding: 16px;
+      }
+
+      .journey-index {
+        border-right: 1px solid var(--line);
+        background: var(--surface-muted);
+      }
+
+      .journey-index span {
+        display: block;
+        margin-bottom: 9px;
+        color: var(--accent);
+        font-family: var(--mono);
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .journey-index strong {
+        display: block;
+        font-size: 14px;
+        line-height: 1.3;
+      }
+
+      .journey-cell {
+        border-right: 1px solid var(--line);
+      }
+
+      .journey-cell:last-child {
+        border-right: 0;
+      }
+
+      .journey-cell h3 {
+        margin-bottom: 6px;
+      }
+
+      .journey-cell p,
+      .journey-cell li {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .journey-cell p {
+        margin-bottom: 10px;
+      }
+
+      .journey-cell ul {
         display: grid;
-        grid-template-columns: 92px minmax(0, 0.96fr) minmax(320px, 1.04fr);
-        gap: 22px;
-        align-items: start;
-        padding: 22px;
-        border: 1px solid var(--line);
-        border-radius: var(--radius);
-        background: rgba(255, 255, 255, 0.86);
-        box-shadow: 0 14px 40px rgba(29, 45, 40, 0.07);
+        gap: 5px;
+        margin: 0;
+        padding-left: 17px;
       }
 
-      .stage-number {
-        display: grid;
-        place-items: center;
-        width: 68px;
-        height: 68px;
-        border: 2px solid var(--teal);
-        border-radius: 50%;
-        color: var(--teal-deep);
-        font-family:
-          "Noto Serif CJK SC",
-          "Songti SC",
-          Georgia,
-          serif;
-        font-size: 1.5rem;
-        font-weight: 900;
-      }
-
-      .stage h3 {
-        font-size: clamp(1.4rem, 3vw, 2.15rem);
-      }
-
-      .stage-lede {
-        margin: 12px 0 0;
-        color: #35443e;
-        font-size: 1.02rem;
-      }
-
-      .detail-grid {
+      .screen-grid {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 12px;
-        margin-top: 18px;
-      }
-
-      .detail {
-        padding: 13px;
-        border-top: 3px solid var(--line-strong);
-        background: #f7faf7;
-      }
-
-      .detail strong {
-        display: block;
-        margin-bottom: 6px;
-        color: var(--teal-deep);
-        font-size: 0.85rem;
-      }
-
-      .detail p,
-      .detail ul {
-        margin: 0;
-        color: var(--muted);
-        font-size: 0.93rem;
-      }
-
-      .detail ul {
-        padding-left: 1.2em;
+        gap: 14px;
       }
 
       .screen {
+        min-width: 0;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
         overflow: hidden;
-        border: 1px solid #cbd8ce;
-        border-radius: var(--radius);
-        background: #fbfdfa;
-        box-shadow: 0 18px 42px rgba(28, 38, 34, 0.12);
       }
 
-      .screen-top {
+      .screen-head {
         display: flex;
-        align-items: center;
+        align-items: flex-start;
         justify-content: space-between;
         gap: 12px;
-        padding: 12px 14px;
         border-bottom: 1px solid var(--line);
-        background: #eef5ef;
+        padding: 14px;
+        background: var(--surface-muted);
       }
 
-      .screen-title {
-        font-weight: 900;
-      }
-
-      .dots {
-        display: inline-flex;
-        gap: 5px;
-      }
-
-      .dots i {
-        display: block;
-        width: 9px;
-        height: 9px;
-        border-radius: 50%;
-        background: var(--line-strong);
+      .screen-head p {
+        margin: 4px 0 0;
+        color: var(--muted);
+        font-size: 12px;
       }
 
       .screen-body {
-        display: grid;
-        gap: 12px;
         padding: 14px;
-      }
-
-      .screen-row {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
-        gap: 14px;
-        align-items: center;
-        padding: 12px;
-        border: 1px solid #dbe5dc;
-        background: #fff;
-      }
-
-      .screen-row strong {
-        display: block;
-        font-size: 0.98rem;
-      }
-
-      .screen-row span {
-        color: var(--muted);
-        font-size: 0.88rem;
       }
 
       .screen-list {
@@ -467,910 +610,1038 @@
       }
 
       .screen-list li {
-        display: flex;
-        justify-content: space-between;
-        gap: 12px;
-        padding: 9px 0;
-        border-bottom: 1px solid #e7eee8;
+        display: grid;
+        grid-template-columns: minmax(130px, 0.42fr) minmax(0, 1fr);
+        gap: 10px;
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 8px;
+        color: var(--muted);
+        font-size: 13px;
       }
 
       .screen-list li:last-child {
         border-bottom: 0;
+        padding-bottom: 0;
       }
 
-      .badge {
-        display: inline-flex;
-        align-items: center;
-        min-width: max-content;
-        padding: 4px 8px;
-        border: 1px solid currentColor;
-        border-radius: 999px;
-        font-size: 0.78rem;
-        font-weight: 900;
+      .screen-list strong {
+        color: var(--ink);
       }
 
-      .badge.verified {
-        color: var(--teal-deep);
-        background: #e7f4ef;
-      }
-
-      .badge.review {
-        color: var(--amber);
-        background: #fff7e8;
-      }
-
-      .badge.changed {
-        color: var(--rust);
-        background: #fff0ed;
-      }
-
-      .badge.manual {
-        color: var(--violet);
-        background: #f3f1ff;
-      }
-
-      .badge.done {
-        color: var(--leaf);
-        background: #eef8ed;
-      }
-
-      .badge.info {
-        color: var(--blue);
-        background: #edf4ff;
-      }
-
-      .flow-panel {
-        display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 12px;
-      }
-
-      .flow-node {
-        min-height: 136px;
-        padding: 14px;
-        border: 1px solid var(--line);
+      .matrix {
+        border: 1px solid var(--line-strong);
+        border-radius: 8px;
         background: var(--surface);
+        overflow: hidden;
       }
 
-      .flow-node strong {
+      .matrix th,
+      .matrix td {
+        padding: 12px;
+      }
+
+      .notice-flow {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .notice-step {
+        min-width: 0;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+        padding: 13px;
+      }
+
+      .notice-step span {
         display: block;
         margin-bottom: 8px;
-        color: var(--teal-deep);
+        color: var(--accent);
+        font-family: var(--mono);
+        font-size: 12px;
+        font-weight: 700;
       }
 
-      .flow-node p {
-        margin: 0;
+      .notice-step p {
+        margin-bottom: 0;
         color: var(--muted);
-        font-size: 0.94rem;
-      }
-
-      .trust-table {
-        width: 100%;
-        border-collapse: collapse;
-        overflow: hidden;
-        border: 1px solid var(--line);
-        background: var(--surface);
-      }
-
-      .trust-table th,
-      .trust-table td {
-        padding: 13px 14px;
-        border-bottom: 1px solid var(--line);
-        text-align: left;
-        vertical-align: top;
-      }
-
-      .trust-table th {
-        background: #eef5ef;
-        color: var(--teal-deep);
-        font-size: 0.9rem;
-      }
-
-      .trust-table tr:last-child td {
-        border-bottom: 0;
-      }
-
-      .trust-table td {
-        color: #33433c;
+        font-size: 13px;
       }
 
       .boundary-grid {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 16px;
+        gap: 14px;
       }
 
       .boundary {
-        padding: 18px;
+        min-width: 0;
         border: 1px solid var(--line);
-        border-radius: var(--radius);
+        border-radius: 8px;
         background: var(--surface);
-      }
-
-      .boundary h3 {
-        color: var(--teal-deep);
-        font-size: 1.18rem;
+        padding: 16px;
       }
 
       .boundary ul {
-        margin: 12px 0 0;
-        padding-left: 1.25em;
+        display: grid;
+        gap: 7px;
+        margin: 0;
+        padding-left: 18px;
+      }
+
+      .boundary li {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .success-strip {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .success-item {
+        min-width: 0;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+        padding: 14px;
+      }
+
+      .success-item strong {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 18px;
+      }
+
+      .success-item span {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .closing {
+        padding-bottom: 54px;
+      }
+
+      .closing-panel {
+        border: 1px solid var(--line-strong);
+        border-radius: 8px;
+        background: var(--surface);
+        padding: 20px;
+      }
+
+      .closing-panel p {
+        max-width: 900px;
+        margin-bottom: 0;
         color: var(--muted);
       }
 
-      .callout {
-        padding: 22px;
-        border: 1px solid rgba(182, 67, 45, 0.32);
-        border-left: 6px solid var(--rust);
-        border-radius: var(--radius);
-        background: #fff9f6;
-      }
+      @media (max-width: 1024px) {
+        .page-shell {
+          width: calc(100% - 28px);
+          max-width: 940px;
+        }
 
-      .callout h2 {
-        font-size: clamp(1.45rem, 3vw, 2.2rem);
-      }
-
-      .callout p {
-        margin: 12px 0 0;
-        color: #4f3830;
-      }
-
-      footer {
-        margin-top: 48px;
-        padding-top: 22px;
-        border-top: 1px solid var(--line);
-        color: var(--muted);
-        font-size: 0.92rem;
-      }
-
-      @media (max-width: 980px) {
-        .hero-inner,
-        .section-head,
-        .stage {
+        .hero,
+        .section-head {
           grid-template-columns: 1fr;
         }
 
-        .stage {
-          padding: 18px;
+        .console-preview {
+          max-width: 100%;
         }
 
-        .stage-number {
-          width: 54px;
-          height: 54px;
-          font-size: 1.2rem;
-        }
-
-        .flow-panel,
-        .boundary-grid {
+        .model-chain,
+        .principle-grid,
+        .notice-flow,
+        .success-strip {
           grid-template-columns: repeat(2, minmax(0, 1fr));
         }
 
-        .map-grid {
-          grid-template-columns: repeat(3, minmax(0, 1fr));
+        .journey-row {
+          grid-template-columns: 132px minmax(0, 1fr);
+        }
+
+        .journey-index {
+          grid-row: span 3;
+        }
+
+        .journey-cell {
+          border-right: 0;
+          border-bottom: 1px solid var(--line);
+        }
+
+        .journey-cell:last-child {
+          border-bottom: 0;
         }
       }
 
-      @media (max-width: 720px) {
+      @media (max-width: 760px) {
         .page-shell {
-          padding: 16px 14px 42px;
+          width: calc(100% - 24px);
+          max-width: 680px;
         }
 
-        .metric-row,
-        .map-grid,
-        .detail-grid,
-        .flow-panel,
-        .boundary-grid {
+        .topbar-inner,
+        .console-header,
+        .screen-head {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        .doc-meta {
+          display: grid;
           grid-template-columns: 1fr;
+          justify-content: flex-start;
+          width: 100%;
         }
 
-        .screen-row,
-        .screen-list li {
+        .doc-meta span {
+          max-width: 100%;
+          overflow-wrap: anywhere;
+          word-break: break-word;
+        }
+
+        h1 {
+          font-size: 26px;
+        }
+
+        .hero-facts,
+        .filter-row,
+        .model-chain,
+        .principle-grid,
+        .screen-grid,
+        .notice-flow,
+        .boundary-grid,
+        .success-strip {
           grid-template-columns: 1fr;
-          align-items: start;
-        }
-
-        .trust-table {
-          display: block;
-          overflow-x: auto;
-          white-space: nowrap;
-        }
-      }
-
-      @media print {
-        body {
-          background: #fff;
         }
 
         .nav-strip {
           position: static;
         }
 
-        .hero,
-        .stage,
+        .segmented {
+          width: 100%;
+          overflow-x: visible;
+        }
+
+        .segmented span {
+          flex: 1 1 0;
+          min-width: 0;
+          text-align: center;
+          white-space: normal;
+        }
+
+        .journey-row {
+          grid-template-columns: 1fr;
+        }
+
+        .journey-index {
+          border-right: 0;
+          border-bottom: 1px solid var(--line);
+        }
+
+        .screen-list li {
+          grid-template-columns: 1fr;
+        }
+
+        table,
+        thead,
+        tbody,
+        tr,
+        th,
+        td {
+          display: block;
+        }
+
+        thead {
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          overflow: hidden;
+          clip: rect(0 0 0 0);
+        }
+
+        tr {
+          border-bottom: 1px solid var(--line);
+          padding: 10px 0;
+        }
+
+        tbody tr:last-child {
+          border-bottom: 0;
+        }
+
+        td,
+        th {
+          border-bottom: 0;
+          padding: 6px 10px;
+        }
+
+        td::before {
+          display: block;
+          margin-bottom: 2px;
+          color: var(--subtle);
+          content: attr(data-label);
+          font-size: 12px;
+          font-weight: 700;
+        }
+      }
+
+      @media print {
+        .nav-strip,
+        .skip-link {
+          display: none;
+        }
+
+        body {
+          background: #fff;
+        }
+
+        .console-preview,
+        .journey-board,
+        .matrix,
         .screen,
         .boundary,
-        .callout {
+        .notice-step,
+        .fact,
+        .principle,
+        .model-item,
+        .success-item,
+        .closing-panel {
           box-shadow: none;
+          break-inside: avoid;
         }
       }
     </style>
   </head>
   <body>
     <a class="skip-link" href="#journey">跳到用户旅程</a>
-    <div class="page-shell">
-      <header class="hero">
-        <div class="hero-inner">
-          <div>
-            <p class="eyebrow">DueDateHQ Product Journey</p>
-            <h1>从 client list 到可信 due date dashboard</h1>
-            <p class="hero-lede">
-              这份用户旅程地图用 CPA 的视角说明 DueDateHQ Beta 应该让用户看到什么、做什么、相信什么。它不是 PRD 的替代品，而是把产品意图连成一条可打开、可评审的端到端体验。
-            </p>
-            <div class="metric-row" aria-label="Beta 成功标准">
-              <div class="metric">
-                <b>30 秒</b>
-                <span>登录后看到本周所有需要处理的 deadline。</span>
-              </div>
-              <div class="metric">
-                <b>5 分钟</b>
-                <span>完成 weekly triage，替代 30-45 分钟表格/日历交叉检查。</span>
-              </div>
-              <div class="metric">
-                <b>30 clients</b>
-                <span>TaxDome 等 CSV import 目标 P95 不超过 30 分钟。</span>
-              </div>
-            </div>
-          </div>
-          <aside class="promise" aria-label="产品承诺">
-            <strong>知道哪个 deadline due、为什么 due，以及 source 是否 Verified。</strong>
-            <span>
-              DueDateHQ 的核心不是堆更多 due dates，而是把 official source、tax rule version、verification status 和 manual fallback 清楚展示出来。只有 Verified tax rule 可以生成 official system-generated deadline task。
-            </span>
-          </aside>
+
+    <header class="topbar">
+      <div class="page-shell topbar-inner">
+        <div class="brand" aria-label="DueDateHQ">
+          <span class="brand-mark">DD</span>
+          <span>DueDateHQ</span>
         </div>
-      </header>
+        <div class="doc-meta" aria-label="文档元信息">
+          <span>用户旅程地图</span>
+          <span>Verified Operations Console</span>
+          <span>Beta product review</span>
+        </div>
+      </div>
+    </header>
 
-      <nav class="nav-strip" aria-label="页面导航">
+    <div class="page-shell">
+      <div class="hero">
+        <div>
+          <p class="eyebrow">Latest product design alignment</p>
+          <h1>从 client list 到可信 deadline operations console</h1>
+          <p class="lead">
+            这份旅程图把最新 DueDateHQ 产品计划、Beta 目标和设计系统合成一条端到端体验：
+            solo CPA 登录后要能快速知道本周该做什么、每个日期为什么可信、哪里存在覆盖缺口，以及官方来源变化是否需要自己批准。
+          </p>
+          <p class="promise">
+            Product promise: Know what is due, why it is due, and whether the source is verified.
+          </p>
+
+          <div class="hero-facts" aria-label="核心产品事实">
+            <div class="fact">
+              <span>Primary user</span>
+              <strong>Solo 或 independent CPA，管理 30-100 个 mixed individual / small-business clients。</strong>
+            </div>
+            <div class="fact">
+              <span>Core model</span>
+              <strong>Firm - Client relationship - Filing/Tax profile - Deadline task。</strong>
+            </div>
+            <div class="fact">
+              <span>Trust rule</span>
+              <strong>只有 Verified tax rule 可以生成 official system-generated deadline task。</strong>
+            </div>
+            <div class="fact">
+              <span>Beta posture</span>
+              <strong>可见覆盖状态和证据，不承诺完整 50-state 自动化或税务保证。</strong>
+            </div>
+          </div>
+        </div>
+
+        <aside class="console-preview" aria-label="Monday dashboard preview">
+          <div class="console-header">
+            <div class="console-title">
+              <strong>Monday Triage</strong>
+              <span>80 clients, multi-state, filing season week</span>
+            </div>
+            <div class="segmented" aria-label="deadline horizon">
+              <span class="active">Due this week</span>
+              <span>This month</span>
+              <span>Long range</span>
+            </div>
+          </div>
+          <div class="console-body">
+            <div class="filter-row" aria-label="dashboard filters">
+              <div>Search client, EIN, profile</div>
+              <div>State: CA, NY</div>
+              <div>Status: open</div>
+              <div>Trust: review</div>
+            </div>
+            <table aria-label="deadline task preview">
+              <thead>
+                <tr>
+                  <th>Client / profile</th>
+                  <th>Obligation</th>
+                  <th>Due</th>
+                  <th>Trust</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td data-label="Client / profile">
+                    Aster Design LLC<br />
+                    <span class="mono">CA S-corp profile</span>
+                  </td>
+                  <td data-label="Obligation">FTB estimated payment</td>
+                  <td data-label="Due">May 15, 2026</td>
+                  <td data-label="Trust"><span class="badge verified">Verified</span></td>
+                </tr>
+                <tr>
+                  <td data-label="Client / profile">
+                    Rivera Household<br />
+                    <span class="mono">Federal individual profile</span>
+                  </td>
+                  <td data-label="Obligation">Extension payment</td>
+                  <td data-label="Due">Needs review</td>
+                  <td data-label="Trust"><span class="badge review">Source changed</span></td>
+                </tr>
+                <tr>
+                  <td data-label="Client / profile">
+                    Main Street Books<br />
+                    <span class="mono">TX sales/use profile</span>
+                  </td>
+                  <td data-label="Obligation">Local filing profile missing</td>
+                  <td data-label="Due">No official task</td>
+                  <td data-label="Trust"><span class="badge gap">Coverage gap</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </aside>
+      </div>
+    </div>
+
+    <nav class="nav-strip" aria-label="页面导航">
+      <div class="page-shell">
         <ul>
-          <li><a href="#overview">总览</a></li>
-          <li><a href="#journey">旅程</a></li>
-          <li><a href="#trust">Trust status</a></li>
+          <li><a href="#overview">产品骨架</a></li>
+          <li><a href="#journey">端到端旅程</a></li>
           <li><a href="#screens">关键屏幕</a></li>
-          <li><a href="#boundaries">Beta 边界</a></li>
+          <li><a href="#trust">信任状态</a></li>
+          <li><a href="#notice">官方通知</a></li>
+          <li><a href="#scope">Beta 边界</a></li>
+          <li><a href="#success">成功标准</a></li>
         </ul>
-      </nav>
+      </div>
+    </nav>
 
-      <main>
-        <section id="overview" aria-labelledby="overview-title">
+    <main>
+      <section id="overview">
+        <div class="page-shell">
           <div class="section-head">
             <div>
-              <p class="section-kicker">01 · FLOW OVERVIEW</p>
-              <h2 id="overview-title">CPA 期望的一条直线</h2>
+              <p class="section-kicker">Product skeleton</p>
+              <h2>CPA 看到的是一张工作台，系统内部保留可审计的税务语义</h2>
+              <p>
+                最新设计不把 DueDateHQ 做成 landing page 或松散功能清单。第一屏就应该像一个可信的运营台：
+                日期、来源、状态、风险和下一步动作都靠近具体 deadline task。
+              </p>
             </div>
-            <p class="section-note">
-              用户不应该先读 tax rule library、API 或技术文档。产品第一感知应该是：我把 client 放进来，系统告诉我哪些 due date 可信、哪些需要我或 DueDateHQ 处理，然后给我一个可执行的本周 dashboard。
-            </p>
+            <div class="note">
+              视觉方向：light-first、dense、audit-friendly。使用明确 badges、紧凑表格、filter bar、evidence drawer 和 diff review，避免营销式大卡片、玻璃拟态、紫色渐变和含糊 AI 文案。
+            </div>
           </div>
 
-          <div class="map-grid" aria-label="端到端旅程步骤">
-            <article class="map-step">
-              <b>1</b>
-              <h3>登录与初始化</h3>
-              <p>CPA 创建账号，进入单用户 workspace，看到 CSV import 和 manual entry 入口。</p>
-            </article>
-            <article class="map-step">
-              <b>2</b>
-              <h3>client 进入系统</h3>
-              <p>从 TaxDome、Drake、Karbon、QuickBooks 做 CSV import，或通过 manual entry 创建 client。</p>
-            </article>
-            <article class="map-step">
-              <b>3</b>
-              <h3>field mapping 与 duplicate detection review</h3>
-              <p>系统自动识别 client name、EIN、state、entity type，不确定行进入 review。</p>
-            </article>
-            <article class="map-step">
-              <b>4</b>
-              <h3>obligation mapping</h3>
-              <p>filing/tax profile 匹配 transparent coverage library，区分 Verified、Needs review、Coverage gap、Unsupported。</p>
-            </article>
-            <article class="map-step">
-              <b>5</b>
-              <h3>生成 due date calendar</h3>
-              <p>只有 Verified tax rule 生成 official full-year tasks，manual entry 的 due date 清楚标注。</p>
-            </article>
-            <article class="map-step">
-              <b>6</b>
-              <h3>weekly triage</h3>
-              <p>默认看到 Due today、This week、This month、Long range 和 dashboard urgency surface。</p>
-            </article>
-            <article class="map-step">
-              <b>7</b>
-              <h3>Evidence 与 Source changed</h3>
-              <p>每个 official task 可打开 Evidence，Source changed 进入 verification queue。</p>
-            </article>
-            <article class="map-step">
-              <b>8</b>
-              <h3>manual entry 兜底</h3>
-              <p>特殊 due date 可以作为 User provided task 出现，并可请求 review。</p>
-            </article>
-            <article class="map-step">
-              <b>9</b>
-              <h3>progress 与 export</h3>
-              <p>task status、feature progress、current view export 支撑 review 和 workload sharing。</p>
-            </article>
-            <article class="map-step">
-              <b>10</b>
-              <h3>Beta 边界</h3>
-              <p>不做 desktop database、复杂 reports、external email/SMS/calendar reminders 和 unreviewed automatic interpretation。</p>
-            </article>
+          <div class="model-chain" aria-label="product domain model">
+            <div class="model-item">
+              <span>01 Firm</span>
+              <h3>单用户 Beta workspace</h3>
+              <p>CPA 注册、命名 workspace、选择主要服务 state，后续组织权限和邀请不进入 Beta。</p>
+            </div>
+            <div class="model-item">
+              <span>02 Client relationship</span>
+              <h3>个人与企业关系</h3>
+              <p>CSV 可以提出关联建议，但不能自动 merge。CPA 确认 family、owner、business 等关系。</p>
+            </div>
+            <div class="model-item">
+              <span>03 Filing / Tax profile</span>
+              <h3>可匹配规则的 profile</h3>
+              <p>entity type、jurisdiction、tax type、fiscal year、extension state 和 notes 进入 review。</p>
+            </div>
+            <div class="model-item">
+              <span>04 Deadline task</span>
+              <h3>带证据的工作项</h3>
+              <p>official due date、firm target date、task status、verification badge 和 source evidence 分开展示。</p>
+            </div>
           </div>
-        </section>
 
-        <section id="journey" aria-labelledby="journey-title">
+          <div class="principle-grid" aria-label="journey principles">
+            <div class="principle">
+              <h3>第一问题：本周要做什么</h3>
+              <p>默认 dashboard 直接进入 Due this week、This month、Long range，而不是先解释产品。</p>
+            </div>
+            <div class="principle">
+              <h3>第二问题：为什么可信</h3>
+              <p>每个 official task 都能打开 evidence drawer，看到 source、rule version、last verified 和 date history。</p>
+            </div>
+            <div class="principle">
+              <h3>第三问题：哪里不能信</h3>
+              <p>Needs review、Source changed、Unsupported、Coverage gap 和 User provided 必须可见，不能伪装成 Verified。</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="journey">
+        <div class="page-shell">
           <div class="section-head">
             <div>
-              <p class="section-kicker">02 · END TO END JOURNEY</p>
-              <h2 id="journey-title">每一步用户看到什么</h2>
+              <p class="section-kicker">End-to-end journey</p>
+              <h2>从首次登录到 Monday triage，再到官方 notice diff 审批</h2>
+              <p>
+                每一步都写清 CPA 目标、系统反馈和信任边界。产品要让用户连续完成工作，而不是在 import、coverage、dashboard、notice 之间猜下一步。
+              </p>
             </div>
-            <p class="section-note">
-              每个阶段都写清目标、关键动作、系统反馈和 CPA 的屏幕感知，便于产品、设计、工程用同一张图讨论 Beta 功能。
-            </p>
+            <div class="note">
+              旅程里的动词要具体：Review profiles、Apply selected updates、Reject selected updates、Decide later。不要暗示系统自动保证合规。
+            </div>
           </div>
 
-          <div class="stage-stack">
-            <article class="stage" aria-labelledby="stage-1-title">
-              <div class="stage-number">01</div>
-              <div>
-                <h3 id="stage-1-title">首次登录与 workspace 设置</h3>
-                <p class="stage-lede">
-                  Sarah 是一名服务约 80 个 multi-state small business client 的 solo CPA。她第一次进入 DueDateHQ 时，不需要先理解后台 tax rule，只需要知道下一步如何把 client 和 due date work 迁进来。
-                </p>
-                <div class="detail-grid">
-                  <div class="detail">
-                    <strong>用户目标</strong>
-                    <p>确认这是一个安全、独立的 CPA workspace，并尽快进入 client onboarding。</p>
-                  </div>
-                  <div class="detail">
-                    <strong>关键动作</strong>
-                    <p>邮箱密码注册、命名 workspace、选择主要服务 state、选择 CSV import 或 manual entry。</p>
-                  </div>
-                  <div class="detail">
-                    <strong>系统反馈</strong>
-                    <p>显示 workspace 已创建、coverage matrix 已可查看、下一步推荐为 CSV import。</p>
-                  </div>
-                  <div class="detail">
-                    <strong>CPA 看到</strong>
-                    <p>一个简洁启动清单，而不是空 dashboard 或技术配置项。</p>
-                  </div>
-                </div>
+          <div class="journey-board" aria-label="DueDateHQ end-to-end user journey">
+            <article class="journey-row">
+              <div class="journey-index">
+                <span>Step 01</span>
+                <strong>注册与 workspace 初始化</strong>
               </div>
-              <div class="screen" aria-label="初始化屏幕示意">
-                <div class="screen-top">
-                  <span class="screen-title">设置 DueDateHQ workspace</span>
-                  <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
-                </div>
-                <div class="screen-body">
-                  <div class="screen-row">
-                    <div>
-                      <strong>当前目标：import 或添加首批 clients</strong>
-                      <span>推荐从 TaxDome CSV import 开始，manual entry 可随时补充。</span>
-                    </div>
-                    <span class="badge info">下一步</span>
-                  </div>
-                  <ul class="screen-list">
-                    <li><span>workspace</span><strong>Mitchell CPA</strong></li>
-                    <li><span>主要 state</span><strong>CA、TX、NY、FL</strong></li>
-                    <li><span>source monitoring 策略</span><strong>24h detection，human review 后 publish</strong></li>
-                  </ul>
-                </div>
+              <div class="journey-cell">
+                <h3>CPA 想确认这是不是给自己用的工作台</h3>
+                <p>邮箱密码注册后进入单用户 workspace，看到主要 state、服务类型和推荐导入路径。</p>
+                <span class="badge neutral">Auth</span>
+              </div>
+              <div class="journey-cell">
+                <h3>系统给出一条最短起步路径</h3>
+                <p>推荐 TaxDome / Drake / Karbon / QuickBooks CSV import，同时保留 manual entry 入口。</p>
+              </div>
+              <div class="journey-cell">
+                <h3>信任边界</h3>
+                <p>此时没有 official task。页面只说明数据进入方式、coverage matrix 和 Verified rule 的含义。</p>
               </div>
             </article>
 
-            <article class="stage" aria-labelledby="stage-2-title">
-              <div class="stage-number">02</div>
-              <div>
-                <h3 id="stage-2-title">CSV import clients，或 manual entry 创建 client</h3>
-                <p class="stage-lede">
-                  DueDateHQ 需要把 CPA 现有 client data 变成统一的 tax profile：client name、EIN、entity type、jurisdiction/state、county、fiscal year 和 notes。批量 migration 走 CSV import，edge cases 走 manual entry。
-                </p>
-                <div class="detail-grid">
-                  <div class="detail">
-                    <strong>用户目标</strong>
-                    <p>不用从零敲 30 个 clients，也不因为几行有问题卡住整个 CSV import。</p>
-                  </div>
-                  <div class="detail">
-                    <strong>关键动作</strong>
-                    <p>选择 TaxDome、Drake、Karbon 或 QuickBooks，上传 CSV，review field mapping 和 duplicate detection。</p>
-                  </div>
-                  <div class="detail">
-                    <strong>系统反馈</strong>
-                    <p>展示 header detection、mapping confidence、accepted rows、review rows、duplicate candidates。</p>
-                  </div>
-                  <div class="detail">
-                    <strong>CPA 看到</strong>
-                    <p>大部分 clients 已可提交，不确定 clients 被隔离到 review，而不是静默丢弃。</p>
-                  </div>
-                </div>
+            <article class="journey-row">
+              <div class="journey-index">
+                <span>Step 02</span>
+                <strong>CSV 或 manual client capture</strong>
               </div>
-              <div class="screen" aria-label="CSV import 屏幕示意">
-                <div class="screen-top">
-                  <span class="screen-title">TaxDome CSV import review</span>
-                  <span class="badge info">预览中</span>
-                </div>
-                <div class="screen-body">
-                  <div class="screen-row">
-                    <div>
-                      <strong>30 行 client data</strong>
-                      <span>24 行 accepted，4 行需要 review，2 个 duplicate candidates。</span>
-                    </div>
-                    <span class="badge verified">field mapping OK</span>
-                  </div>
-                  <ul class="screen-list">
-                    <li><span>Client Name</span><strong>98% confidence</strong></li>
-                    <li><span>EIN</span><strong>91% confidence</strong></li>
-                    <li><span>State</span><strong>CA, TX, NY suggested</strong></li>
-                    <li><span>Entity Type</span><strong>LLC/S-Corp review</strong></li>
-                  </ul>
-                </div>
+              <div class="journey-cell">
+                <h3>CPA 不想从零录入 30 个 clients</h3>
+                <p>上传 source CSV 或手动创建 client relationship、filing/tax profile、state、entity type、fiscal year。</p>
+                <span class="badge neutral">Import</span>
+              </div>
+              <div class="journey-cell">
+                <h3>系统先预览，不直接提交</h3>
+                <p>adapter profile 自动识别 client name、EIN、state、entity type；低置信字段进入 review。</p>
+              </div>
+              <div class="journey-cell">
+                <h3>信任边界</h3>
+                <p>CSV 来源不是税务来源。import 只能建立 profile 候选，不能自己产生 verified due date。</p>
               </div>
             </article>
 
-            <article class="stage" aria-labelledby="stage-3-title">
-              <div class="stage-number">03</div>
-              <div>
-                <h3 id="stage-3-title">filing/tax profile mapping 到 obligation library</h3>
-                <p class="stage-lede">
-                  CSV import 成功不等于 due date 都已确认。系统会用 filing/tax profile 的 entity type、jurisdiction、tax type 和 fiscal year 匹配 obligation library，并把 known obligation 和 verified schedulable tax rule 分开。
-                </p>
-                <div class="detail-grid">
-                  <div class="detail">
-                    <strong>用户目标</strong>
-                    <p>知道哪些 filing/tax profiles 已经能生成 official tasks，哪些只是 Coverage gap 或 Needs review。</p>
-                  </div>
-                  <div class="detail">
-                    <strong>关键动作</strong>
-                    <p>查看 import summary，打开 coverage detail，对 gap 请求 coverage。</p>
-                  </div>
-                  <div class="detail">
-                    <strong>系统反馈</strong>
-                    <p>按 Verified、Needs review、Source changed、Coverage gap、Unsupported 和 User provided 分类展示。</p>
-                  </div>
-                  <div class="detail">
-                    <strong>CPA 看到</strong>
-                    <p>透明的 coverage status，而不是把所有 known obligation 都伪装成 official due date。</p>
-                  </div>
-                </div>
+            <article class="journey-row">
+              <div class="journey-index">
+                <span>Step 03</span>
+                <strong>Import review 与 relationship suggestions</strong>
               </div>
-              <div class="screen" aria-label="obligation mapping 屏幕示意">
-                <div class="screen-top">
-                  <span class="screen-title">obligation mapping 结果</span>
-                  <span class="badge info">提交前摘要</span>
-                </div>
-                <div class="screen-body">
-                  <div class="screen-row">
-                    <div>
-                      <strong>CA Sales Tax · LLC</strong>
-                      <span>匹配 official tax rule v4，source last checked 2026-05-04。</span>
-                    </div>
-                    <span class="badge verified">Verified</span>
-                  </div>
-                  <div class="screen-row">
-                    <div>
-                      <strong>NY Franchise Tax · S-Corp</strong>
-                      <span>candidate tax rule 存在，但 review 未完成。</span>
-                    </div>
-                    <span class="badge review">Needs review</span>
-                  </div>
-                  <div class="screen-row">
-                    <div>
-                      <strong>Local payroll surcharge</strong>
-                      <span>known obligation，Beta 暂不能安全 schedule。</span>
-                    </div>
-                    <span class="badge changed">Unsupported</span>
-                  </div>
-                </div>
+              <div class="journey-cell">
+                <h3>CPA 要快速处理例外，不被整批阻塞</h3>
+                <p>review rows 按 problem type 分组：missing EIN、ambiguous state、duplicate candidate、relationship suggestion。</p>
+                <span class="badge review">Needs review</span>
+              </div>
+              <div class="journey-cell">
+                <h3>系统把 ready 和 review 分开</h3>
+                <p>Ready profiles 可提交；uncertain profiles 停留在 review queue；relationship suggestions 必须由 CPA 确认。</p>
+              </div>
+              <div class="journey-cell">
+                <h3>信任边界</h3>
+                <p>不能自动 merge 个体和企业关系。不能把 fuzzy inference 写成确定事实。</p>
               </div>
             </article>
 
-            <article class="stage" aria-labelledby="stage-4-title">
-              <div class="stage-number">04</div>
-              <div>
-                <h3 id="stage-4-title">生成全年 due date calendar</h3>
-                <p class="stage-lede">
-                  提交 CSV import 或保存 manual entry client 后，系统立即生成可用 calendar。但 official system-generated task 只来自 Verified tax rule；Needs review、Coverage gap 和 Unsupported 继续可见，不能产生 official confirmed due date。
-                </p>
-                <div class="detail-grid">
-                  <div class="detail">
-                    <strong>用户目标</strong>
-                    <p>马上看到全年 dashboard surface，并知道哪些 due date 可以依赖。</p>
-                  </div>
-                  <div class="detail">
-                    <strong>关键动作</strong>
-                    <p>提交 CSV import，查看 created relationships/profiles、generated tasks、Needs review、Coverage gap 和 Unsupported 汇总。</p>
-                  </div>
-                  <div class="detail">
-                    <strong>系统反馈</strong>
-                    <p>生成 official tasks、显示 extension due date Evidence、保留 Unsupported obligation 的 coverage 入口。</p>
-                  </div>
-                  <div class="detail">
-                    <strong>CPA 看到</strong>
-                    <p>一个能直接进入 weekly triage 的 due date surface，而不是还要 manual rollover。</p>
-                  </div>
-                </div>
+            <article class="journey-row">
+              <div class="journey-index">
+                <span>Step 04</span>
+                <strong>Coverage matrix 与 obligation mapping</strong>
               </div>
-              <div class="screen" aria-label="due date calendar 屏幕示意">
-                <div class="screen-top">
-                  <span class="screen-title">生成结果</span>
-                  <span class="badge verified">已创建</span>
-                </div>
-                <div class="screen-body">
-                  <ul class="screen-list">
-                    <li><span>Clients created</span><strong>28</strong></li>
-                    <li><span>Duplicate skipped / updated</span><strong>2</strong></li>
-                    <li><span>Official deadline tasks</span><strong>184</strong></li>
-                    <li><span>Needs review obligations</span><strong>11</strong></li>
-                    <li><span>Unsupported obligations</span><strong>7</strong></li>
-                  </ul>
-                </div>
+              <div class="journey-cell">
+                <h3>CPA 想知道哪些税类被覆盖</h3>
+                <p>系统按 jurisdiction、tax category、entity type 显示 Verified、Needs review、Source changed、Unsupported、Coverage gap。</p>
+                <span class="badge gap">Coverage gap</span>
+              </div>
+              <div class="journey-cell">
+                <h3>系统解释能做什么和不能做什么</h3>
+                <p>Ready profiles 匹配 obligation library。缺口可 request verification、add user-provided deadline 或 dismiss for now。</p>
+              </div>
+              <div class="journey-cell">
+                <h3>信任边界</h3>
+                <p>Coverage gap 要可操作，但不能生成 official confirmed deadline。Unsupported 也不能被弱化成普通 warning。</p>
               </div>
             </article>
 
-            <article class="stage" aria-labelledby="stage-5-title">
-              <div class="stage-number">05</div>
-              <div>
-                <h3 id="stage-5-title">weekly triage dashboard</h3>
-                <p class="stage-lede">
-                  登录后的默认视图就是 dashboard：Due today、Due this week、This month、Long range。CPA 应该在 30 秒内看到本周所有需要处理的 deadline，并在 5 分钟内完成 weekly triage。
-                </p>
-                <div class="detail-grid">
-                  <div class="detail">
-                    <strong>用户目标</strong>
-                    <p>不用打开 Excel、calendar 和 state tax agency 网站，就能排出本周 priority。</p>
-                  </div>
-                  <div class="detail">
-                    <strong>关键动作</strong>
-                    <p>用 filters 按 client、jurisdiction/state、form/obligation、entity type、tax type、task status、verification status 筛选并排序。</p>
-                  </div>
-                  <div class="detail">
-                    <strong>系统反馈</strong>
-                    <p>展示 countdown、deterministic priority、trust badge、extension due date 和一键 status action。</p>
-                  </div>
-                  <div class="detail">
-                    <strong>CPA 看到</strong>
-                    <p>最紧急的未完成工作在顶部，Source changed 和 User provided 不会被藏起来。</p>
-                  </div>
-                </div>
+            <article class="journey-row">
+              <div class="journey-index">
+                <span>Step 05</span>
+                <strong>Generate deadline tasks</strong>
               </div>
-              <div class="screen" aria-label="weekly triage 屏幕示意">
-                <div class="screen-top">
-                  <span class="screen-title">Due this week</span>
-                  <span class="badge info">priority sort</span>
-                </div>
-                <div class="screen-body">
-                  <div class="screen-row">
-                    <div>
-                      <strong>Atlas Coffee · CA Sales Tax</strong>
-                      <span>5 月 8 日 due · 3 days left · Not started</span>
-                    </div>
-                    <span class="badge verified">Verified</span>
-                  </div>
-                  <div class="screen-row">
-                    <div>
-                      <strong>Northstar Dental · NY Franchise Tax</strong>
-                      <span>5 月 9 日 due · Source changed · 不生成 new task</span>
-                    </div>
-                    <span class="badge changed">Source changed</span>
-                  </div>
-                  <div class="screen-row">
-                    <div>
-                      <strong>River LLC · Payroll Reminder</strong>
-                      <span>5 月 10 日 · CPA manual entry</span>
-                    </div>
-                    <span class="badge manual">User provided</span>
-                  </div>
-                </div>
+              <div class="journey-cell">
+                <h3>CPA 需要全年 calendar，但只接受可信日期</h3>
+                <p>提交 ready profiles 后，Verified rules 立即创建 full-year official tasks。profile-level gaps 继续留在 review summary。</p>
+                <span class="badge verified">Verified</span>
+              </div>
+              <div class="journey-cell">
+                <h3>系统保留 date history</h3>
+                <p>task 记录 official due date、original due date、optional firm target date、extension state 和 source evidence。</p>
+              </div>
+              <div class="journey-cell">
+                <h3>信任边界</h3>
+                <p>Firm target date 是计划字段，不替代 official due date。User-provided deadline 必须标注 not verified by DueDateHQ。</p>
               </div>
             </article>
 
-            <article class="stage" aria-labelledby="stage-6-title">
-              <div class="stage-number">06</div>
-              <div>
-                <h3 id="stage-6-title">Evidence drawer 与 Source changed trust workflow</h3>
-                <p class="stage-lede">
-                  CPA 对某个 date 不放心时，不需要离开产品去猜。official task 可以打开 Evidence，看到 source URL、date calculation、last checked、last verified、tax rule version 和 audit trail。
-                </p>
-                <div class="detail-grid">
-                  <div class="detail">
-                    <strong>用户目标</strong>
-                    <p>理解这个 due date 为什么可信，以及 Source changed 后产品如何保护她。</p>
-                  </div>
-                  <div class="detail">
-                    <strong>关键动作</strong>
-                    <p>打开 Evidence drawer，报告问题，请求 re-verification，或查看 Source changed 警告。</p>
-                  </div>
-                  <div class="detail">
-                    <strong>系统反馈</strong>
-                    <p>24h detection window 发现 Source changed，创建 candidate，受影响 tax rule 进入 Source changed。</p>
-                  </div>
-                  <div class="detail">
-                    <strong>CPA 看到</strong>
-                    <p>unreviewed change 不会被静默 publish，也不会继续生成新的 official task。</p>
-                  </div>
-                </div>
+            <article class="journey-row">
+              <div class="journey-index">
+                <span>Step 06</span>
+                <strong>Monday triage dashboard</strong>
               </div>
-              <div class="screen" aria-label="Evidence drawer 屏幕示意">
-                <div class="screen-top">
-                  <span class="screen-title">Deadline Evidence</span>
-                  <span class="badge verified">Rule v4</span>
-                </div>
-                <div class="screen-body">
-                  <ul class="screen-list">
-                    <li><span>official source</span><strong>CA CDTFA Filing Due Dates</strong></li>
-                    <li><span>date calculation</span><strong>季度期末后第 30 天</strong></li>
-                    <li><span>last checked</span><strong>2026-05-04 09:20</strong></li>
-                    <li><span>last verified</span><strong>2026-04-29 by reviewer</strong></li>
-                    <li><span>可执行操作</span><strong>Report issue / Request re-verification</strong></li>
-                  </ul>
-                </div>
+              <div class="journey-cell">
+                <h3>CPA 登录后 30 秒内要看到本周所有行动</h3>
+                <p>默认分区是 Due this week、This month、Long range。行内展示 countdown、client/profile、state、task status 和 trust badge。</p>
+                <span class="badge neutral">Dashboard</span>
+              </div>
+              <div class="journey-cell">
+                <h3>系统支持快速过滤和轻量批量动作</h3>
+                <p>按 client、state、obligation、entity type、tax type、task status、verification status 过滤，目标 &lt; 1 second。</p>
+              </div>
+              <div class="journey-cell">
+                <h3>信任边界</h3>
+                <p>可批量更新 task status、firm target date 和 current-filter export。不能批量编辑 official due date。</p>
               </div>
             </article>
 
-            <article class="stage" aria-labelledby="stage-7-title">
-              <div class="stage-number">07</div>
-              <div>
-                <h3 id="stage-7-title">manual entry due date 兜底</h3>
-                <p class="stage-lede">
-                  Beta 不会覆盖所有 city、county、industry 或特殊 obligation。CPA 仍然需要一个 single dashboard，所以 DueDateHQ 允许通过 manual entry 添加 one-time 或 recurring due date，但必须清楚标注不是 DueDateHQ Verified。
-                </p>
-                <div class="detail-grid">
-                  <div class="detail">
-                    <strong>用户目标</strong>
-                    <p>即使 official tax rule 暂未覆盖，也能把真实 work 放进 dashboard。</p>
-                  </div>
-                  <div class="detail">
-                    <strong>关键动作</strong>
-                    <p>为 client 添加 tax type、jurisdiction、obligation、due date、source note 和 review request。</p>
-                  </div>
-                  <div class="detail">
-                    <strong>系统反馈</strong>
-                    <p>创建 User provided task，保留 CPA source note，可生成 verification request。</p>
-                  </div>
-                  <div class="detail">
-                    <strong>CPA 看到</strong>
-                    <p>task 在 dashboard 中可处理，但 badge 明确说明 Not verified by DueDateHQ。</p>
-                  </div>
-                </div>
+            <article class="journey-row">
+              <div class="journey-index">
+                <span>Step 07</span>
+                <strong>Evidence drawer 与 Source changed</strong>
               </div>
-              <div class="screen" aria-label="manual entry due date 屏幕示意">
-                <div class="screen-top">
-                  <span class="screen-title">新增 manual entry due date</span>
-                  <span class="badge manual">User provided</span>
-                </div>
-                <div class="screen-body">
-                  <div class="screen-row">
-                    <div>
-                      <strong>City Gross Receipts Filing</strong>
-                      <span>source note：client 通知邮件，待 DueDateHQ review。</span>
-                    </div>
-                    <span class="badge review">Request review</span>
-                  </div>
-                </div>
+              <div class="journey-cell">
+                <h3>CPA 要知道日期从哪里来</h3>
+                <p>点击 evidence action 打开 drawer，查看 official source link、rule version、last checked、last verified 和 date event history。</p>
+                <span class="badge review">Source changed</span>
+              </div>
+              <div class="journey-cell">
+                <h3>系统把来源变化推到 review</h3>
+                <p>monitor 发现 source changed 后，相关 rule 进入 verification queue，新发布前不自动改变 workspace state。</p>
+              </div>
+              <div class="journey-cell">
+                <h3>信任边界</h3>
+                <p>Source changed 不是新 official date。必须 review 并发布 rule version 后，才能影响后续 official tasks。</p>
               </div>
             </article>
 
-            <article class="stage" aria-labelledby="stage-8-title">
-              <div class="stage-number">08</div>
-              <div>
-                <h3 id="stage-8-title">progress tracking、export 与 urgency surfaces</h3>
-                <p class="stage-lede">
-                  DueDateHQ 的日常运营层要覆盖 status、urgency 和可移交资料。Beta 先做产品内 urgency surfaces 和 current task view export，不把外部 email、SMS、calendar reminders 放进首版承诺。
-                </p>
-                <div class="detail-grid">
-                  <div class="detail">
-                    <strong>用户目标</strong>
-                    <p>知道哪些 tasks 是 Not started、In progress、Waiting on client、Extended、Done，并能把当前 workload 分享给自己或 client。</p>
-                  </div>
-                  <div class="detail">
-                    <strong>关键动作</strong>
-                    <p>一键标记 Done、Extended、Waiting on client、In progress，filter 当前 view 并 export。</p>
-                  </div>
-                  <div class="detail">
-                    <strong>系统反馈</strong>
-                    <p>status 立即更新，extension due date 只在 Verified Evidence 支持时作为 verified extension 显示。</p>
-                  </div>
-                  <div class="detail">
-                    <strong>CPA 看到</strong>
-                    <p>due today、this week、this month 的提醒面在 dashboard 内，而不是另一个通知系统。</p>
-                  </div>
-                </div>
+            <article class="journey-row">
+              <div class="journey-index">
+                <span>Step 08</span>
+                <strong>Official notice proposal review</strong>
               </div>
-              <div class="screen" aria-label="progress export 屏幕示意">
-                <div class="screen-top">
-                  <span class="screen-title">task actions</span>
-                  <span class="badge info">Export current view</span>
-                </div>
-                <div class="screen-body">
-                  <div class="screen-row">
-                    <div>
-                      <strong>Atlas Coffee · CA Sales Tax</strong>
-                      <span>status 已更新，保留 Evidence 和 audit trail。</span>
-                    </div>
-                    <span class="badge done">Done</span>
-                  </div>
-                  <div class="screen-row">
-                    <div>
-                      <strong>本周 view export</strong>
-                      <span>用于 workload review、client communication 或归档。</span>
-                    </div>
-                    <span class="badge info">Export view</span>
-                  </div>
-                </div>
+              <div class="journey-cell">
+                <h3>CPA 只想看可能影响自己 workspace 的变化</h3>
+                <p>notice inbox 显示 P0 source allowlist 的检测结果，notice detail 在前，affected task/profile diffs 在后。</p>
+                <span class="badge risk">Review proposal</span>
+              </div>
+              <div class="journey-cell">
+                <h3>系统提出变更，不替 CPA 做决定</h3>
+                <p>proposal 可以是 task update 或 coverage/review status update。CPA 逐条 approve、reject 或 decide later。</p>
+              </div>
+              <div class="journey-cell">
+                <h3>信任边界</h3>
+                <p>AI 只做 notice 摘要和匹配建议，默认不发送 customer PII，不自动 mutate workspace data，所有决定进入 audit log。</p>
+              </div>
+            </article>
+
+            <article class="journey-row">
+              <div class="journey-index">
+                <span>Step 09</span>
+                <strong>Feature progress 与 reviewer confidence</strong>
+              </div>
+              <div class="journey-cell">
+                <h3>团队要知道 Beta 哪些部分可用</h3>
+                <p>feature progress page 按 Auth、CSV imports、Manual entry、Tax obligation library、Monitoring、Dashboard、Deployment 等分组。</p>
+                <span class="badge neutral">Progress</span>
+              </div>
+              <div class="journey-cell">
+                <h3>系统用稳定状态语言</h3>
+                <p>每组只使用 Done、In progress、Blocked、Not started，并链接到对应 specs、环境和验证结果。</p>
+              </div>
+              <div class="journey-cell">
+                <h3>信任边界</h3>
+                <p>progress 不是营销页。它说明产品 readiness、blocked reason 和下一步检查，而不是承诺已经 fully covered。</p>
               </div>
             </article>
           </div>
-        </section>
+        </div>
+      </section>
 
-        <section id="trust" aria-labelledby="trust-title">
+      <section id="screens">
+        <div class="page-shell">
           <div class="section-head">
             <div>
-              <p class="section-kicker">03 · TRUST STATES</p>
-              <h2 id="trust-title">Trust status 决定 due date 能不能变成 official task</h2>
+              <p class="section-kicker">Screen inventory</p>
+              <h2>关键屏幕必须服务旅程中的决策点</h2>
+              <p>
+                最新设计强调操作密度和状态可见性。每个屏幕都应该回答 CPA 当下的问题，并把证据、例外和动作放在同一上下文里。
+              </p>
             </div>
-            <p class="section-note">
-              这是 DueDateHQ 区别于桌面 bundled due-date 数据的核心。status 不是内部技术字段，而是 CPA 在 dashboard、coverage matrix 和 Evidence 中必须看得懂的产品语言。
-            </p>
+            <div class="note">
+              Beta 第一屏不是宣传页。用户登录后应该进入 Monday triage 或明确的 import setup，而不是需要先阅读功能说明。
+            </div>
           </div>
 
-          <table class="trust-table">
-            <thead>
-              <tr>
-                <th>Status</th>
-                <th>CPA 看到的含义</th>
-                <th>是否生成 official task</th>
-                <th>Next action</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><span class="badge verified">Verified</span></td>
-                <td>official source、date calculation、applicability 和 reviewer action 都已完成 review，source 未变化。</td>
-                <td>可以生成 official task。</td>
-                <td>打开 Evidence，查看 source、tax rule version、last checked 和 last verified。</td>
-              </tr>
-              <tr>
-                <td><span class="badge review">Needs review</span></td>
-                <td>candidate tax rule 存在，但 review 未完成或 source 不清楚。</td>
-                <td>不可以。</td>
-                <td>进入 verification queue；user 可请求 coverage 或等待 review。</td>
-              </tr>
-              <tr>
-                <td><span class="badge changed">Source changed</span></td>
-                <td>之前 Verified 的 official source 发生 change，需要 re-review。</td>
-                <td>不生成 new official task。</td>
-                <td>受影响 tax rule 进入 Source changed queue，review approved 后才 publish new version。</td>
-              </tr>
-              <tr>
-                <td><span class="badge changed">Unsupported</span></td>
-                <td>DueDateHQ 知道这项 obligation exists，但 Beta 暂不能安全生成 deadline task。</td>
-                <td>不可以。</td>
-                <td>在 coverage matrix 中透明展示，可请求 coverage。</td>
-              </tr>
-              <tr>
-                <td><span class="badge manual">User provided</span></td>
-                <td>CPA manual entry 的 due date，可作为 task 出现，但不是 DueDateHQ Verified due date。</td>
-                <td>不是 official system task。</td>
-                <td>可继续处理，或发起 DueDateHQ verification request。</td>
-              </tr>
-            </tbody>
-          </table>
-        </section>
+          <div class="screen-grid" aria-label="key product screens">
+            <article class="screen">
+              <div class="screen-head">
+                <div>
+                  <h3>CSV import review</h3>
+                  <p>TaxDome、Drake、Karbon、QuickBooks client/profile source intake。</p>
+                </div>
+                <span class="badge review">Review rows</span>
+              </div>
+              <div class="screen-body">
+                <ul class="screen-list">
+                  <li><strong>CPA question</strong><span>哪些 profiles 可以提交，哪些需要人工确认？</span></li>
+                  <li><strong>Primary controls</strong><span>source adapter、field mapping、duplicate handling、relationship suggestions、commit ready profiles。</span></li>
+                  <li><strong>Trust cue</strong><span>CSV 字段只建立 profile，不产生 verified due date。</span></li>
+                </ul>
+              </div>
+            </article>
 
-        <section id="screens" aria-labelledby="screens-title">
+            <article class="screen">
+              <div class="screen-head">
+                <div>
+                  <h3>Client relationship and filing profile setup</h3>
+                  <p>manual entry fallback for clients, profiles, and custom deadlines。</p>
+                </div>
+                <span class="badge neutral">Manual entry</span>
+              </div>
+              <div class="screen-body">
+                <ul class="screen-list">
+                  <li><strong>CPA question</strong><span>我能不能把真实工作先放进 dashboard，即使官方规则暂未覆盖？</span></li>
+                  <li><strong>Primary controls</strong><span>create relationship、add filing/tax profile、add one-time or recurring user-provided deadline。</span></li>
+                  <li><strong>Trust cue</strong><span>User provided, not verified by DueDateHQ。</span></li>
+                </ul>
+              </div>
+            </article>
+
+            <article class="screen">
+              <div class="screen-head">
+                <div>
+                  <h3>Monday triage dashboard</h3>
+                  <p>主要日常工作面，服务 filing-season Monday morning。</p>
+                </div>
+                <span class="badge verified">Operational view</span>
+              </div>
+              <div class="screen-body">
+                <ul class="screen-list">
+                  <li><strong>CPA question</strong><span>今天、本周、本月哪些 deadline 需要行动？</span></li>
+                  <li><strong>Primary controls</strong><span>horizon tabs、filters、sort、one-click status、bulk status、bulk firm target date、export current view。</span></li>
+                  <li><strong>Trust cue</strong><span>verified badge 和 evidence action 在 deadline row 内显示。</span></li>
+                </ul>
+              </div>
+            </article>
+
+            <article class="screen">
+              <div class="screen-head">
+                <div>
+                  <h3>Evidence drawer</h3>
+                  <p>官方来源证据要靠近 deadline task。</p>
+                </div>
+                <span class="badge verified">Evidence</span>
+              </div>
+              <div class="screen-body">
+                <ul class="screen-list">
+                  <li><strong>CPA question</strong><span>这个 date 为什么存在？source 最近什么时候检查过？</span></li>
+                  <li><strong>Primary controls</strong><span>open source、view rule version、view date history、request review。</span></li>
+                  <li><strong>Trust cue</strong><span>official due date、original due date 和 firm target date 分列。</span></li>
+                </ul>
+              </div>
+            </article>
+
+            <article class="screen">
+              <div class="screen-head">
+                <div>
+                  <h3>Coverage matrix</h3>
+                  <p>把 supported、unsupported 和 gaps 做成可行动列表。</p>
+                </div>
+                <span class="badge gap">Coverage</span>
+              </div>
+              <div class="screen-body">
+                <ul class="screen-list">
+                  <li><strong>CPA question</strong><span>我服务的 state 和 tax category 哪些被 DueDateHQ 覆盖？</span></li>
+                  <li><strong>Primary controls</strong><span>filter by state/category/entity type、request verification、add user-provided deadline、dismiss for now。</span></li>
+                  <li><strong>Trust cue</strong><span>Coverage gap 不生成 official task，但必须保持可见。</span></li>
+                </ul>
+              </div>
+            </article>
+
+            <article class="screen">
+              <div class="screen-head">
+                <div>
+                  <h3>Official notice inbox and proposal diff</h3>
+                  <p>notice detail first, affected item diffs second。</p>
+                </div>
+                <span class="badge risk">CPA approval</span>
+              </div>
+              <div class="screen-body">
+                <ul class="screen-list">
+                  <li><strong>CPA question</strong><span>这个官方变化是否影响我的 clients？我应该应用哪些更新？</span></li>
+                  <li><strong>Primary controls</strong><span>review notice、compare before/after、approve、reject、decide later、bulk selected updates。</span></li>
+                  <li><strong>Trust cue</strong><span>monitor 可以提出 proposal，但不自动改变 workspace。</span></li>
+                </ul>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="trust">
+        <div class="page-shell">
           <div class="section-head">
             <div>
-              <p class="section-kicker">04 · PRODUCT SURFACES</p>
-              <h2 id="screens-title">Beta 应该让人感知到的屏幕组合</h2>
+              <p class="section-kicker">Trust taxonomy</p>
+              <h2>信任状态决定系统能不能生成或改变 official task</h2>
+              <p>
+                所有状态都必须带文字标签，不只靠颜色。用户要能从状态上判断：这是官方 verified 日期、需要 review 的候选项、覆盖缺口，还是自己临时录入的工作。
+              </p>
             </div>
-            <p class="section-note">
-              这些不是视觉稿，而是产品层面的 screen inventory。每个屏幕都服务于一段旅程，避免功能看起来只是散落在 specs 里的条目。
-            </p>
-          </div>
-
-          <div class="flow-panel">
-            <div class="flow-node">
-              <strong>登录 / 初始化</strong>
-              <p>单用户 Beta workspace，快速解释 CSV import、manual entry、coverage matrix 和 trust model。</p>
-            </div>
-            <div class="flow-node">
-              <strong>CSV Import</strong>
-              <p>source adapter、preview、mapping confidence、duplicate review、commit summary。</p>
-            </div>
-            <div class="flow-node">
-              <strong>Manual Entry</strong>
-              <p>client tax profile、一次性或 recurring User provided due date、request verification。</p>
-            </div>
-            <div class="flow-node">
-              <strong>Coverage Matrix</strong>
-              <p>supported/known obligations、verification status、monitor status、last checked、request coverage。</p>
-            </div>
-            <div class="flow-node">
-              <strong>Deadline Calendar</strong>
-              <p>由 Verified rules 生成全年 official tasks，展示 upcoming recurrence 和 extension Evidence。</p>
-            </div>
-            <div class="flow-node">
-              <strong>Monday Dashboard</strong>
-              <p>Due today、Due this week、This month、Long range、fast filters、priority sorting、one-click status。</p>
-            </div>
-            <div class="flow-node">
-              <strong>Evidence Drawer</strong>
-              <p>source URL、date calculation、last checked、last changed、rule version、audit trail。</p>
-            </div>
-            <div class="flow-node">
-              <strong>Verification Queue</strong>
-              <p>Needs review、Source changed、User requested candidates，human review 后才能 publish Verified。</p>
+            <div class="note">
+              最重要的不变量：unverified data 永远不能用 Verified styling，firm target date 永远不能覆盖 official due date。
             </div>
           </div>
-        </section>
 
-        <section id="boundaries" aria-labelledby="boundaries-title">
+          <div class="matrix" aria-label="trust status matrix">
+            <table>
+              <thead>
+                <tr>
+                  <th>Status</th>
+                  <th>用户看到什么</th>
+                  <th>系统可以做什么</th>
+                  <th>下一步动作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td data-label="Status"><span class="badge verified">Verified</span></td>
+                  <td data-label="用户看到什么">official due date、source evidence、rule version、last verified。</td>
+                  <td data-label="系统可以做什么">创建 official system-generated deadline task。</td>
+                  <td data-label="下一步动作">Open evidence、mark task status、set firm target date、export view。</td>
+                </tr>
+                <tr>
+                  <td data-label="Status"><span class="badge review">Needs review</span></td>
+                  <td data-label="用户看到什么">匹配不确定或新 rule candidate，需要内部 review。</td>
+                  <td data-label="系统可以做什么">展示候选和影响范围，不能生成 official task。</td>
+                  <td data-label="下一步动作">Request DueDateHQ verification 或 add user-provided deadline。</td>
+                </tr>
+                <tr>
+                  <td data-label="Status"><span class="badge review">Source changed</span></td>
+                  <td data-label="用户看到什么">官方来源发生变化，现有信任需要复核。</td>
+                  <td data-label="系统可以做什么">创建 review queue item 和 notice proposal，不自动发布。</td>
+                  <td data-label="下一步动作">Review source diff、approve/reject proposal、publish new rule version。</td>
+                </tr>
+                <tr>
+                  <td data-label="Status"><span class="badge gap">Coverage gap</span></td>
+                  <td data-label="用户看到什么">当前 jurisdiction/category/profile 没有覆盖。</td>
+                  <td data-label="系统可以做什么">显示 gap 和可选行动，不能创建 official confirmed deadline。</td>
+                  <td data-label="下一步动作">Request verification、add user-provided deadline、dismiss for now。</td>
+                </tr>
+                <tr>
+                  <td data-label="Status"><span class="badge neutral">Unsupported</span></td>
+                  <td data-label="用户看到什么">Beta 明确不支持该 city、county、industry 或特殊 obligation。</td>
+                  <td data-label="系统可以做什么">保留 profile context 和说明，不生成 official task。</td>
+                  <td data-label="下一步动作">Manual tracking or ignore，避免误导成即将覆盖。</td>
+                </tr>
+                <tr>
+                  <td data-label="Status"><span class="badge neutral">User provided</span></td>
+                  <td data-label="用户看到什么">用户自行录入的 one-time 或 recurring deadline。</td>
+                  <td data-label="系统可以做什么">展示在 dashboard，允许 status/target date/export。</td>
+                  <td data-label="下一步动作">Request DueDateHQ review，不显示为 verified。</td>
+                </tr>
+                <tr>
+                  <td data-label="Status"><span class="badge neutral">Firm target date</span></td>
+                  <td data-label="用户看到什么">firm 内部计划日期，与 official due date 分列。</td>
+                  <td data-label="系统可以做什么">用于排序、bulk update 和 workload planning。</td>
+                  <td data-label="下一步动作">Edit target date，但不能改写 official due date。</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="notice">
+        <div class="page-shell">
           <div class="section-head">
             <div>
-              <p class="section-kicker">05 · BETA BOUNDARIES</p>
-              <h2 id="boundaries-title">Beta 的承诺和不承诺</h2>
+              <p class="section-kicker">Official notice monitor</p>
+              <h2>监控系统负责发现和解释，CPA 负责批准变更</h2>
+              <p>
+                官方 source monitor 是 DueDateHQ 的信任层，不是自动改账层。Beta 的 notice UI 要清楚显示来源、confidence gate、affected items 和每条 proposal 的决策状态。
+              </p>
             </div>
-            <p class="section-note">
-              用户旅程必须诚实。DueDateHQ Beta 可以清楚展示 coverage gaps 和 User provided due date，但不能暗示 unreviewed tax rule 等同于 official due date。
-            </p>
+            <div class="note">
+              P0 allowlist：IRS、California FTB、New York Tax Department、Texas Comptroller、Florida Department of Revenue。通知只在产品内展示，不承诺 email、SMS、Slack 或 calendar push。
+            </div>
           </div>
 
-          <div class="boundary-grid">
-            <div class="boundary">
+          <div class="notice-flow" aria-label="official notice review flow">
+            <div class="notice-step">
+              <span>01 Detect</span>
+              <h3>24h source check</h3>
+              <p>监控 supported official sources，发现可能影响 deadline 或 coverage 的变化。</p>
+            </div>
+            <div class="notice-step">
+              <span>02 Summarize</span>
+              <h3>Explainable confidence</h3>
+              <p>high/medium 进入 CPA-facing alert，medium 标注 AI-detected / needs review。</p>
+            </div>
+            <div class="notice-step">
+              <span>03 Match</span>
+              <h3>Workspace impact</h3>
+              <p>匹配本 workspace 的 profiles/tasks，默认不发送 customer PII 给模型。</p>
+            </div>
+            <div class="notice-step">
+              <span>04 Propose</span>
+              <h3>Before/after diff</h3>
+              <p>proposal 可更新 task 或 coverage/review status，界面必须不只依赖颜色表达 diff。</p>
+            </div>
+            <div class="notice-step">
+              <span>05 Decide</span>
+              <h3>CPA approval</h3>
+              <p>approve、reject、decide later 都进入 audit log，monitor 不自动 mutate workspace。</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="scope">
+        <div class="page-shell">
+          <div class="section-head">
+            <div>
+              <p class="section-kicker">Beta scope</p>
+              <h2>旅程必须诚实表达 Beta 的承诺和不承诺</h2>
+              <p>
+                DueDateHQ 要达到 File In Time 核心工作流 parity or better，但不是桌面软件克隆。Better 的部分来自 cloud workflow、verified source evidence、coverage visibility 和 no manual rollover。
+              </p>
+            </div>
+            <div class="note">
+              产品语言要避免 “fully compliant”、 “guaranteed deadline”、 “AI handled it”。用可审计事实说明状态和下一步。
+            </div>
+          </div>
+
+          <div class="boundary-grid" aria-label="beta boundaries">
+            <article class="boundary">
               <h3>Beta 必须覆盖</h3>
               <ul>
-                <li>邮箱密码登录。</li>
-                <li>四类 CSV import source。</li>
-                <li>manual entry clients 和 due dates。</li>
-                <li>Verified rules 生成 official tasks。</li>
-                <li>weekly triage、filters、sorting、status updates。</li>
-                <li>Evidence、coverage、source monitoring 和 verification queue。</li>
+                <li>Email/password registration and login。</li>
+                <li>TaxDome、Drake、Karbon、QuickBooks CSV import。</li>
+                <li>Manual client/profile/deadline entry。</li>
+                <li>Verified rules generate official deadline tasks。</li>
+                <li>Coverage matrix、verification queue、official source monitoring。</li>
+                <li>Monday triage、fast filters、deterministic priority sort、dashboard export。</li>
+                <li>Feature progress page 和 Cloudflare deployment visibility。</li>
               </ul>
-            </div>
-            <div class="boundary">
+            </article>
+
+            <article class="boundary">
               <h3>Beta 先不承诺</h3>
               <ul>
-                <li>production-grade tax liability guarantee。</li>
-                <li>未经 human review 的 automatic tax rule interpretation 或 rule publish。</li>
-                <li>完整 city/county/industry 自动化。</li>
-                <li>OAuth、MFA、组织、邀请和复杂权限。</li>
-                <li>外部 email、SMS、calendar reminders。</li>
+                <li>完整 50-state verified coverage 或税务责任保证。</li>
+                <li>自动发布 rule changes 或自动改变 workspace。</li>
+                <li>默认把 customer PII 发给 AI model。</li>
+                <li>client portal、document upload、e-signature、direct client notifications。</li>
+                <li>email、SMS、Slack、calendar push reminders。</li>
+                <li>bulk official due-date edits。</li>
               </ul>
-            </div>
-            <div class="boundary">
-              <h3>明确不是桌面克隆</h3>
+            </article>
+
+            <article class="boundary">
+              <h3>不是 File In Time 桌面克隆</h3>
               <ul>
-                <li>不暴露本地数据库、备份、优化和网络用户维护。</li>
-                <li>不做 Crystal Reports-style builder。</li>
-                <li>不做 mail merge、labels、extension form printing。</li>
-                <li>不做 arbitrary field renaming 和复杂 saved-view 膨胀。</li>
-                <li>official recurring deadlines 不需要 manual rollover。</li>
+                <li>不复制 local database administration、backup/restore UI。</li>
+                <li>不做 Crystal Reports-style reports、mail merge、labels。</li>
+                <li>不做 arbitrary field renaming、network-user maintenance、detailed rights matrices。</li>
+                <li>保留核心工作流：client setup、obligation setup、task generation、triage、filters、extension status、exports、urgency surfaces。</li>
               </ul>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="success">
+        <div class="page-shell">
+          <div class="section-head">
+            <div>
+              <p class="section-kicker">Success criteria</p>
+              <h2>旅程评审时用这些结果判断页面是否讲对了产品</h2>
+              <p>
+                如果评审者看完页面仍然分不清 official due date、firm target date、coverage gap 和 user-provided deadline，说明页面还不够 DueDateHQ。
+              </p>
+            </div>
+            <div class="note">
+              成功不是 “页面看起来完整”，而是 CPA 在几秒内理解哪些工作可信、哪些工作需要 review、哪些变更需要自己批准。
             </div>
           </div>
-        </section>
 
-        <section class="callout" aria-labelledby="closing-title">
-          <h2 id="closing-title">产品理解的最终检查</h2>
-          <p>
-            看完这份旅程后，评审者应该能说清：DueDateHQ 如何从 client import 开始，生成可信 due date calendar，帮助 CPA 完成 weekly triage，在 Source changed 时暂停 trust，并用 manual entry due date 兜底但不混淆 official verification status。
-          </p>
-        </section>
-      </main>
+          <div class="success-strip" aria-label="beta success targets">
+            <div class="success-item">
+              <strong>30 sec</strong>
+              <span>登录后看到本周所有需要行动的 deadlines。</span>
+            </div>
+            <div class="success-item">
+              <strong>5 min</strong>
+              <span>完成 weekly triage，替代 30-45 分钟 spreadsheet/calendar workflow。</span>
+            </div>
+            <div class="success-item">
+              <strong>P95 30 min</strong>
+              <span>从 TaxDome 导入 30 clients，Drake/Karbon/QuickBooks 同样支持代表性 CSV adapters。</span>
+            </div>
+            <div class="success-item">
+              <strong>&lt; 1 sec</strong>
+              <span>Beta-sized solo CPA workspace 的核心 dashboard filters 响应目标。</span>
+            </div>
+          </div>
+        </div>
+      </section>
 
-      <footer>
-        <p>
-          Based on the current DueDateHQ PRD, product plan, technical plan, SDD specs, and File In Time competitor workflow research. Standalone static HTML with embedded CSS; no build step or external dependency.
-        </p>
-      </footer>
-    </div>
+      <section class="closing" aria-labelledby="closing-title">
+        <div class="page-shell">
+          <div class="closing-panel">
+            <p class="section-kicker">Final product check</p>
+            <h2 id="closing-title">这条旅程的核心判断</h2>
+            <p>
+              DueDateHQ 应该让 CPA 从 import 或 manual entry 开始，建立 client relationships 和 filing/tax profiles；
+              只用 Verified tax rules 生成 official deadline tasks；在 Monday triage 中集中处理本周、本月和 long-range 工作；
+              在 evidence drawer、coverage matrix 和 official notice proposal review 中持续说明日期为什么可信、哪里不能信、哪些变更必须由 CPA 批准。
+            </p>
+          </div>
+        </div>
+      </section>
+    </main>
   </body>
 </html>
