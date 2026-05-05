@@ -75,6 +75,30 @@ const statusLabels: Record<VerificationStatusKey, string> = {
   no_rule: "Coverage gap",
 };
 
+const statusDescriptions: Record<VerificationStatusKey, string> = {
+  verified: "Verified against official source evidence and eligible for official deadlines.",
+  needs_review: "Known obligation or rule candidate that needs reviewer approval.",
+  source_changed: "Official source changed and the rule needs reviewer approval again.",
+  unsupported: "Known obligation that DueDateHQ does not schedule in beta.",
+  no_rule: "Coverage gap with no verified scheduling rule yet.",
+};
+
+const statusHeaderKeys = [
+  "verified",
+  "needs_review",
+  "source_changed",
+  "unsupported",
+  "no_rule",
+] as const;
+
+const statusHeaderIconStyles: Record<VerificationStatusKey, string> = {
+  verified: "bg-ddhq-verified-soft text-ddhq-verified",
+  needs_review: "bg-ddhq-review-soft text-ddhq-review",
+  source_changed: "border-ddhq-review/30 bg-ddhq-review-soft text-ddhq-review",
+  unsupported: "bg-ddhq-gap-soft text-ddhq-gap",
+  no_rule: "bg-ddhq-gap-soft text-ddhq-gap",
+};
+
 function getStatusKey(status: string | null): VerificationStatusKey {
   if (status === "verified") return "verified";
   if (status === "needs_review") return "needs_review";
@@ -319,7 +343,9 @@ function CoverageComponent() {
                       <TableHead className="text-[11px] font-semibold uppercase text-muted-foreground">Obligation</TableHead>
                       <TableHead className="w-36 text-[11px] font-semibold uppercase text-muted-foreground">Tax category</TableHead>
                       <TableHead className="w-40 text-[11px] font-semibold uppercase text-muted-foreground">Entity types</TableHead>
-                      <TableHead className="w-36 text-[11px] font-semibold uppercase text-muted-foreground">Status</TableHead>
+                      <TableHead className="w-36 text-[11px] font-semibold uppercase text-muted-foreground">
+                        <StatusColumnHeader />
+                      </TableHead>
                       <TableHead className="w-28 text-[11px] font-semibold uppercase text-muted-foreground">Last verified</TableHead>
                       <TableHead className="w-24 text-[11px] font-semibold uppercase text-muted-foreground">Actions</TableHead>
                     </TableRow>
@@ -476,6 +502,36 @@ function VerificationBadge({ statusKey }: { statusKey: VerificationStatusKey }) 
       <Icon className="size-3 shrink-0" aria-hidden="true" />
       {statusLabels[statusKey]}
     </StatusBadge>
+  );
+}
+
+function StatusColumnHeader() {
+  return (
+    <div className="flex min-w-0 items-center gap-1.5">
+      <span>Status</span>
+      <span className="flex shrink-0 items-center gap-0.5" aria-label="Status meanings">
+        {statusHeaderKeys.map((statusKey) => (
+          <StatusHeaderIcon key={statusKey} statusKey={statusKey} />
+        ))}
+      </span>
+    </div>
+  );
+}
+
+function StatusHeaderIcon({ statusKey }: { statusKey: VerificationStatusKey }) {
+  const Icon = statusIcons[statusKey];
+  const description = `${statusLabels[statusKey]}: ${statusDescriptions[statusKey]}`;
+
+  return (
+    <span
+      role="img"
+      tabIndex={0}
+      title={description}
+      aria-label={description}
+      className={`inline-flex size-4 items-center justify-center rounded-[6px] border border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${statusHeaderIconStyles[statusKey]}`}
+    >
+      <Icon className="size-3" aria-hidden="true" />
+    </span>
   );
 }
 
