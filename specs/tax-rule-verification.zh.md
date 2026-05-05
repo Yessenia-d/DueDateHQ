@@ -4,7 +4,7 @@
 
 定义税务规则核验状态系统，控制某条税务规则是否能生成官方 deadline task，并帮助用户理解规则可信度。
 
-这是 DueDateHQ 相比 File In Time 的核心改进：任务日期不是因为存在于 bundled service table 中就可信，而是只有在官方来源、计算逻辑、审核动作和规则版本都可见时才可信。
+这是 DueDateHQ 相比 File In Time 的核心改进：任务日期不是因为存在于 bundled service table 中就可信，而是只有在官方来源、计算逻辑、审核动作、date event history 和规则版本都可见时才可信。
 
 ## User Flow
 
@@ -55,16 +55,22 @@ Evidence fields：
 - Source URL。
 - Rule summary。
 - Due date rule。
+- Current due date。
+- Original due date。
+- 可选 firm target date，并明确标记为 firm planning metadata。
 - Last verified at。
 - Source last checked at。
 - Source last changed at。
 - Current version。
 - Previous version。
 - Verification notes。
+- Date event history：official extension、official relief/change、user-provided adjustment、firm target change。
 
 Manual deadlines 使用 `deadline_tasks.sourceType = user_provided`，不是 tax rule verification status。
 
 Unsupported、needs-review、source-changed、manual 和 user-provided items 必须对用户透明，但不能被呈现为 verified official deadlines。
+
+Firm target dates 不属于 official rule verification。它们可以出现在 Evidence 中作为规划上下文，但绝不能和 official due dates 混淆。
 
 ## Status Rules
 
@@ -100,8 +106,9 @@ Unsupported、needs-review、source-changed、manual 和 user-provided items 必
 - `source_changed` rules 不生成新的官方任务。
 - `unsupported` obligations 只显示在 coverage。
 - Evidence drawer 可以解释状态和来源链路。
-- Evidence drawer 为 official tasks 展示 rule versioning 和 source last checked/changed timestamps。
+- Evidence drawer 为 official tasks 展示 current due date、original due date、可选 firm target date、date event history、rule versioning 和 source last checked/changed timestamps。
 - Manual 或 user-provided deadlines 必须在 verification status taxonomy 之外明确标记。
+- Official extensions 和 relief/change updates 记录为 date events，而不是静默覆盖。
 
 ## Out of Scope
 

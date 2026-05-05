@@ -2,7 +2,7 @@
 
 ## Goal
 
-Find the first Beta users and validate that DueDateHQ solves a painful workflow for solo multi-state CPAs.
+Find the first Beta users and validate that DueDateHQ solves a painful workflow for solo and independent CPAs managing mixed individual and small-business clients.
 
 ## User Flow
 
@@ -30,7 +30,7 @@ flowchart TD
 ## Pages
 
 - Public waitlist or landing page later.
-- Public 50-state coverage tracker later.
+- Public tax deadline coverage tracker later.
 - In-product onboarding entry after login.
 
 ## API
@@ -65,7 +65,7 @@ Later:
 
 ## First Segment
 
-Solo multi-state CPAs.
+Solo and independent CPAs managing 30-100 mixed individual and small-business clients, often across multiple states.
 
 ## Pricing
 

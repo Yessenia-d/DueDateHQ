@@ -2,7 +2,7 @@
 
 ## Goal
 
-找到第一批 Beta 用户，并验证 DueDateHQ 是否真正解决 solo 多州 CPA 的高痛点工作流。
+找到第一批 Beta 用户，并验证 DueDateHQ 是否真正解决管理混合个人与小企业客户的 solo/independent CPA 的高痛点工作流。
 
 ## User Flow
 
@@ -30,7 +30,7 @@ flowchart TD
 ## Pages
 
 - 后续 public waitlist 或 landing page。
-- 后续 public 50-state coverage tracker。
+- 后续 public tax deadline coverage tracker。
 - 登录后产品内 onboarding 入口。
 
 ## API
@@ -65,7 +65,7 @@ flowchart TD
 
 ## First Segment
 
-Solo 多州 CPA。
+管理 30-100 个混合个人与小企业客户、通常跨多州的 solo/independent CPA。
 
 ## Pricing
 

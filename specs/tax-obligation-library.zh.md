@@ -2,7 +2,7 @@
 
 ## Goal
 
-维护结构化的 50 州税务义务库，区分已知税务义务和已核验可安排的 deadline rules，并用透明 obligations、rules、evidence、recurrence 和 extension handling 替代 File In Time-style services。
+维护结构化的联邦/州税务义务库，区分已知税务义务和已核验可安排的 deadline rules，并用透明 obligations、rules、evidence、recurrence 和 extension/date-change handling 替代 File In Time-style services。Beta 不能暗示完整 50 州已核验覆盖；必须展示 supported coverage、needs-review states 和 coverage gaps。
 
 ## User Flow
 
@@ -10,7 +10,7 @@
 2. 用户选择州和税种分类。
 3. 用户看到已知义务及其核验状态。
 4. Verified rules 可以解释截止日期、extensions 和 recurrence。
-5. Unsupported 或 Needs review 义务可以请求覆盖。
+5. Unsupported、Needs review 或 coverage-gap 义务可以请求覆盖，或通过 user-provided deadline 处理。
 6. Upcoming official tasks 从维护过的 Verified rules 生成，而不是依赖 manual rollover。
 
 ## Flow Diagram
@@ -21,7 +21,8 @@ flowchart TD
   B --> C{Has verified rule?}
   C -- Yes --> D[Can generate official tasks]
   C -- Needs review --> E[Verification Queue]
-  C -- Unsupported --> F[Coverage request]
+  C -- Coverage gap --> F[Coverage gap actions]
+  C -- Unsupported --> F
   D --> G[Evidence drawer]
   G --> H[Generate upcoming tasks]
   G --> I[Show verified extension date]
@@ -39,6 +40,8 @@ flowchart TD
 - `coverage.matrix`
 - `coverage.getRule`
 - `coverage.requestCoverage`
+- `coverage.addUserProvidedDeadlineFromGap`
+- `coverage.dismissGapForNow`
 
 ## Data Model
 
@@ -51,6 +54,7 @@ flowchart TD
 - Obligation name。
 - Applicable entity types。
 - Known status。
+- Coverage state：`supported | needs_review | coverage_gap | unsupported`。
 
 `tax_rules`
 
@@ -58,7 +62,9 @@ flowchart TD
 - Filing/payment/extension marker。
 - 规则 recurring 时的 recurrence pattern。
 - Upcoming generation horizon。
-- 官方证据支持 extension handling 时的 extension due date rule。
+- Current due date calculation rule。
+- Original due date preservation rule。
+- 官方证据支持 date changes 时的 extension 或 relief date rule。
 
 ## Competitor Parity Notes
 
@@ -66,16 +72,19 @@ File In Time 使用 services 定义 work type、frequency、due dates、extensio
 
 - `Verified` rules 可以生成 official tasks、extension dates 和 upcoming recurring tasks。
 - `Needs review`、`Source changed`、`Unsupported` obligations 保持可见，但不创建 official tasks。
+- `Coverage gap` entries 保持可见，并支持 request DueDateHQ verification、add user-provided deadline、ignore/dismiss for now。
 - User-provided custom deadlines 保持 user-provided，不能伪装成 verified service。
 - Official recurring deadlines 应由维护过的 rules 生成。用户不应该为 official deadlines 执行 manual rollover。
 
 ## Acceptance Criteria
 
-- Library 可以表示 federal 和 50-state obligations。
+- Library 可以表示 federal 和 state obligations，但 Beta 不承诺完整 50 州已核验覆盖。
 - Known obligations 不等于 verified deadlines。
 - Verified rules 明确链接官方来源。
+- Supported sources/states 明确展示。
+- Coverage gaps 可见且可操作。
 - Unsupported obligations 可以展示但不生成任务。
-- Verified extension dates 只有在 rule evidence 支持时展示。
+- Verified extension 和 official relief/change dates 只有在 rule evidence 支持时展示。
 - Verified recurring rules 可以在不需要 user rollover 的情况下创建 upcoming official tasks。
 - 产品文案清楚解释覆盖状态。
 

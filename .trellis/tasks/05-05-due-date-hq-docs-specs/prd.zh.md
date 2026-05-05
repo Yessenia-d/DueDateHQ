@@ -69,17 +69,42 @@ DueDateHQ 必须在这些方面强于 File In Time：
 - Cloud workflow：用户不需要管理 desktop installs、shared drives、database files、optimization 或 backups。
 - Onboarding：source-specific CSV adapters 要优于通用 delimited-file mapping。
 
+## 当前对话产品决策
+
+产品方案和 specs 还必须体现以下 Beta 决策：
+
+- Beta 面向管理约 30-100 个混合个人与小企业客户的 solo/independent CPA。
+- Beta 不承诺完整 50 州已核验覆盖；承诺对 supported sources/states 展示透明 verified coverage，并明确展示 `Needs review` 和 `Coverage gap` 状态。
+- 主 UI 保持简单，使用 `Filing profiles` / `Tax profiles` 等 CPA 友好词汇；不要在主 UI 暴露内部 tax subject 术语。
+- 数据规划必须区分 `Client relationship -> Filing/Tax profile -> Deadline task`。
+- CSV import 可以建议个人与企业之间的潜在关系，但不能自动合并；必须由 CPA 确认。
+- Import review 和结果按 profile/problem 分组，不按每个生成 task 展示；summary 用平实语言解释 ready profiles、generated verified tasks、profile review items 和 coverage gaps。
+- Coverage gaps 必须支持操作：request DueDateHQ verification、add user-provided deadline、ignore/dismiss for now。
+- DueDateHQ 支持 official due dates 和可选 firm target dates。Firm target dates 可帮助 triage，但绝不能和 official due dates 混淆。
+- Extension/date changes 使用 current due date、original due date、firm target date，并通过 date event history 支撑 official extensions、official relief/change、user-provided adjustments 和 firm target changes；Evidence drawer 展示该历史。
+- Task workflow 包含 `Waiting on client`，但 Beta 不做 client portal、document upload、document checklist automation、e-signature、direct end-client notifications、email/SMS/Slack/calendar push。
+- Beta 支持轻量 bulk operations：bulk task status update、bulk firm target date update、bulk export current filtered view。不支持 bulk official due-date edits。
+- Official Notice Monitor 由 DueDateHQ 平台配置 AI provider/API key，只分析 official notices，默认不把 customer PII 发给模型，并在本地匹配受影响 clients/profiles。
+- Monitor 可以自动检测并推送 likely relevant notices，但不得自动修改 CPA workspace data。
+- Notice impacts 可以是 proposed task updates 或 proposed coverage/review status updates，必须由 CPA 查看清晰 before/after diff 后确认；支持单个或批量 approve/reject/decide later，状态为 `pending`、`approved`、`rejected`、`decide_later`，并全量 audit logged。
+- Beta notifications 只在产品内：dashboard banner、notice inbox/alert center、affected review page。
+- P0 官方来源 allowlist：IRS、California FTB、New York Tax Department、Texas Comptroller、Florida Department of Revenue。
+- IRS P0 monitor 范围：federal individual 和 small-business filing/payment/extension/estimated tax deadlines，以及 IRS disaster/tax relief deadline changes；不是所有 IRS tax-law news。
+- State P0 范围：CA personal income、business/franchise、disaster/tax relief；NY personal income、business/corporate、disaster/tax relief；TX franchise、sales/use、disaster/tax relief；FL corporate income、sales/use、reemployment、disaster/tax relief。
+- Monitor confidence 使用可解释 gate，不使用虚假百分比分数：high/medium + affected workspace match 时给 CPA 产品内提醒，medium 标记 AI-detected/needs review；low 只进入内部队列。
+- Notice UI 分两层：先展示 notice detail，再展示 affected task/profile diffs。
+
 ## P0 用户故事验收标准
 
 ### 每周申报季分诊
 
-- Persona 是服务约 80 个多州客户的 solo/independent CPA。
+- Persona 是服务约 80 个混合个人与小企业多州客户的 solo/independent CPA。
 - 登录后，默认 dashboard 将截止日期分为 `本周到期`、`本月预警`、`长期计划`。
 - 登录并打开产品后 30 秒内，CPA 能看到本周所有需要行动的截止日期。
 - 本周项目显示具体剩余天数倒计时。
-- 快速筛选覆盖客户、州、表单/义务类型、实体类型、税种、任务状态和核验状态。
+- 快速筛选覆盖 client relationship、filing/tax profile、州、表单/义务类型、实体类型、税种、任务状态和核验状态。
 - 核心 dashboard 筛选在 Beta 规模 solo CPA workspace 内目标响应时间为 `< 1 second`。
-- 每个截止日期支持一键标记状态：`已完成`、`已延期`、`进行中`。
+- 每个截止日期支持一键标记状态：`已完成`、`已延期`、`Waiting on client`、`进行中`。
 - 完整每周分诊流程可在 5 分钟内完成，对比当前 30-45 分钟的表格/日历流程。
 - 智能优先级排序属于 P0 dashboard 能力；Beta 阶段可以用确定性规则排序实现，不要求实时 AI。
 
@@ -90,8 +115,8 @@ DueDateHQ 必须在这些方面强于 File In Time：
 - 系统支持 TaxDome、Drake、Karbon、QuickBooks 导出的 CSV。
 - 系统自动识别 client name、EIN、state 和 entity type 字段映射。
 - 对模糊或缺失字段，系统给出智能、非阻塞建议，并将不确定行送入 review，而不是阻塞整个导入。
-- 导入后，当存在匹配的 Verified rules 时，系统立即生成每个客户的全年 deadline calendar/tasks。
-- Needs-review 和 unsupported obligations 保持可见，但不会成为官方已确认截止日期。
+- 导入后，当存在匹配的 Verified rules 时，系统立即生成每个 filing/tax profile 的全年 deadline calendar/tasks。
+- Needs-review、coverage-gap 和 unsupported obligations 保持可见，但不会成为官方已确认截止日期。
 - 相关 P0 能力包括 CSV import、field mapping、calendar/task auto-generation、entity type auto-recognition 和 intelligent field matching。
 
 ## Constraints
@@ -111,3 +136,4 @@ DueDateHQ 必须在这些方面强于 File In Time：
 - 所有新增/更新的英文 Markdown 文档都有对应中文版本。
 - 产品方案和 feature specs 要在相关位置吸收 File In Time 竞品调研结论，尤其是 CSV 导入 review、Monday triage、任务过滤、导出能力和 Beta 不做范围。
 - 产品方案和 feature specs 要明确说明 DueDateHQ 如何在每个 File In Time 核心流程上做到 parity 或更好：client setup、import、obligation/service setup、task generation、triage、filtering、status/extension handling、recurrence/upcoming tasks、exports、reminders/urgency，以及 admin/settings boundaries。
+- 产品、技术和 feature specs 要体现当前对话决策：混合客户 Beta ICP、透明 supported coverage、filing/tax profiles、notice impacts 必须确认、Beta 仅产品内通知、firm target dates、date event history 和轻量 bulk operations。

@@ -2,7 +2,7 @@
 
 ## Goal
 
-让 CPA 从 TaxDome、Drake、Karbon、QuickBooks CSV 导出中导入客户，preview rows、review 字段映射、处理 likely duplicates、修正缺失字段，并且只在导入客户匹配 Verified tax rules 时创建官方全年 deadline tasks。P0 迁移目标是 CPA 在 30 分钟内完成 30-client import。
+让 CPA 从 TaxDome、Drake、Karbon、QuickBooks CSV 导出中导入 client relationships 和 filing/tax profiles，preview rows、review 字段映射、处理 likely duplicates、确认个人/企业 relationship suggestions、修正缺失字段，并且只在导入 profiles 匹配 Verified tax rules 时创建官方全年 deadline tasks。P0 迁移目标是 CPA 在 30 分钟内完成 30-client import。
 
 ## User Flow
 
@@ -12,12 +12,13 @@
 4. 系统在可能时自动识别 client name、EIN、state 和 entity type 字段映射。
 5. 系统预览字段映射。
 6. 系统检测 headers、validation issues、模糊或缺失字段和 likely duplicate clients。
-7. 系统提供智能、非阻塞建议，并将不确定行送入 review。
-8. 用户 review 不确定行和 duplicate candidates。
-9. 用户提交导入。
-10. 系统创建客户。
-11. 系统只根据 verified tax rules 创建每个客户的全年官方 deadline calendar/tasks。
-12. 用户看到导入摘要并可打开 dashboard。
+7. 系统建议个人与企业之间的潜在关系，但不自动合并。
+8. 系统提供智能、非阻塞建议，并将不确定行送入 review。
+9. 用户 review 不确定行、duplicate candidates 和 relationship suggestions。
+10. 用户提交导入。
+11. 系统创建 client relationships 和 filing/tax profiles。
+12. 系统只根据 verified tax rules 创建每个 profile 的全年官方 deadline calendar/tasks。
+13. 用户看到按 profile/problem 分组的导入摘要并可打开 dashboard。
 
 ## Flow Diagram
 
@@ -36,11 +37,14 @@ flowchart TD
   F --> G[User accepts or fixes fields]
   Q -- No --> H[Preview summary]
   G --> H
-  H --> I[Commit import]
-  I --> J[Create clients]
+  H --> R{Relationship suggestion?}
+  R -- Yes --> S[CPA confirms or rejects]
+  R -- No --> I[Commit import]
+  S --> I
+  I --> J[Create relationships and profiles]
   J --> K[Match verified tax rules]
   K --> L[Create full-year official deadline tasks]
-  L --> M[Show import result]
+  L --> M[Show grouped import result]
 ```
 
 ## Pages
@@ -51,18 +55,19 @@ flowchart TD
   - Header detection。
   - 映射预览。
   - Duplicate review。
+  - Relationship suggestion review。
   - 行 review。
-  - 提交摘要。
+  - 按 filing/tax profile 和 problem 分组的提交摘要。
 
 ## API
 
 - `imports.preview`
   - 输入：来源系统、CSV 文件或文本。
-  - 输出：batch id、header detection result、列映射、自动识别的关键字段、mapping confidence、accepted rows、review rows、duplicate candidates、suggestions、validation messages。
+  - 输出：batch id、header detection result、列映射、自动识别的关键字段、mapping confidence、accepted profile rows、review rows、duplicate candidates、relationship suggestions、suggestions、validation messages。
 
 - `imports.commit`
-  - 输入：batch id、已修正行和 duplicate resolutions。
-  - 输出：创建客户数、updated/skipped duplicate count、创建全年 deadline task 数、needs-review 义务数、unsupported 义务数。
+  - 输入：batch id、已修正行、duplicate resolutions，以及 accepted/rejected relationship suggestions。
+  - 输出：ready profile count、created/updated client relationship count、updated/skipped duplicate count、创建全年 deadline task 数、profile review item count、needs-review 义务数、coverage-gap 数、unsupported 义务数。
 
 ## Data Model
 
@@ -77,7 +82,11 @@ flowchart TD
 - Header detected。
 - Adapter version。
 
-`clients`
+`client_relationships`
+
+- 从 canonical import rows 或 CPA-confirmed relationship suggestions 创建。
+
+`filing_profiles`
 
 - 从 canonical import rows 创建。
 
@@ -85,16 +94,25 @@ flowchart TD
 
 - 只从 verified rules 生成。
 
-Canonical client shape：
+Canonical filing/tax profile shape：
 
 - Client name。
 - EIN。
+- SSN last four（如存在）。
 - Entity type。
 - States。
 - County。
 - Fiscal year type。
 - Source system。
 - Source row id。
+
+Relationship suggestion shape：
+
+- Incoming profile row id。
+- Suggested existing or new client relationship id。
+- Reason。
+- Suggested action：confirm relationship 或 keep separate。
+- Status：pending、accepted 或 rejected。
 
 Duplicate candidate shape：
 
@@ -106,7 +124,7 @@ Duplicate candidate shape：
 
 ## Competitor Parity Notes
 
-File In Time 把 import 当作 review workflow，而不是盲目 upload。DueDateHQ 必须覆盖 preview、mapping、header handling、commit 前 review 和 duplicate resolution。DueDateHQ 应该通过 source-specific adapters 做得更好，让 TaxDome、Drake、Karbon、QuickBooks 用户不必每次从 generic delimited file 开始手工 mapping。
+File In Time 把 import 当作 review workflow，而不是盲目 upload。DueDateHQ 必须覆盖 preview、mapping、header handling、commit 前 review 和 duplicate resolution。DueDateHQ 应该通过 source-specific adapters 做得更好，让 TaxDome、Drake、Karbon、QuickBooks 用户不必每次从 generic delimited file 开始手工 mapping。同时 review 应按 filing/tax profile 和 problem type 分组，避免 CPA 被迫逐条理解每个 generated task。
 
 ## Acceptance Criteria
 
@@ -118,15 +136,18 @@ File In Time 把 import 当作 review workflow，而不是盲目 upload。DueDat
 - 导入性能目标为 `P95 <= 30 minutes for a 30-client import`。
 - 系统自动识别 client name、EIN、state 和 entity type 字段映射。
 - 模糊或缺失字段获得智能、非阻塞建议，不确定行进入 review，而不是阻塞整个导入。
+- 个人与企业之间的潜在关系可以被建议，但绝不能自动合并。
+- CPA 必须明确确认或拒绝 relationship suggestions。
+- User-facing copy 使用 `Filing profile` 或 `Tax profile`，避免内部 tax-subject jargon。
 - 缺失必填字段可以 review，不会被静默丢弃。
 - Header detection 和 mapping preview 在 commit 前可见。
 - Likely duplicate clients 展示 field differences，并由用户选择处理方式。
-- Import commit 创建客户。
-- 导入后，匹配的 Verified rules 立即生成每个客户的全年 deadline calendar/tasks。
+- Import commit 创建 client relationships 和 filing/tax profiles。
+- 导入后，匹配的 Verified rules 立即生成每个 filing/tax profile 的全年 deadline calendar/tasks。
 - 只有 verified rules 生成官方 deadline tasks。
-- Needs-review 和 unsupported obligations 保持可见，但不是官方已确认截止日期。
+- Needs-review、coverage-gap 和 unsupported obligations 保持可见，但不是官方已确认截止日期。
 - 相关 P0 能力包括 CSV import、field mapping、calendar/task auto-generation、entity type auto-recognition 和 intelligent field matching。
-- 导入摘要解释 generated、needs-review、unsupported obligations。
+- 导入摘要用平实语言解释 ready profiles、generated verified tasks、profile review items、needs-review items、coverage gaps 和 unsupported obligations。
 
 ## Out of Scope
 

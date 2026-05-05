@@ -13,7 +13,7 @@ DueDateHQ uses the existing Better-T-Stack structure:
 
 The technical goal is to implement a real Beta product while preserving a strict distinction between verified official rules, user-provided deadlines, and unverified obligations.
 
-Technical parity target: implement the useful File In Time workflow baseline as a cloud product, not as a desktop clone. The system should support client setup, source-specific CSV import preview/mapping/review/duplicate handling, obligation-driven task generation, Monday triage, filters/sorting, task status, extension handling, verified recurrence/upcoming tasks, dashboard/task exports, and in-product urgency surfaces. It should deliberately omit local database administration, backup/restore UI, Crystal Reports-style reporting, mail merge/labels, extension form printing, arbitrary field renaming, network-user maintenance, detailed rights matrices, and external email/SMS/calendar reminders unless later prioritized.
+Technical parity target: implement the useful File In Time workflow baseline as a cloud product, not as a desktop clone. The system should support client setup, source-specific CSV import preview/mapping/review/duplicate handling, obligation-driven task generation, Monday triage, filters/sorting, task status, extension/date-change handling, verified recurrence/upcoming tasks, dashboard/task exports, in-product urgency surfaces, and light bulk operations. It should deliberately omit local database administration, backup/restore UI, Crystal Reports-style reporting, mail merge/labels, extension form printing, arbitrary field renaming, network-user maintenance, detailed rights matrices, client portal, document upload/checklist automation, e-signature, direct end-client notifications, and external email/SMS/Slack/calendar push unless later prioritized.
 
 ## System Boundaries
 
@@ -25,11 +25,13 @@ In scope:
 - Tax obligation library.
 - Verification statuses.
 - Source monitoring pipeline.
+- Official notice monitoring and affected-profile proposal review.
 - Verification queue.
 - Coverage matrix.
 - Monday triage dashboard.
 - Feature progress page.
 - Dashboard/task export for operational review.
+- Light bulk task status updates and firm target date updates.
 
 Out of scope:
 
@@ -37,6 +39,10 @@ Out of scope:
 - Organization/team permissions.
 - MFA, OAuth, password reset, email verification.
 - Automatic AI publishing of tax rules.
+- AI analysis of customer PII by default.
+- Automatic mutation of CPA workspace data from official notice monitoring.
+- Bulk official due-date edits.
+- Client portal, document upload, document checklist automation, e-signature, direct end-client notifications, and email/SMS/Slack/calendar push.
 - Full county/city/industry-specific automation.
 - Desktop database management, backup/restore UI, Crystal Reports-style reports, mail merge/labels, extension form printing, arbitrary field renaming, network-user maintenance, detailed rights matrices, and external email/SMS/calendar reminders.
 
@@ -56,12 +62,36 @@ Better Auth owns its required tables. Business tables reference the authenticate
 - `createdAt`
 - `updatedAt`
 
-`clients`
+### Deadline Domain Model
+
+The core deadline domain uses three levels:
+
+```txt
+Client relationship -> Filing/Tax profile -> Deadline task
+```
+
+Primary UI copy should say `Filing profile` or `Tax profile`. Internal implementation should avoid exposing tax-subject jargon in the main CPA workflow.
+
+`client_relationships`
 
 - `id`
 - `firmId`
-- `name`
+- `displayName`
+- `relationshipType`: `individual | business | household | related_group`
+- `notes`
+- `sourceSystem`
+- `createdVia`: `csv_import | manual`
+- `createdAt`
+- `updatedAt`
+
+`filing_profiles`
+
+- `id`
+- `firmId`
+- `clientRelationshipId`
+- `profileName`
 - `ein`
+- `ssnLast4` nullable
 - `entityType`
 - `states`
 - `county`
@@ -69,6 +99,7 @@ Better Auth owns its required tables. Business tables reference the authenticate
 - `notes`
 - `sourceSystem`
 - `createdVia`: `csv_import | manual`
+- `coverageState`: `ready | needs_review | coverage_gap | unsupported`
 - `createdAt`
 - `updatedAt`
 
@@ -85,6 +116,17 @@ Better Auth owns its required tables. Business tables reference the authenticate
 - `headerDetected`
 - `adapterVersion`
 - `createdAt`
+
+`import_profile_relationship_suggestions`
+
+- `id`
+- `importBatchId`
+- `incomingProfileId`
+- `suggestedClientRelationshipId`
+- `reason`
+- `status`: `pending | accepted | rejected`
+- `decidedBy`
+- `decidedAt`
 
 `tax_obligations`
 
@@ -122,22 +164,38 @@ Better Auth owns its required tables. Business tables reference the authenticate
 
 - `id`
 - `firmId`
-- `clientId`
+- `filingProfileId`
 - `taxRuleId` nullable; required only when `sourceType = verified_rule`
 - `title`
 - `jurisdiction`
 - `taxCategory`
-- `dueDate`
+- `currentDueDate`
 - `originalDueDate`
-- `extensionDueDate`
+- `firmTargetDate` nullable
 - `recurrenceKey`
-- `status`: `not_started | in_progress | extended | done`
+- `status`: `not_started | in_progress | waiting_on_client | extended | done`
 - `priority`
 - `sourceType`: `verified_rule | user_provided`
 - `userProvidedSourceNote`
 - `createdVia`: `system_rule | manual`
 - `createdAt`
 - `updatedAt`
+
+`deadline_date_events`
+
+- `id`
+- `deadlineTaskId`
+- `eventType`: `official_extension | official_relief_change | user_provided_adjustment | firm_target_change`
+- `previousCurrentDueDate`
+- `newCurrentDueDate`
+- `previousFirmTargetDate`
+- `newFirmTargetDate`
+- `sourceName`
+- `sourceUrl`
+- `sourceSnapshotId`
+- `createdBy`
+- `createdAt`
+- `notes`
 
 `official_sources`
 
@@ -146,10 +204,44 @@ Better Auth owns its required tables. Business tables reference the authenticate
 - `agencyName`
 - `sourceType`: `html | pdf | rss | api | manual`
 - `sourceUrl`
+- `allowlistLevel`: `p0 | later`
+- `deadlineScope`
 - `monitorFrequencyHours`
 - `active`
 - `createdAt`
 - `updatedAt`
+
+`official_notices`
+
+- `id`
+- `sourceId`
+- `noticeUrl`
+- `noticeTitle`
+- `noticePublishedAt`
+- `noticeSummary`
+- `jurisdiction`
+- `deadlineRelevance`: `high | medium | low`
+- `detectedAt`
+- `aiProviderRunId` nullable
+- `createdAt`
+
+`notice_impact_proposals`
+
+- `id`
+- `officialNoticeId`
+- `firmId`
+- `filingProfileId` nullable
+- `deadlineTaskId` nullable
+- `proposalType`: `task_update | coverage_review_status_update`
+- `beforeState`
+- `afterState`
+- `confidenceLabel`: `high | medium | low`
+- `confidenceReasons`
+- `status`: `pending | approved | rejected | decide_later`
+- `decidedBy`
+- `decidedAt`
+- `auditLogId`
+- `createdAt`
 
 `source_snapshots`
 
@@ -180,7 +272,7 @@ Better Auth owns its required tables. Business tables reference the authenticate
 - `changeType`: `content_hash_changed | pdf_updated | feed_item | source_unreachable | keyword_match`
 - `extractedSummary`
 - `proposedRulePatch`
-- `status`: `pending | approved | rejected`
+- `status`: `pending | approved | rejected | decide_later`
 - `reviewedBy`
 - `reviewedAt`
 
@@ -231,15 +323,16 @@ Imports:
 - `imports.preview`
   - Parses TaxDome, Drake, Karbon, and QuickBooks CSV exports with source-specific adapters.
   - Automatically recognizes field mapping for client name, EIN, state, and entity type where possible.
-  - Returns mapping confidence, intelligent deterministic suggestions, accepted rows, review rows, duplicate candidates, and validation messages.
+  - Returns mapping confidence, intelligent deterministic suggestions, accepted profile rows, review rows, duplicate candidates, CPA-confirmed relationship suggestions, and validation messages.
 - `imports.commit`
-  - Commits accepted rows, reviewed row corrections, and duplicate resolutions.
+  - Commits accepted rows, reviewed row corrections, duplicate resolutions, and accepted/rejected relationship suggestions.
   - Generates full-year official deadline tasks immediately only when matching `verified` rules exist.
-  - Returns generated task counts plus needs-review and unsupported obligation counts.
+  - Returns a plain-language import summary grouped by filing/tax profile and problem type: ready profiles, generated verified tasks, profile review items, needs-review counts, coverage gaps, and unsupported obligation counts.
 
 Manual entry:
 
-- `clients.createManual`
+- `clientRelationships.createManual`
+- `filingProfiles.createManual`
 - `deadlineTasks.createManual`
 - `deadlineTasks.requestVerification`
 
@@ -247,11 +340,15 @@ Dashboard:
 
 - `dashboard.summary`
   - Returns default `Due this week`, `This month`, and `Long range` groups after login.
-  - Supports fast filters by client, state, form/obligation type, entity type, tax type, task status, and verification status.
+  - Supports fast filters by client relationship, filing/tax profile, state, form/obligation type, entity type, tax type, task status, and verification status.
   - Supports deterministic smart priority sorting for Beta.
 - `dashboard.export`
+- `dashboard.bulkExportCurrentFilteredView`
 - `tasks.updateStatus`
-  - Supports one-click marking for `done`, `extended`, and `in_progress`.
+  - Supports one-click marking for `done`, `extended`, `waiting_on_client`, and `in_progress`.
+- `tasks.bulkUpdateStatus`
+- `tasks.updateFirmTargetDate`
+- `tasks.bulkUpdateFirmTargetDate`
 - `tasks.getEvidence`
 
 Coverage:
@@ -259,6 +356,8 @@ Coverage:
 - `coverage.matrix`
 - `coverage.getRule`
 - `coverage.requestCoverage`
+- `coverage.addUserProvidedDeadlineFromGap`
+- `coverage.dismissGapForNow`
 
 Verification:
 
@@ -273,6 +372,13 @@ Source monitoring:
 - `officialSources.getCheckRuns`
 - `officialSources.enqueueCheck`
 - `officialSources.recordCheckResult`
+- `officialNotices.list`
+- `officialNotices.get`
+- `noticeImpacts.listAffected`
+- `noticeImpacts.approve`
+- `noticeImpacts.reject`
+- `noticeImpacts.decideLater`
+- `noticeImpacts.bulkDecision`
 
 Progress:
 
@@ -280,12 +386,13 @@ Progress:
 
 ## Performance and Workflow Targets
 
-- A solo or independent CPA serving about 80 multi-state clients can see all deadlines needing action this week within 30 seconds of opening the dashboard after login.
+- A solo or independent CPA serving about 80 mixed individual and small-business clients across multiple states can see all deadlines needing action this week within 30 seconds of opening the dashboard after login.
 - Core dashboard filters return updated results in `< 1 second` for Beta-sized solo CPA workspaces.
 - Weekly triage is completable within 5 minutes, compared with the current 30-45 minute spreadsheet/calendar workflow.
 - A CPA migrating from TaxDome can complete a 30-client import within 30 minutes; measurable target is `P95 <= 30 minutes for a 30-client import`.
 - Import review is non-blocking at the batch level: fuzzy or missing fields route uncertain rows to review while accepted rows and duplicate resolutions can continue toward commit.
-- Deadline generation preserves the trust invariant: only `verified` tax rules create official full-year deadline tasks; needs-review and unsupported obligations stay visible but are not official confirmed deadlines.
+- Deadline generation preserves the trust invariant: only `verified` tax rules create official full-year deadline tasks; needs-review, coverage-gap, and unsupported obligations stay visible but are not official confirmed deadlines.
+- Official Notice Monitor alerts are in-app only and never mutate workspace data until the CPA approves before/after diffs.
 
 ## Source Monitoring Architecture
 
@@ -302,6 +409,7 @@ Monitoring rule:
 ```txt
 The monitor may detect changes and create candidates.
 It must not publish verified tax rules.
+It must not mutate CPA workspace data without CPA confirmation.
 ```
 
 Flow:
@@ -324,6 +432,25 @@ flowchart LR
   L -- No --> O[Keep or reject candidate]
 ```
 
+Official Notice Monitor constraints:
+
+- DueDateHQ configures the AI provider/API key at the platform level; individual CPAs do not bring their own AI keys.
+- AI analyzes official notices only, and customer PII is not sent to the model by default.
+- Affected clients/profiles are matched locally against workspace data.
+- Proposed impacts can be `task_update` or `coverage_review_status_update`, both requiring CPA confirmation.
+- CPA review shows clear before/after diffs and supports individual or bulk approve/reject/decide-later operations.
+- All operations are audit logged.
+- Notifications are in-app only: dashboard banner, notice inbox/alert center, and affected review page.
+- Confidence is an explainable gate, not a percentage score. High confidence plus affected workspace match alerts the CPA; medium confidence plus match alerts the CPA labeled AI-detected/needs review; low confidence stays internal.
+
+P0 official source allowlist and scope:
+
+- IRS: federal individual and small-business filing/payment/extension/estimated tax deadlines, plus IRS disaster/tax relief deadline changes. Not all IRS tax-law news.
+- California FTB: personal income, business/franchise, and disaster/tax relief.
+- New York Tax Department: personal income, business/corporate, and disaster/tax relief.
+- Texas Comptroller: franchise, sales/use, and disaster/tax relief.
+- Florida Department of Revenue: corporate income, sales/use, reemployment, and disaster/tax relief.
+
 ## Frontend Pages
 
 `/login`
@@ -332,7 +459,7 @@ flowchart LR
 
 `/import`
 
-- CSV source selection, upload, automatic key-field mapping, mapping preview, intelligent non-blocking suggestions, review rows, duplicate review, commit.
+- CSV source selection, upload, automatic key-field mapping, mapping preview, intelligent non-blocking suggestions, relationship suggestions requiring CPA confirmation, review rows, duplicate review, profile/problem grouped commit summary.
 
 `/clients/new`
 
@@ -344,11 +471,19 @@ flowchart LR
 
 `/`
 
-- Monday triage dashboard with default horizon groups, urgency sections, deterministic smart priority sorting, fast filters/sorting, task status updates, extension visibility, evidence access, and export.
+- Monday triage dashboard with default horizon groups, urgency sections, deterministic smart priority sorting, fast filters/sorting, task status updates including `waiting_on_client`, firm target date controls, extension visibility, evidence access, light bulk operations, and export.
 
 `/coverage`
 
-- 50-state coverage matrix with monitor and verification status.
+- Transparent coverage matrix with supported source/state status, needs-review and coverage-gap states, monitor and verification status, and coverage-gap actions.
+
+`/notices`
+
+- Notice inbox/alert center with notice detail first, then affected task/profile diffs.
+
+`/notices/:id/affected`
+
+- Affected review page for approving, rejecting, or deciding later on proposed task/profile and coverage/review updates.
 
 `/verification`
 
@@ -374,6 +509,13 @@ Manual deadlines:
 - Can appear on dashboard.
 - Must show `User provided · Not verified by DueDateHQ`.
 - Can create a `verification_request`.
+
+Date rules:
+
+- `deadline_tasks.currentDueDate` is the current official or user-provided task date used for work planning.
+- `deadline_tasks.originalDueDate` preserves the original official due date where one exists.
+- `deadline_tasks.firmTargetDate` is optional firm planning metadata and must not be displayed as an official due date.
+- `deadline_date_events` backs the Evidence drawer and records official extensions, official relief/change, user-provided adjustments, and firm target changes.
 
 ## Deployment Plan
 
@@ -403,7 +545,7 @@ Automated:
 - Build.
 - API tests for imports, manual deadlines, verification rules, and source monitoring services.
 - Import tests covering TaxDome, Drake, Karbon, and QuickBooks CSV fixtures, auto-mapping for client name/EIN/state/entity type, review rows for fuzzy or missing fields, and Verified-only full-year task generation.
-- Dashboard tests covering default horizon grouping, countdown in days, core filter coverage, one-click `done`/`extended`/`in_progress` status updates, and deterministic priority sorting.
+- Dashboard tests covering default horizon grouping, countdown in days, core filter coverage, one-click `done`/`extended`/`waiting_on_client`/`in_progress` status updates, and deterministic priority sorting.
 
 Manual:
 
@@ -411,6 +553,7 @@ Manual:
 - Import representative CSV from each source.
 - Confirm a 30-client TaxDome import can complete within 30 minutes, with `P95 <= 30 minutes for a 30-client import` as the target.
 - Confirm import preview detects headers, mapping, review rows, and likely duplicates before commit.
+- Confirm import review groups issues by filing/tax profile/problem type and never auto-merges individual/business relationship suggestions without CPA confirmation.
 - Confirm fuzzy or missing import fields produce non-blocking suggestions and do not block the whole batch.
 - Manually create client and deadline.
 - Confirm only verified rules create official tasks.
@@ -419,14 +562,24 @@ Manual:
 - Confirm verified recurring obligations generate upcoming tasks without manual rollover.
 - Confirm dashboard opens after login with `Due this week`, `This month`, and `Long range`; this-week work is visible within 30 seconds and shows countdowns in days.
 - Confirm dashboard filters/sorting, extension status, urgency surfaces, smart priority sorting, and export work.
+- Confirm task statuses include `waiting_on_client`.
+- Confirm optional firm target dates are visually distinct from official due dates and can be bulk-updated.
+- Confirm bulk task status update and current-filter export work, and that bulk official due-date edits are unavailable.
 - Confirm core dashboard filters respond in `< 1 second` for a Beta-sized solo CPA workspace and the weekly triage flow can be completed within 5 minutes.
 - Confirm coverage matrix shows monitor status.
-- Confirm evidence drawer shows last checked, last changed, and rule versions.
+- Confirm coverage gaps offer request verification, add user-provided deadline, and ignore/dismiss actions.
+- Confirm evidence drawer shows current due date, original due date, firm target date, date event history, last checked, last changed, and rule versions.
 - Confirm verification queue approval publishes a new version.
+- Confirm Official Notice Monitor only analyzes official notices, uses platform-level AI configuration, does not send customer PII by default, matches profiles locally, and only alerts CPAs in-app.
+- Confirm proposed notice impacts require CPA confirmation with before/after diffs, support `pending`, `approved`, `rejected`, and `decide_later`, and write audit logs.
 
 ## Implementation Guardrails
 
 - Do not auto-publish source changes.
+- Do not auto-apply official notice impacts to CPA workspace data.
 - Do not show unsupported obligations as confirmed deadlines.
+- Do not describe Beta as complete 50-state verified coverage.
+- Do not confuse firm target dates with official due dates.
+- Do not expose internal tax-subject terminology in primary UI copy.
 - Do not hide user-provided deadlines from dashboard, but clearly mark them.
 - Keep user-facing copy explicit about Beta data coverage.

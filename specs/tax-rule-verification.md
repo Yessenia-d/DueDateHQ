@@ -4,7 +4,7 @@
 
 Define the verification status system that controls whether a tax rule can generate official deadline tasks and how users understand rule trust.
 
-This is a core DueDateHQ improvement over File In Time: task dates are not trusted because they exist in a bundled service table. They are trusted only when the official source, calculation, reviewer action, and rule version are visible.
+This is a core DueDateHQ improvement over File In Time: task dates are not trusted because they exist in a bundled service table. They are trusted only when the official source, calculation, reviewer action, date event history, and rule version are visible.
 
 ## User Flow
 
@@ -55,16 +55,22 @@ Evidence fields:
 - Source URL.
 - Rule summary.
 - Due date rule.
+- Current due date.
+- Original due date.
+- Optional firm target date, clearly labeled as firm planning metadata.
 - Last verified at.
 - Source last checked at.
 - Source last changed at.
 - Current version.
 - Previous version.
 - Verification notes.
+- Date event history: official extension, official relief/change, user-provided adjustment, firm target change.
 
 Manual deadlines use `deadline_tasks.sourceType = user_provided` and are not tax rule verification statuses.
 
 Unsupported, needs-review, source-changed, manual, and user-provided items must remain transparent to the user, but they must not be presented as verified official deadlines.
+
+Firm target dates are not part of official rule verification. They can appear in Evidence for planning context, but must never be confused with official due dates.
 
 ## Status Rules
 
@@ -100,8 +106,9 @@ Unsupported, needs-review, source-changed, manual, and user-provided items must 
 - `source_changed` rules do not generate new official tasks.
 - `unsupported` obligations only appear in coverage.
 - Evidence drawer can explain status and source lineage.
-- Evidence drawer shows rule versioning and source last checked/changed timestamps for official tasks.
+- Evidence drawer shows current due date, original due date, optional firm target date, date event history, rule versioning, and source last checked/changed timestamps for official tasks.
 - Manual or user-provided deadlines are clearly marked outside the verification status taxonomy.
+- Official extensions and relief/change updates are recorded as date events rather than silent overwrites.
 
 ## Out of Scope
 

@@ -771,7 +771,7 @@
             <article class="map-step">
               <b>4</b>
               <h3>obligation mapping</h3>
-              <p>client profile 匹配 50-state obligation library，区分 Verified、Needs review、Unsupported。</p>
+              <p>filing/tax profile 匹配 transparent coverage library，区分 Verified、Needs review、Coverage gap、Unsupported。</p>
             </article>
             <article class="map-step">
               <b>5</b>
@@ -918,14 +918,14 @@
             <article class="stage" aria-labelledby="stage-3-title">
               <div class="stage-number">03</div>
               <div>
-                <h3 id="stage-3-title">client profile mapping 到 obligation library</h3>
+                <h3 id="stage-3-title">filing/tax profile mapping 到 obligation library</h3>
                 <p class="stage-lede">
-                  CSV import 成功不等于 due date 都已确认。系统会用 client 的 entity type、jurisdiction、tax type 和 fiscal year 匹配 obligation library，并把 known obligation 和 verified schedulable tax rule 分开。
+                  CSV import 成功不等于 due date 都已确认。系统会用 filing/tax profile 的 entity type、jurisdiction、tax type 和 fiscal year 匹配 obligation library，并把 known obligation 和 verified schedulable tax rule 分开。
                 </p>
                 <div class="detail-grid">
                   <div class="detail">
                     <strong>用户目标</strong>
-                    <p>知道哪些 clients 已经能生成 official tasks，哪些只是 coverage gap 或 Needs review。</p>
+                    <p>知道哪些 filing/tax profiles 已经能生成 official tasks，哪些只是 Coverage gap 或 Needs review。</p>
                   </div>
                   <div class="detail">
                     <strong>关键动作</strong>
@@ -933,7 +933,7 @@
                   </div>
                   <div class="detail">
                     <strong>系统反馈</strong>
-                    <p>按 Verified、Needs review、Source changed、Unsupported 和 User provided 分类展示。</p>
+                    <p>按 Verified、Needs review、Source changed、Coverage gap、Unsupported 和 User provided 分类展示。</p>
                   </div>
                   <div class="detail">
                     <strong>CPA 看到</strong>
@@ -977,7 +977,7 @@
               <div>
                 <h3 id="stage-4-title">生成全年 due date calendar</h3>
                 <p class="stage-lede">
-                  提交 CSV import 或保存 manual entry client 后，系统立即生成可用 calendar。但 official system-generated task 只来自 Verified tax rule；Needs review 和 Unsupported 继续可见，不能产生 official confirmed due date。
+                  提交 CSV import 或保存 manual entry client 后，系统立即生成可用 calendar。但 official system-generated task 只来自 Verified tax rule；Needs review、Coverage gap 和 Unsupported 继续可见，不能产生 official confirmed due date。
                 </p>
                 <div class="detail-grid">
                   <div class="detail">
@@ -986,7 +986,7 @@
                   </div>
                   <div class="detail">
                     <strong>关键动作</strong>
-                    <p>提交 CSV import，查看 created clients、generated tasks、Needs review 和 Unsupported 汇总。</p>
+                    <p>提交 CSV import，查看 created relationships/profiles、generated tasks、Needs review、Coverage gap 和 Unsupported 汇总。</p>
                   </div>
                   <div class="detail">
                     <strong>系统反馈</strong>
@@ -1168,11 +1168,11 @@
                 <div class="detail-grid">
                   <div class="detail">
                     <strong>用户目标</strong>
-                    <p>知道哪些 tasks 是 Not started、In progress、Extended、Done，并能把当前 workload 分享给自己或 client。</p>
+                    <p>知道哪些 tasks 是 Not started、In progress、Waiting on client、Extended、Done，并能把当前 workload 分享给自己或 client。</p>
                   </div>
                   <div class="detail">
                     <strong>关键动作</strong>
-                    <p>一键标记 Done、Extended、In progress，filter 当前 view 并 export。</p>
+                    <p>一键标记 Done、Extended、Waiting on client、In progress，filter 当前 view 并 export。</p>
                   </div>
                   <div class="detail">
                     <strong>系统反馈</strong>
@@ -1291,7 +1291,7 @@
             </div>
             <div class="flow-node">
               <strong>Coverage Matrix</strong>
-              <p>50-state obligations、verification status、monitor status、last checked、request coverage。</p>
+              <p>supported/known obligations、verification status、monitor status、last checked、request coverage。</p>
             </div>
             <div class="flow-node">
               <strong>Deadline Calendar</strong>
