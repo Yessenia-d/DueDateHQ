@@ -112,6 +112,7 @@ export function serializeFilingProfile(profile: FilingProfile): FilingProfileRes
 
 export function serializeDeadlineTask(task: DeadlineTask): DeadlineTaskResponse {
   const isUserProvided = task.sourceType === "user_provided";
+  const isVerifiedRule = task.sourceType === "verified_rule";
 
   return {
     id: task.id,
@@ -133,9 +134,11 @@ export function serializeDeadlineTask(task: DeadlineTask): DeadlineTaskResponse 
     trustLabel: isUserProvided
       ? "User provided - Not verified by DueDateHQ"
       : "Verified by DueDateHQ",
-    recurrenceLabel: task.recurrenceKey
-      ? "Recurring user-provided deadline"
-      : "One-time user-provided deadline",
+    recurrenceLabel: isVerifiedRule
+      ? "Generated from a DueDateHQ Verified rule"
+      : task.recurrenceKey
+        ? "Recurring user-provided deadline"
+        : "One-time user-provided deadline",
     createdAt: serializeDate(task.createdAt),
     updatedAt: serializeDate(task.updatedAt),
   };

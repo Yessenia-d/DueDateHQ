@@ -5,6 +5,7 @@ import { coverageRouter } from "./coverage";
 import { dashboardRouter } from "./dashboard";
 import { deadlineTasksRouter } from "./deadlineTasks";
 import { filingProfilesRouter } from "./filingProfiles";
+import { importsRouter } from "./imports";
 import { officialNoticesRouter } from "./officialNotices";
 import { officialSourcesRouter } from "./officialSources";
 import { progressRouter } from "./progress";
@@ -20,6 +21,7 @@ export const appRouter = router({
   dashboard: dashboardRouter,
   deadlineTasks: deadlineTasksRouter,
   filingProfiles: filingProfilesRouter,
+  imports: importsRouter,
   officialNotices: officialNoticesRouter,
   officialSources: officialSourcesRouter,
   progress: progressRouter,

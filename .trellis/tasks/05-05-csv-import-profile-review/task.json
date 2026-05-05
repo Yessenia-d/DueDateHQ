@@ -3,7 +3,7 @@
   "name": "csv-import-profile-review",
   "title": "Implement CSV import with profile review",
   "description": "Implement source-specific CSV preview, mapping, profile/problem review, relationship suggestions, and commit summary.",
-  "status": "planning",
+  "status": "in_progress",
   "dev_type": null,
   "scope": null,
   "package": "server",
