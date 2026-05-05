@@ -1,0 +1,7 @@
+Client ID,Taxpayer Name,Return Type,Filing State,County,Fiscal Year End,SSN/EIN,Client Group,Email,Phone,Notes
+D-2001,"James Carter",1040,CA,Los Angeles,12/31,555-66-1234,Carter Household,james.carter@example.test,213-555-0101,"Accepted individual row with full SSN that should reduce to last four"
+D-2002,"Carter & Carter Farms LLC",1065,California,Fresno,12/31,91-4567890,Carter Household,office@carterfarms.example.test,559-555-0144,"Accepted partnership row linked to same household"
+D-2003,"Carter Farms LLC",1065,CA,Fresno,12/31,91-4567890,Carter Household,bookkeeper@carterfarms.example.test,559-555-0145,"Duplicate-ish business name with same EIN"
+D-2004,"Meridian Architecture Inc",1120S,TX,Travis,06/30,74-2223333,Meridian Group,tax@meridianarch.example.test,512-555-0188,"Accepted S corp with fiscal year-end hint"
+D-2005,"Legacy Family Trust",1041,NY,New York,12/31,,Legacy Group,trustee@legacy.example.test,212-555-0199,"Missing tax ID should require review"
+D-2006,"Summit Client Services",BUS,,Denver,09/30,,Summit Group,ops@summitclient.example.test,303-555-0110,"Ambiguous return type, missing state, and missing tax ID should require review"

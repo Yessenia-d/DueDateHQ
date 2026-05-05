@@ -71,3 +71,20 @@ test("QuickBooks bank transaction CSVs are rejected as the wrong import source",
     /QuickBooks bank transaction CSVs are not client import files/,
   );
 });
+
+test("TaxDome year-round profile exports detect headers across tax-specific columns", () => {
+  const result = parseWithSourceAdapter(
+    "taxdome",
+    [
+      "Account Name,Client ID,Entity Type,State,County,Fiscal Year,EIN,SSN Last 4,Linked Contacts,Tax Profile,Tax Jurisdiction,Period Month,Tax Year,Filing Form,Filing Frequency,Due Date,Filing Status,Amount Due,Custom Deadline Note",
+      '"Harbor & Pine Family Office",HPFO-2026-001,S Corporation,California,San Francisco,Calendar Year,12-3456789,,"Alex Harbor; Priya Pine",Federal S corporation income tax,Federal,January,2026,1120-S,Annual,2026-03-16,Filed,0,"Annual S corp return for client business profile"',
+      '"Harbor & Pine Family Office",HPFO-2026-002,LLC,California,San Francisco,Calendar Year,33-1112222,,"Priya Pine",Sales and use tax,California,January,2026,CDTFA-401-A,Monthly,2026-02-29,Filed,1840.25,"January CA sales tax profile"',
+    ].join("\n"),
+  );
+
+  assert.equal(result.headerDetected, true);
+  assert.equal(result.rows.length, 2);
+  assert.equal(result.rows[0]?.profile.clientName, "Harbor & Pine Family Office");
+  assert.equal(result.rows[0]?.profile.entityType, "s_corp");
+  assert.deepEqual(result.rows[0]?.profile.states, ["CA"]);
+});

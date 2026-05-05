@@ -1,0 +1,7 @@
+Organization Name,First Name,Last Name,Client Identifier,Entity Type,State,County,Fiscal Year End,EIN,SSN Last 4,Business Number,Belongs To,Associated Organization,Email,Phone,Client Group,Notes
+"Brightline Therapy PLLC",,,K-3001,LLC,Texas,Travis,12/31,74-3334444,,,"Brightline Owners","Brightline Therapy Group",admin@brightlinetherapy.example.test,512-555-0122,Brightline Group,"Accepted LLC organization profile"
+"Brightline Therapy Payroll",,,K-3002,Company,TX,Travis,12/31,74-3334444,,,"Brightline Therapy PLLC","Brightline Therapy Group",payroll@brightlinetherapy.example.test,512-555-0123,Brightline Group,"Duplicate-ish payroll profile with fuzzy entity type"
+,,Maya Singh,K-3003,Individual,California,Alameda,12/31,,6789,,"Brightline Therapy PLLC","Brightline Therapy Group",maya.singh@example.test,510-555-0155,Brightline Group,"Accepted individual contact row using first and last name fallback"
+"Blue Mesa Partners",,,K-3004,Partnership,New Mexico,Santa Fe,06/30,85-7654321,,,"Blue Mesa Holdings","Blue Mesa Holdings",tax@bluemesa.example.test,505-555-0166,Blue Mesa Group,"Accepted partnership with fiscal year-end hint"
+"Northstar Holdings",,,K-3005,Organization,Washington,King,09/30,,,BN-883-221,"Northstar Family","Northstar Family Office",ops@northstar.example.test,206-555-0177,Northstar Group,"Business Number is present but no US tax ID; entity type is fuzzy"
+"Hilltop Trust",,,K-3006,Trust,,Multnomah,12/31,93-2221111,,,"Hilltop Family","Hilltop Family Office",trustee@hilltop.example.test,503-555-0188,Hilltop Group,"Missing state should require review"

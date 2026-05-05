@@ -44,7 +44,7 @@ function normalizeLineEndings(csvText: string): string[] {
 function looksLikeHeader(cells: readonly string[]): boolean {
   const normalizedCells = cells.map((cell) => cell.trim().toLowerCase());
   const headerCells = normalizedCells.filter((cell) =>
-    /account|address|amount|billing|client|company|contact|county|customer|date|description|ein|entity|first|fiscal|identifier|last|memo|name|organization|phone|province|return|ssn|state|tax|type/.test(
+    /account|address|amount|billing|client|company|contact|county|custom|customer|date|deadline|description|due|ein|entity|filing|first|fiscal|form|frequency|identifier|jurisdiction|last|linked|memo|month|name|organization|period|phone|profile|province|return|ssn|state|status|tax|type|year/.test(
       cell,
     ),
   );
@@ -52,7 +52,10 @@ function looksLikeHeader(cells: readonly string[]): boolean {
     /^(1040|1041|1065|1120s?|ca|ny|tx|fl)$/.test(cell),
   );
 
-  return headerCells.length >= Math.max(1, cells.length - 1) && valueCells.length === 0;
+  return (
+    headerCells.length >= Math.max(1, Math.ceil(cells.length * 0.6)) &&
+    valueCells.length === 0
+  );
 }
 
 export function parseCsvText(csvText: string): ParsedCsv {

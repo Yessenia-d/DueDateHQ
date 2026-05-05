@@ -1,0 +1,7 @@
+Customer,Company Name,Customer Type,Billing State,Billing County,Fiscal Year,EIN,SSN Last 4,Customer ID,Parent Customer,Email,Phone,Notes
+"Oak Street Books","Oak Street Books LLC",LLC,Oregon,Multnomah,Calendar Year,93-4567890,,QB-4001,,owner@oakstreetbooks.example.test,503-555-0100,"Accepted QBO customer with company and EIN"
+"Oak Street Books: Salem Store","Oak Street Books LLC",LLC,OR,Marion,Calendar Year,93-4567890,,QB-4002,"Oak Street Books",salem@oakstreetbooks.example.test,503-555-0101,"Duplicate-ish subcustomer sharing the same EIN"
+"Elena Ruiz",,Individual,California,Los Angeles,Calendar Year,,2244,QB-4003,,elena.ruiz@example.test,323-555-0111,"Accepted individual customer using SSN last four"
+"Ruiz Household",,Customer,CA,Los Angeles,Calendar Year,,,QB-4004,"Elena Ruiz",household@ruiz.example.test,323-555-0112,"Generic customer type and missing tax ID should require review"
+"Pine Lake HOA","Pine Lake Homeowners Association",Nonprofit,Florida,Orange,Fiscal Year,59-1112222,,QB-4005,,treasurer@pinelakehoa.example.test,407-555-0133,"Accepted nonprofit with fiscal-year hint"
+"Unmapped Vendor Account","Unmapped Vendor Account",Vendor,,King,Fiscal Year,,,QB-4006,,vendor@example.test,206-555-0144,"Wrong-ish customer type, missing state, and missing tax ID should require review"
