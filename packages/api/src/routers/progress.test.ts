@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import type { Context } from "../context";
 import { appRouter } from "./index";
 import { featureProgressStatuses } from "./progress";
 
@@ -20,7 +21,11 @@ const requiredFeatureNames = [
 ] as const;
 
 test("progress.list returns grouped Beta feature progress with derived readiness", async () => {
-  const caller = appRouter.createCaller({ auth: null, session: null });
+  const caller = appRouter.createCaller({
+    auth: {} as Context["auth"],
+    firm: null,
+    session: null,
+  });
   const result = await caller.progress.list();
   const items = result.groups.flatMap((group) => group.items);
   const statusSet = new Set(featureProgressStatuses);

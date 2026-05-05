@@ -77,7 +77,7 @@ export const seedFeatureProgressItems = [
     name: "Auth and firm workspace",
     description: "Protected CPA workspace shell, firm ownership, and auth-ready session boundary.",
     specPath: "specs/auth.md",
-    status: "not_started",
+    status: "done",
     priority: "p0",
     updatedAt: seedUpdatedAt,
   },

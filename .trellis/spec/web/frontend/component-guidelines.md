@@ -56,4 +56,13 @@ Questions to answer:
 
 <!-- Component-related mistakes your team has made -->
 
-(To be filled by the team)
+### App Shell Grid Rows
+
+When the root route uses a two-row shell such as `grid-rows-[auto_1fr]`, keep
+all chrome elements inside the first row wrapper. For example, `Header` and a
+session/status bar belong in one `auto` row wrapper, followed by `Outlet` in the
+`1fr` row.
+
+Putting `Header`, session bar, and `Outlet` directly into a two-row grid makes
+the second chrome element consume the `1fr` row and pushes route content far
+down the viewport.

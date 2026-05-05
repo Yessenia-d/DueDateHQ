@@ -15,6 +15,7 @@
     "@due-date-hq/env": "workspace:*",
     "@trpc/client": "catalog:",
     "@trpc/server": "catalog:",
+    "better-auth": "^1.6.9",
     "dotenv": "catalog:",
     "zod": "catalog:"
   },

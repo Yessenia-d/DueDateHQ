@@ -1,9 +1,10 @@
 import type { AppRouter } from "@due-date-hq/api/routers/index";
-import { env } from "@due-date-hq/env/web";
 import { QueryCache, QueryClient } from "@tanstack/react-query";
 import { createTRPCClient, httpBatchLink } from "@trpc/client";
 import { createTRPCOptionsProxy } from "@trpc/tanstack-react-query";
 import { toast } from "sonner";
+
+import { getServerUrl } from "./server-url";
 
 export const queryClient = new QueryClient({
   queryCache: new QueryCache({
@@ -21,7 +22,13 @@ export const queryClient = new QueryClient({
 export const trpcClient = createTRPCClient<AppRouter>({
   links: [
     httpBatchLink({
-      url: `${env.VITE_SERVER_URL}/trpc`,
+      fetch(url, options) {
+        return fetch(url, {
+          ...options,
+          credentials: "include",
+        });
+      },
+      url: `${getServerUrl()}/trpc`,
     }),
   ],
 });

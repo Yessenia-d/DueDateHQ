@@ -9,6 +9,7 @@ config({ path: "../../apps/web/.env" });
 config({ path: "../../apps/server/.env" });
 
 const app = await alchemy("due-date-hq");
+const betterAuthSecret = alchemy.secret(process.env.BETTER_AUTH_SECRET, "BETTER_AUTH_SECRET");
 
 const db = await D1Database("database", {
   migrationsDir: "../../packages/db/src/migrations",
@@ -20,7 +21,8 @@ export const server = await Worker("server", {
   compatibility: "node",
   bindings: {
     DB: db,
-    CORS_ORIGIN: "*",
+    CORS_ORIGIN: process.env.CORS_ORIGIN ?? "*",
+    BETTER_AUTH_SECRET: betterAuthSecret,
   },
   dev: {
     port: 3000,

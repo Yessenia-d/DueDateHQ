@@ -45,6 +45,105 @@ into tRPC context. `routers/index.ts` registers the app router and exports
 - Notice proposal APIs must expose before/after diffs and never apply workspace
   mutations until approval.
 
+## Scenario: Auth and Firm Workspace Session
+
+### 1. Scope / Trigger
+
+- Trigger: email/password auth crosses Hono HTTP handlers, Better Auth, D1
+  schema, tRPC context, and the React app shell.
+- Use this pattern for the Beta firm workspace boundary. Do not add multi-user
+  firm membership, invitations, OAuth, MFA, or password reset until those have
+  their own task and spec.
+
+### 2. Signatures
+
+- HTTP auth base path: `/api/auth/*`, mounted by `apps/server/src/index.ts`.
+- Auth factory:
+  `createDueDateAuth({ corsOrigin, db, request, secret }): DueDateAuth`.
+- Firm bootstrap:
+  `ensureFirmForUser(db, firmOwner, firmName?): Promise<Firm>`.
+- tRPC context:
+  `createContext({ context }): { auth, firm, session }`.
+- Session guard:
+  `requireFirmSession(ctx): SessionContext`.
+- API procedures:
+  `auth.session(): SerializedFirmSession | null` and
+  `auth.workspace(): SerializedFirmSession`.
+- DB tables: `auth_users`, `auth_sessions`, `auth_accounts`,
+  `auth_verifications`, and `firms`.
+
+### 3. Contracts
+
+- Server env/bindings required for auth: `DB`, `CORS_ORIGIN`, and
+  `BETTER_AUTH_SECRET`.
+- Web env required for local/API calls: `VITE_SERVER_URL`.
+- Register accepts Better Auth email/password input plus optional `firmName`.
+  The user create hook must create or resolve exactly one firm for the owner.
+- `firms.owner_user_id` is unique and references `auth_users.id`; later Beta
+  business data must attach to the firm context, not only the user.
+- `auth.session` is public so the app shell can discover login state. It must
+  return only serialized user, firm, and session expiry fields needed by the UI.
+- `auth.workspace` and later business procedures must call
+  `requireFirmSession` before returning firm-owned data.
+- Local development must allow equivalent loopback origins with the same port
+  (`localhost`, `127.0.0.1`, `::1`) for both CORS and Better Auth trusted
+  origins.
+
+### 4. Validation & Error Matrix
+
+- Missing session on a protected procedure -> `UNAUTHORIZED` with
+  `Sign in to access this firm workspace.`
+- Existing user without a firm -> call `ensureFirmForUser` in context and
+  resolve/create the firm before exposing a session.
+- Concurrent firm bootstrap insert collision -> re-read by `owner_user_id`;
+  only throw if the firm still cannot be resolved.
+- Browser origin is a configured loopback alias -> allow it.
+- Browser origin is not configured and not an allowed loopback alias -> reject
+  through CORS/Better Auth origin checks.
+- Missing `BETTER_AUTH_SECRET` in production-like deployment -> invalid config;
+  do not ship with an implicit production secret.
+
+### 5. Good/Base/Bad Cases
+
+- Good: register with `firmName`, receive a session cookie, and
+  `auth.session` returns `{ user, firm, session.expiresAt }`.
+- Base: register without `firmName`; the firm defaults to
+  `<user name>'s firm`.
+- Bad: a React route reads workspace data from user email or local storage
+  instead of calling a firm-session-backed API.
+- Bad: `localhost:3001` works but `127.0.0.1:3001` fails in local dev.
+
+### 6. Tests Required
+
+- API test asserts `auth.session` returns `null` without a session.
+- API test asserts protected workspace access rejects unauthenticated callers.
+- API or integration test asserts firm bootstrap is idempotent per owner user.
+- Browser/manual check covers register or login -> logged-in home -> logout.
+- Typecheck must cover API, DB, server, and web packages.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```typescript
+export const businessRouter = router({
+  list: publicProcedure.query(({ ctx }) => {
+    return listRowsForUser(ctx.session?.user.id);
+  }),
+});
+```
+
+#### Correct
+
+```typescript
+export const businessRouter = router({
+  list: protectedProcedure.query(({ ctx }) => {
+    const session = requireFirmSession(ctx);
+    return listRowsForFirm(session.firm.id);
+  }),
+});
+```
+
 ## Scenario: Feature Progress Read Model
 
 ### 1. Scope / Trigger
