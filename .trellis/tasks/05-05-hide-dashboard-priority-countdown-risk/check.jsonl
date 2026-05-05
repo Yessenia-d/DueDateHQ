@@ -1,0 +1,3 @@
+{"file": ".trellis/spec/web/frontend/index.md", "reason": "Verify dashboard task table UX remains dense, scannable, and status-forward."}
+{"file": ".trellis/spec/ui/frontend/index.md", "reason": "Verify compact component styling and accessible controls."}
+{"file": ".trellis/spec/guides/due-date-hq-project-conventions.md", "reason": "Verify project conventions and required checks."}

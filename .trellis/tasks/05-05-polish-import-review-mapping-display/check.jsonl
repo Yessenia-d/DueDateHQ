@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/web/frontend/index.md", "reason": "Verify route-level UI change follows apps/web conventions."}
+{"file": ".trellis/spec/ui/frontend/index.md", "reason": "Verify compact status-forward UI treatment and component usage."}
