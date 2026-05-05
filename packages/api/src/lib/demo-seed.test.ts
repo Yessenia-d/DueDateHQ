@@ -49,8 +49,39 @@ test("demo datasets cover triage, coverage, and notice workflows", () => {
   assert.ok(
     triage.deadlineTasks.filter((task) => task.sourceType === "verified_rule").length >= 4,
   );
+  assert.ok(triage.clientRelationships.length >= 7);
+  assert.ok(triage.filingProfiles.length >= 8);
+  assert.ok(triage.deadlineTasks.length >= 18);
+  assert.ok(triage.deadlineTasks.filter(isDueThisWeek).length >= 8);
+  assert.ok(triage.deadlineTasks.some((task) => task.currentDueDate < "2026-05-05"));
+  assert.ok(triage.deadlineTasks.some((task) => task.currentDueDate > "2026-05-11"));
   assert.ok(
     new Set(triage.deadlineTasks.map((task) => task.status)).has("waiting_on_client"),
+  );
+  assert.ok(triage.deadlineTasks.some((task) => task.sourceType === "entered_deadline"));
+  assert.ok(triage.deadlineTasks.some((task) => task.taxRuleId === "rule-tx-sales-quarterly"));
+  assert.ok(triage.deadlineTasks.some((task) => task.taxRuleId === "rule-ny-ct3-filing"));
+  assert.ok(
+    triage.deadlineTasks.some(
+      (task) =>
+        task.id === "demo-triage-task-barton-tx-sales" &&
+        task.originalDueDate === "2026-05-05" &&
+        task.currentDueDate === "2026-05-07",
+    ),
+  );
+  assert.ok(
+    triage.dateEvents.some(
+      (event) =>
+        event.deadlineTaskId === "demo-triage-task-barton-tx-sales" &&
+        event.eventType === "official_extension" &&
+        event.previousCurrentDueDate === "2026-05-05" &&
+        event.newCurrentDueDate === "2026-05-07",
+    ),
+  );
+  assert.ok(triage.filingProfiles.some((profile) => profile.ssnLast4 === "2198"));
+  assert.ok(triage.filingProfiles.filter((profile) => profile.ein).length >= 6);
+  assert.ok(
+    triage.filingProfiles.some((profile) => profile.coverageState === "coverage_gap"),
   );
 
   assert.ok(
@@ -81,6 +112,12 @@ test("demo datasets cover triage, coverage, and notice workflows", () => {
   );
   assert.ok(plan.officialNotices.length >= 1);
 });
+
+function isDueThisWeek(task: ReturnType<typeof buildDemoSeedPlan>["deadlineTasks"][number]) {
+  return task.status !== "done" &&
+    task.currentDueDate >= "2026-05-05" &&
+    task.currentDueDate <= "2026-05-11";
+}
 
 function rowsForFirm(plan: ReturnType<typeof buildDemoSeedPlan>, firmId: string) {
   return {

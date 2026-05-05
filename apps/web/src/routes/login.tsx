@@ -15,13 +15,18 @@ export const Route = createFileRoute("/login")({
 
 type AuthMode = "login" | "register";
 
+const defaultDemoCredentials = {
+  email: "demo-triage@duedatehq.test",
+  password: "DueDateHQ-demo-2026!",
+};
+
 function LoginComponent() {
   const session = useQuery(trpc.auth.session.queryOptions());
   const [mode, setMode] = React.useState<AuthMode>("login");
   const [name, setName] = React.useState("");
   const [firmName, setFirmName] = React.useState("");
-  const [email, setEmail] = React.useState("");
-  const [password, setPassword] = React.useState("");
+  const [email, setEmail] = React.useState(defaultDemoCredentials.email);
+  const [password, setPassword] = React.useState(defaultDemoCredentials.password);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
 
@@ -34,6 +39,13 @@ function LoginComponent() {
   function handleModeChange(nextMode: AuthMode) {
     setErrorMessage(null);
     setMode(nextMode);
+    if (nextMode === "login") {
+      setEmail(defaultDemoCredentials.email);
+      setPassword(defaultDemoCredentials.password);
+    } else {
+      setEmail("");
+      setPassword("");
+    }
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
