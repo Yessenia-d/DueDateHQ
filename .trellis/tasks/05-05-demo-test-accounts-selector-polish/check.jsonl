@@ -1,1 +1,8 @@
-{"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python3 .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file":"CONTEXT.md","reason":"Verify domain vocabulary and actor model: CPA user, firm workspace, client data, entered deadline reference semantics."}
+{"file":"DESIGN.md","reason":"Verify frontend control spacing and operational UI polish against the design system."}
+{"file":".trellis/spec/guides/index.md","reason":"Apply shared cross-layer and reuse checks during review."}
+{"file":".trellis/spec/api/backend/index.md","reason":"Check firm-session scoping, API trust labels, export behavior, and manual deadline validation."}
+{"file":".trellis/spec/db/backend/index.md","reason":"Check DB constraints and whether internal user_provided storage remains compatible."}
+{"file":".trellis/spec/server/backend/index.md","reason":"Check any server/demo seed entrypoint conventions."}
+{"file":".trellis/spec/web/frontend/index.md","reason":"Check frontend routing/state visibility and CPA-facing terminology."}
+{"file":".trellis/spec/ui/frontend/index.md","reason":"Check shared select/status badge changes for consistency."}

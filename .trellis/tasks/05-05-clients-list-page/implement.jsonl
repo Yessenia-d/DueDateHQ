@@ -1,0 +1,11 @@
+{"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python3 .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file": ".trellis/spec/api/backend/index.md", "reason": "API router conventions for backend tRPC work"}
+{"file": ".trellis/spec/api/backend/database-guidelines.md", "reason": "Drizzle query and database access rules for clients.list"}
+{"file": ".trellis/spec/api/backend/error-handling.md", "reason": "Backend procedure error handling expectations"}
+{"file": ".trellis/spec/api/backend/quality-guidelines.md", "reason": "Backend test and quality expectations"}
+{"file": ".trellis/spec/web/frontend/index.md", "reason": "Web frontend conventions for route implementation"}
+{"file": ".trellis/spec/web/frontend/component-guidelines.md", "reason": "Component composition and UI primitive usage"}
+{"file": ".trellis/spec/web/frontend/state-management.md", "reason": "React Query and frontend state conventions"}
+{"file": ".trellis/spec/web/frontend/type-safety.md", "reason": "Frontend type safety expectations"}
+{"file": ".trellis/spec/web/frontend/quality-guidelines.md", "reason": "Frontend quality checks"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Task spans API and UI route layers"}

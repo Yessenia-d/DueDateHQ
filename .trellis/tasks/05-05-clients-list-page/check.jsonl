@@ -1,0 +1,10 @@
+{"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python3 .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file": ".trellis/spec/api/backend/index.md", "reason": "Check API router conventions"}
+{"file": ".trellis/spec/api/backend/database-guidelines.md", "reason": "Check Drizzle query and scoping rules"}
+{"file": ".trellis/spec/api/backend/quality-guidelines.md", "reason": "Check backend tests and quality"}
+{"file": ".trellis/spec/web/frontend/index.md", "reason": "Check web route conventions"}
+{"file": ".trellis/spec/web/frontend/component-guidelines.md", "reason": "Check UI composition and design system use"}
+{"file": ".trellis/spec/web/frontend/state-management.md", "reason": "Check frontend data fetching patterns"}
+{"file": ".trellis/spec/web/frontend/type-safety.md", "reason": "Check type safety"}
+{"file": ".trellis/spec/web/frontend/quality-guidelines.md", "reason": "Check frontend quality expectations"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Check API/UI contract consistency"}

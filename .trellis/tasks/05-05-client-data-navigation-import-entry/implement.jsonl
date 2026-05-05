@@ -1,0 +1,8 @@
+{"file": ".trellis/spec/guides/due-date-hq-project-conventions.md", "reason": "DueDateHQ domain language and frontend conventions"}
+{"file": "specs/csv-imports.md", "reason": "CSV import flow and post-import expectations"}
+{"file": ".trellis/spec/web/frontend/index.md", "reason": "Frontend route and app shell rules for client/import navigation"}
+{"file": "specs/manual-client-and-deadline-entry.md", "reason": "Client relationship, filing profile, and user-provided deadline scope"}
+{"file": ".trellis/spec/ui/frontend/index.md", "reason": "Shared UI primitive and restrained operational UI rules"}
+{"file": "DESIGN.md", "reason": "Project design system for frontend UI changes"}
+{"file": "PRODUCT.md", "reason": "Product IA and domain language for client/import/dashboard surfaces"}
+{"file": "specs/dashboard.md", "reason": "Dashboard should remain cross-client triage, not client record"}

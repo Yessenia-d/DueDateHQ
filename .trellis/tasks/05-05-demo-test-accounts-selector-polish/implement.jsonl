@@ -1,1 +1,8 @@
-{"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python3 .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file":"CONTEXT.md","reason":"Use project domain vocabulary: CPA, Firm, Client Relationship, Filing Profile, Deadline Task, Entered Deadline trust boundary."}
+{"file":"DESIGN.md","reason":"Required before frontend UI changes; select spacing and dense operational UI must follow the design system."}
+{"file":".trellis/spec/guides/index.md","reason":"Shared thinking guides for cross-layer changes and terminology consistency."}
+{"file":".trellis/spec/api/backend/index.md","reason":"API procedures must preserve firm session scoping, manual/entered deadline semantics, dashboard/export labels, and auth workspace boundaries."}
+{"file":".trellis/spec/db/backend/index.md","reason":"Database schema constraints around firm scope, deadline task source types, and required source/reference notes."}
+{"file":".trellis/spec/server/backend/index.md","reason":"Server entrypoints and local/demo seed paths must follow server backend conventions if touched."}
+{"file":".trellis/spec/web/frontend/index.md","reason":"Frontend routes must preserve visibility of review/gap/manual deadline states and TanStack Router patterns."}
+{"file":".trellis/spec/ui/frontend/index.md","reason":"Shared select component and status badge UI changes must follow package UI conventions."}

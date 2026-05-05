@@ -20,7 +20,7 @@ Make the product easier to demo end to end by tightening the select control visu
 
 * Test accounts should be real CPA login accounts, not a front-end-only demo mode.
 * Seed data should be repeatable/idempotent so local development and beta demos can reset or re-run it without duplicate records.
-* Demo data should clearly preserve DueDateHQ trust language: `Verified`, `Needs review`, `Coverage gap`, `Unsupported`, `Source changed`, and `Custom deadline`.
+* Demo data should clearly preserve DueDateHQ trust language: `Verified`, `Needs review`, `Coverage gap`, `Unsupported`, `Source changed`, and `Entered deadline`.
 * The select spacing fix should apply to the shared select component unless browser testing shows it breaks another screen.
 
 ## Requirements
@@ -35,14 +35,26 @@ Make the product easier to demo end to end by tightening the select control visu
   * Verified official deadlines.
   * Source changed and notice-review/audit behavior.
   * Coverage gaps, unsupported items, and verification requests.
-  * Custom firm-defined manual deadlines.
+  * Entered deadlines with a clear reference/basis note.
   * CSV import/review states and duplicate/relationship review where supported.
   * Multiple clients, filing profiles, entity types, jurisdictions, statuses, and firm target dates.
 * Seed data must be firm-scoped and must not leak between accounts.
 * Keep the core actor model clear: authenticated `user` means CPA operator; imported business data means the CPA firm's clients and filing/tax profiles.
 * Audit any visible copy or demo data naming that could make end-clients look like app users.
-* Replace CPA-facing `User provided` deadline language with a clearer custom-deadline concept.
-* CPA-facing labels should communicate: firm/custom deadline, defined by the CPA firm, not verified by DueDateHQ.
+* Replace CPA-facing `User provided` deadline language with the clearer `Entered deadline` concept.
+* CPA-facing labels should communicate: entered by the CPA firm, reference recorded, not verified by DueDateHQ.
+* An entered deadline must show or store what it references, such as client source data, prior-year workpaper, CPA judgment, engagement-specific tracking, or an official/client notice that is not yet modeled as a verified DueDateHQ rule.
+* Rename CPA-facing manual deadline flows:
+  * Action labels should use `Add entered deadline`.
+  * Status/trust labels should use `Entered deadline`.
+  * Explanation labels should use `Reference`.
+  * Trust copy should include `Not verified by DueDateHQ`.
+* Migrate internal database and API semantics to match entered-deadline terminology:
+  * `deadline_tasks.source_type` should use `entered_deadline` instead of `user_provided` for firm-entered/manual deadlines.
+  * The source/reference note field should use entered-deadline/reference naming instead of user-provided naming in current schema/API code.
+  * Date event naming should use entered-deadline adjustment terminology where current code/database schema exposes user-provided adjustment terminology.
+  * A forward migration must convert existing `user_provided` rows and related reference/note fields to the new terminology.
+  * Historical migration files should not be manually rewritten unless the project migration tooling explicitly requires snapshot regeneration; add a new migration for the transition.
 
 ## Acceptance Criteria
 
@@ -53,6 +65,8 @@ Make the product easier to demo end to end by tightening the select control visu
 * [ ] Each CPA account has a visibly different client dataset.
 * [ ] Across the three accounts, the app can demonstrate the major workflows listed in Requirements.
 * [ ] Re-running the seed path does not create duplicate demo users or duplicate firm demo records.
+* [ ] CPA-facing UI no longer uses `User provided` as the primary manual deadline label.
+* [ ] Entered deadline surfaces show the recorded reference/source note.
 * [ ] Lint and type-check pass.
 * [ ] Browser verification covers the dashboard select controls and at least one login/demo-account path.
 
@@ -64,15 +78,23 @@ Make the product easier to demo end to end by tightening the select control visu
 * Demo account credentials and data intent are documented in the task or project docs if exposed to users.
 * Any docs under `docs/` or `specs/` modified in English are updated with corresponding `.zh.md` translations.
 
-## Open Questions
+## Demo CPA Accounts
 
-* Which three CPA firm personas/client data splits should be used for the MVP?
+The MVP should use three CPA accounts split by workflow coverage:
+
+* `demo-triage@duedatehq.test` — Greenfield CPA firm with enough verified official deadlines to show dashboard horizons, overdue/due-this-week/this-month/long-range sections, statuses, firm target dates, evidence, and export.
+* `demo-coverage@duedatehq.test` — Multi-state CPA firm with client profiles that produce coverage gaps, unsupported obligations, needs-review items, verification requests, and entered deadlines with references.
+* `demo-notices@duedatehq.test` — Review-heavy CPA firm with source-changed rules, notice impact proposals, audit trail examples, and mixed deadline statuses.
+
+Use a shared documented demo password unless the implementation has an existing safer local convention.
 
 ## Concept Decision
 
 The product user is the CPA. The CPA imports or manually enters data about the CPA firm's clients. End-clients do not log into the product in Beta and should not be modeled as `user` records.
 
-CPA-facing "User provided deadline" language is ambiguous because it can sound like the client supplied the deadline. The product should instead express the concept as a custom or firm-defined deadline: a deadline the CPA firm adds for planning/tracking when DueDateHQ does not have a verified official rule.
+CPA-facing "User provided deadline" language is ambiguous because it can sound like the client supplied the deadline. `Custom deadline` is also too vague because it does not answer what the CPA used as the reference.
+
+The product should instead express the concept as an entered deadline: a deadline the CPA firm enters when DueDateHQ does not have a verified official rule or when the deadline depends on client-specific information. The UI should pair the trust label with a reference note so the CPA can tell whether it came from client source data, a client notice, prior-year workpapers, CPA judgment, or another firm-defined reference.
 
 ## Logic Impact Assessment
 
@@ -82,15 +104,16 @@ Core domain logic should not need a broad rewrite because the existing model alr
 * `firms` represent CPA firm workspaces.
 * Business data is scoped by `firmId`.
 * `client_relationships` and `filing_profiles` represent the CPA firm's clients and tax profiles.
-* Internally, existing `user_provided` enum/source fields can remain for now if a broad schema migration is not needed.
+* Internal enum/source fields must be migrated from `user_provided` to `entered_deadline` so code and database semantics match the product concept.
 * CPA-facing UI, exports, demo data, and documentation should not rely on `User provided` as the primary label.
+* The entered-deadline reference field should become the CPA-facing explanation for the reference behind the entered deadline.
 
 Implementation should still review and tighten:
 
 * Visible copy: avoid "user data" when the intended meaning is "client data" or "firm client data".
 * Demo/test data: create CPA accounts and CPA firm datasets, not end-client accounts.
 * Authorization boundaries: business procedures must continue to scope by `session.firm.id`, not only `session.user.id`.
-* Labels around custom/manual deadlines: use wording such as `Custom deadline` and `Defined by firm - Not verified by DueDateHQ`.
+* Labels around manual deadlines: use wording such as `Entered deadline` and `Reference recorded - Not verified by DueDateHQ`.
 
 ## Out Of Scope
 
@@ -98,6 +121,16 @@ Implementation should still review and tighten:
 * Production self-service demo reset UI.
 * External email/SMS/calendar notification integrations.
 * Replacing Better Auth.
+
+## Technical Approach
+
+* Update shared select spacing in `packages/ui` and verify dashboard filters.
+* Migrate DB schema, migration snapshots, API types, and code paths from `user_provided`/`userProvidedSourceNote` naming to entered-deadline/reference naming.
+* Centralize entered deadline labels where practical so storage/API/UI copy remain consistent.
+* Update dashboard, task table, evidence drawer, manual client/deadline pages, coverage actions, and export copy that currently says `User provided`.
+* Add or update tests around API labels/export output so `Entered deadline` and reference notes are covered.
+* Add an idempotent demo seed path for the three CPA accounts and firm-scoped datasets.
+* Prefer deterministic demo IDs and cleanup/upsert behavior over append-only seeding.
 
 ## Technical Notes
 

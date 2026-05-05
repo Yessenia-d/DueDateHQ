@@ -1,7 +1,7 @@
 {
-  "id": "demo-test-accounts-selector-polish",
-  "name": "demo-test-accounts-selector-polish",
-  "title": "Polish selector spacing and add demo test accounts",
+  "id": "clients-list-page",
+  "name": "clients-list-page",
+  "title": "Add clients list page",
   "description": "",
   "status": "in_progress",
   "dev_type": null,
