@@ -1,0 +1,103 @@
+# Tax Rule Verification
+
+## Goal
+
+Define the verification status system that controls whether a tax rule can generate official deadline tasks and how users understand rule trust.
+
+## User Flow
+
+1. User sees a deadline or coverage entry.
+2. User sees verification status.
+3. User opens evidence.
+4. User understands source, rule, calculation, and last verification.
+5. Internal reviewer can verify, reject, or re-verify a rule.
+
+## Flow Diagram
+
+```mermaid
+stateDiagram-v2
+  [*] --> Unsupported
+  Unsupported --> NeedsReview: coverage requested or candidate found
+  NeedsReview --> Verified: reviewer approves
+  Verified --> SourceChanged: official source changed
+  SourceChanged --> Verified: reviewer approves updated rule
+  NeedsReview --> Unsupported: reviewer rejects as unsupported
+```
+
+## Pages
+
+- Dashboard evidence drawer.
+- `/coverage` rule detail.
+- `/verification` internal queue.
+
+## API
+
+- `tasks.getEvidence`
+- `verificationQueue.list`
+- `verificationQueue.approveCandidate`
+- `verificationQueue.rejectCandidate`
+- `verificationQueue.markReviewed`
+
+## Data Model
+
+`tax_rules.verificationStatus`
+
+- `verified`
+- `needs_review`
+- `source_changed`
+- `unsupported`
+
+Evidence fields:
+
+- Source name.
+- Source URL.
+- Rule summary.
+- Due date rule.
+- Last verified at.
+- Source last checked at.
+- Source last changed at.
+- Current version.
+- Previous version.
+- Verification notes.
+
+Manual deadlines use `deadline_tasks.sourceType = user_provided` and are not tax rule verification statuses.
+
+## Status Rules
+
+`Verified` requires:
+
+- Official source exists.
+- Rule applies to jurisdiction, entity, tax category, and tax year context.
+- Calculation rule is stored.
+- Review is completed.
+- Source has not changed since verification.
+
+`Needs review` applies when:
+
+- Candidate rule exists but is not reviewed.
+- Source is unclear.
+- User reports issue.
+- Rule has expired review window.
+
+`Source changed` applies when:
+
+- Previously verified source content changes.
+- Source URL changes, redirects, or fails.
+- New official notice appears.
+
+`Unsupported` applies when:
+
+- Obligation is known but DueDateHQ cannot schedule it safely.
+
+## Acceptance Criteria
+
+- Only `verified` rules generate official deadline tasks.
+- `needs_review` rules do not generate official tasks.
+- `source_changed` rules do not generate new official tasks.
+- `unsupported` obligations only appear in coverage.
+- Evidence drawer can explain status and source lineage.
+
+## Out of Scope
+
+- Fully automated legal/tax interpretation.
+- User override that labels a system rule as verified.

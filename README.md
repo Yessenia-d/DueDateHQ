@@ -2,6 +2,24 @@
 
 This project was created with [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack), a modern TypeScript stack that combines React, TanStack Router, Hono, TRPC, and more.
 
+## Product & Technical Planning
+
+DueDateHQ is being developed with Spec-Driven Development.
+
+English is the default documentation language. Every product, technical, and feature spec document should also have a Chinese counterpart using the `.zh.md` suffix for review.
+
+- Beta plan: [docs/due-date-hq-beta-plan.md](docs/due-date-hq-beta-plan.md)
+- Product plan: [docs/product/due-date-hq-product-plan.md](docs/product/due-date-hq-product-plan.md)
+- Technical plan: [docs/technical/due-date-hq-beta-technical-plan.md](docs/technical/due-date-hq-beta-technical-plan.md)
+- Feature specs: [specs/README.md](specs/README.md)
+
+Chinese review versions:
+
+- Beta plan: [docs/due-date-hq-beta-plan.zh.md](docs/due-date-hq-beta-plan.zh.md)
+- Product plan: [docs/product/due-date-hq-product-plan.zh.md](docs/product/due-date-hq-product-plan.zh.md)
+- Technical plan: [docs/technical/due-date-hq-beta-technical-plan.zh.md](docs/technical/due-date-hq-beta-technical-plan.zh.md)
+- Feature specs: [specs/README.zh.md](specs/README.zh.md)
+
 ## Features
 
 - **TypeScript** - For type safety and improved developer experience
