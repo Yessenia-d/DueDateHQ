@@ -1,0 +1,6 @@
+{"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python3 .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file": "specs/README.md", "reason": "Global DueDateHQ SDD invariants and Beta boundaries"}
+{"file": "specs/manual-client-and-deadline-entry.md", "reason": "Manual client/profile/deadline contract"}
+{"file": "specs/tax-rule-verification.md", "reason": "Manual deadline verification boundary"}
+{"file": ".trellis/spec/api/backend/index.md", "reason": "API backend guidelines"}
+{"file": ".trellis/spec/web/frontend/index.md", "reason": "Manual entry UI guidelines"}
