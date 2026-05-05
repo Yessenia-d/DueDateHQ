@@ -78,7 +78,7 @@ export function BulkTaskActions({
           type="button"
           variant="outline"
           size="sm"
-          className="h-8 w-32 justify-between border-ddhq-border-strong bg-card text-foreground shadow-sm"
+          className="h-8 w-32 justify-between rounded-lg border-border/80 bg-card text-foreground shadow-none hover:border-border hover:bg-muted/40"
           aria-expanded={bulkActionsOpen}
           disabled={selectedCount === 0 || isBusy}
           onClick={() => setBulkActionsOpen((current) => !current)}
@@ -92,7 +92,7 @@ export function BulkTaskActions({
           />
         </Button>
         {bulkActionsOpen ? (
-          <div className="absolute right-0 top-10 z-[70] w-[28rem] rounded-lg border border-border/90 bg-popover p-3 text-foreground shadow-xl">
+          <div className="absolute right-0 top-10 z-[70] w-[28rem] rounded-xl border border-border/90 bg-popover p-3 text-foreground shadow-xl">
             <div className="mb-3">
               <div className="text-sm font-semibold">批量操作</div>
               <div className="mt-0.5 text-xs text-muted-foreground">
@@ -106,10 +106,10 @@ export function BulkTaskActions({
                   value={bulkStatus}
                   onValueChange={(value) => setBulkStatus(value as DeadlineTaskStatus)}
                 >
-                  <SelectTrigger className="h-8 w-full">
+                  <SelectTrigger className="h-8 w-full rounded-lg">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="rounded-lg" positionerClassName="z-[90]">
                     {taskStatuses.map((status) => (
                       <SelectItem key={status} value={status}>
                         {statusLabels[status]}
@@ -121,7 +121,7 @@ export function BulkTaskActions({
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="h-8 w-20"
+                  className="h-8 w-20 rounded-lg border-border/80"
                   disabled={selectedCount === 0 || isBusy}
                   onClick={() =>
                     bulkUpdateStatus.mutate({
@@ -137,7 +137,7 @@ export function BulkTaskActions({
                 <div className="text-xs font-medium text-muted-foreground">Firm target</div>
                 <Input
                   aria-label="Bulk firm target date"
-                  className="h-8 w-full"
+                  className="h-8 w-full rounded-lg"
                   type="date"
                   value={bulkFirmTargetDate}
                   onChange={(event) => setBulkFirmTargetDate(event.target.value)}
@@ -146,7 +146,7 @@ export function BulkTaskActions({
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="h-8 w-20"
+                  className="h-8 w-20 rounded-lg border-border/80"
                   disabled={selectedCount === 0 || isBusy}
                   onClick={() =>
                     bulkUpdateFirmTarget.mutate({

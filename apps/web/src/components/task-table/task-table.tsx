@@ -124,20 +124,22 @@ const trustSortRank: Record<DashboardTaskRow["verificationStatus"], number> = {
   unsupported: 5,
 };
 
+const tableHeaderCellClass =
+  "sticky top-0 z-20 bg-muted text-[11px] font-semibold uppercase text-muted-foreground";
 const stickySelectHeaderClass =
-  "sticky left-0 z-40 w-10 min-w-10 bg-muted";
+  "sticky left-0 top-0 z-50 w-10 min-w-10 bg-muted";
 const stickySelectCellClass =
   "sticky left-0 z-30 w-10 min-w-10 bg-background group-hover:bg-muted";
 const stickyClientHeaderClass =
-  "sticky left-10 z-40 w-48 min-w-48 bg-muted";
+  "sticky left-10 top-0 z-50 w-48 min-w-48 bg-muted";
 const stickyClientCellClass =
   "sticky left-10 z-30 w-48 min-w-48 bg-background group-hover:bg-muted";
 const stickyProfileHeaderClass =
-  "sticky left-[14.5rem] z-40 w-48 min-w-48 border-r border-border bg-muted shadow-[10px_0_14px_-14px_rgba(0,0,0,0.45)]";
+  "sticky left-[14.5rem] top-0 z-50 w-48 min-w-48 border-r border-border bg-muted shadow-[10px_0_14px_-14px_rgba(0,0,0,0.45)]";
 const stickyProfileCellClass =
   "sticky left-[14.5rem] z-30 w-48 min-w-48 border-r border-border bg-background shadow-[10px_0_14px_-14px_rgba(0,0,0,0.45)] group-hover:bg-muted";
 const stickyActionsHeaderClass =
-  "sticky right-0 z-40 w-[188px] min-w-[188px] rounded-tr-lg border-l border-border bg-muted text-right shadow-[-10px_0_14px_-14px_rgba(0,0,0,0.45)]";
+  "sticky right-0 top-0 z-50 w-[188px] min-w-[188px] rounded-tr-lg border-l border-border bg-muted text-right shadow-[-10px_0_14px_-14px_rgba(0,0,0,0.45)]";
 const stickyActionsCellClass =
   "sticky right-0 z-30 w-[188px] min-w-[188px] border-l border-border bg-background text-right shadow-[-10px_0_14px_-14px_rgba(0,0,0,0.45)] group-hover:bg-muted";
 
@@ -279,13 +281,13 @@ export function TaskTable({
           No tasks in this horizon.
         </div>
       ) : (
-        <div className="max-h-full max-w-full overflow-auto rounded-lg border border-border/80 bg-card">
+        <div className="max-h-full max-w-full overflow-auto rounded-lg border border-border/80 bg-card [&_[data-slot=table-container]]:overflow-visible">
           <Table className="min-w-[1610px]">
             <TableHeader>
               <TableRow className="bg-muted/40">
               <TableHead
                 className={cn(
-                  "text-[11px] font-semibold uppercase text-muted-foreground",
+                  tableHeaderCellClass,
                   stickySelectHeaderClass,
                 )}
               >
@@ -297,7 +299,7 @@ export function TaskTable({
               </TableHead>
               <TableHead
                 className={cn(
-                  "text-[11px] font-semibold uppercase text-muted-foreground",
+                  tableHeaderCellClass,
                   stickyClientHeaderClass,
                 )}
               >
@@ -310,7 +312,7 @@ export function TaskTable({
               </TableHead>
               <TableHead
                 className={cn(
-                  "text-[11px] font-semibold uppercase text-muted-foreground",
+                  tableHeaderCellClass,
                   stickyProfileHeaderClass,
                 )}
               >
@@ -321,7 +323,7 @@ export function TaskTable({
                   onSort={toggleSort}
                 />
               </TableHead>
-              <TableHead className="text-[11px] font-semibold uppercase text-muted-foreground">
+              <TableHead className={tableHeaderCellClass}>
                 <SortHeader
                   label="Obligation"
                   sortKey="obligation"
@@ -329,7 +331,7 @@ export function TaskTable({
                   onSort={toggleSort}
                 />
               </TableHead>
-              <TableHead className="text-right text-[11px] font-semibold uppercase text-muted-foreground">
+              <TableHead className={cn(tableHeaderCellClass, "text-right")}>
                 <SortHeader
                   align="right"
                   label="Official due date"
@@ -338,7 +340,7 @@ export function TaskTable({
                   onSort={toggleSort}
                 />
               </TableHead>
-              <TableHead className="text-right text-[11px] font-semibold uppercase text-muted-foreground">
+              <TableHead className={cn(tableHeaderCellClass, "text-right")}>
                 <SortHeader
                   align="right"
                   label="Firm target"
@@ -347,7 +349,7 @@ export function TaskTable({
                   onSort={toggleSort}
                 />
               </TableHead>
-              <TableHead className="text-[11px] font-semibold uppercase text-muted-foreground">
+              <TableHead className={tableHeaderCellClass}>
                 <SortHeader
                   label="Trust"
                   sortKey="trust"
@@ -355,7 +357,7 @@ export function TaskTable({
                   onSort={toggleSort}
                 />
               </TableHead>
-              <TableHead className="text-right text-[11px] font-semibold uppercase text-muted-foreground">
+              <TableHead className={cn(tableHeaderCellClass, "text-right")}>
                 <SortHeader
                   align="right"
                   label="Countdown"
@@ -364,7 +366,7 @@ export function TaskTable({
                   onSort={toggleSort}
                 />
               </TableHead>
-              <TableHead className="min-w-[11rem] text-[11px] font-semibold uppercase text-muted-foreground">
+              <TableHead className={cn(tableHeaderCellClass, "min-w-[11rem]")}>
                 <SortHeader
                   label="Status"
                   sortKey="status"
@@ -372,7 +374,7 @@ export function TaskTable({
                   onSort={toggleSort}
                 />
               </TableHead>
-              <TableHead className="text-[11px] font-semibold uppercase text-muted-foreground">
+              <TableHead className={tableHeaderCellClass}>
                 <SortHeader
                   label="EIN / SSN last 4"
                   sortKey="identifier"
@@ -380,7 +382,7 @@ export function TaskTable({
                   onSort={toggleSort}
                 />
               </TableHead>
-              <TableHead className="text-[11px] font-semibold uppercase text-muted-foreground">
+              <TableHead className={tableHeaderCellClass}>
                 <SortHeader
                   label="Jurisdiction"
                   sortKey="jurisdiction"
@@ -388,12 +390,12 @@ export function TaskTable({
                   onSort={toggleSort}
                 />
               </TableHead>
-              <TableHead className="min-w-56 text-[11px] font-semibold uppercase text-muted-foreground">
+              <TableHead className={cn(tableHeaderCellClass, "min-w-56")}>
                 Notes
               </TableHead>
               <TableHead
                 className={cn(
-                  "text-[11px] font-semibold uppercase text-muted-foreground",
+                  tableHeaderCellClass,
                   stickyActionsHeaderClass,
                 )}
               >

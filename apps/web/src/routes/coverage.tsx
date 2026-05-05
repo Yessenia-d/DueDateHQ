@@ -107,8 +107,6 @@ const coverageActionButtonClassName =
   "w-full cursor-pointer rounded-[6px] !border-ddhq-border-strong !bg-background px-2 text-[11px] font-semibold shadow-[inset_0_-1px_0_rgba(0,0,0,0.04)] hover:!border-primary/60 hover:!bg-ddhq-accent-soft/60 hover:!text-foreground focus-visible:!border-primary focus-visible:!ring-primary/25";
 const evidenceLabelClassName =
   "text-[11px] font-semibold uppercase leading-4 text-muted-foreground";
-const evidenceValueClassName = "mt-1.5 text-sm leading-5 text-foreground";
-const evidenceMetadataValueClassName = "mt-1 font-mono text-[12px] leading-5 text-foreground";
 const dateHighlightClassName =
   "inline-flex min-w-[6.5rem] items-center rounded-[6px] border border-ddhq-review/35 bg-ddhq-review-soft/55 px-2 py-1 font-mono text-[12px] font-semibold leading-4 text-foreground";
 const extensionDateHighlightClassName =
@@ -603,24 +601,31 @@ function RuleDetailContent({
 
   return (
     <>
-      <div className="flex items-center justify-between border-b border-border px-5 py-4">
-        <h2 className="text-base font-semibold">Rule evidence</h2>
+      <div className="flex items-center justify-between border-b border-border px-4 py-3">
+        <div>
+          <div className="text-xs font-semibold text-muted-foreground">Evidence</div>
+          <h2 className="text-base font-semibold">Rule evidence</h2>
+        </div>
       </div>
 
       {ruleDetail.isPending && (
-        <div className="p-4 text-sm text-muted-foreground">Loading evidence...</div>
+        <div className="space-y-3 p-4">
+          <div className="h-16 animate-pulse rounded-lg border border-border bg-muted" />
+          <div className="h-40 animate-pulse rounded-lg border border-border bg-muted" />
+        </div>
       )}
 
       {ruleDetail.isError && (
-        <div className="p-4 text-sm text-ddhq-risk">Could not load rule evidence.</div>
+        <div className="m-4 rounded-lg border border-ddhq-risk/30 bg-ddhq-risk-soft p-3 text-sm text-ddhq-risk">
+          Could not load rule evidence.
+        </div>
       )}
 
       {ruleDetail.data && (
-        <div className="flex flex-col gap-5 overflow-y-auto px-5 py-5">
+        <div className="min-h-0 flex-1 overflow-auto p-4">
           {/* Obligation info */}
-          <section className="border-b border-border pb-5">
-            <div className={evidenceLabelClassName}>Obligation</div>
-            <div className="mt-1.5 text-sm font-semibold leading-5 text-foreground">
+          <section className="border-b border-border pb-4">
+            <div className="text-sm font-semibold leading-5 text-foreground">
               {ruleDetail.data.obligationName}
             </div>
             <div className="mt-1 text-xs leading-4 text-muted-foreground">
@@ -632,7 +637,7 @@ function RuleDetailContent({
           </section>
 
           {/* Entity types */}
-          <section className="border-b border-border pb-5">
+          <section className="border-b border-border py-4">
             <div className={evidenceLabelClassName}>Entity types</div>
             <div className="mt-2 flex flex-wrap gap-1.5">
               {ruleDetail.data.entityTypes.map((et) => (
@@ -646,86 +651,76 @@ function RuleDetailContent({
             </div>
           </section>
 
-          {/* Verification status */}
-          <section className="border-b border-border pb-5">
-            <div className={evidenceLabelClassName}>Verification status</div>
-            <div className="mt-2">
-              <VerificationBadge
-                statusKey={getStatusKey(ruleDetail.data.verificationStatus)}
-              />
+          {/* Source evidence */}
+          <section className="border-b border-border py-4">
+            <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
+              {ruleDetail.data.verificationStatus === "verified" ? (
+                <ShieldCheck className="size-4 text-ddhq-verified" />
+              ) : (
+                <ShieldAlert className="size-4 text-ddhq-review" />
+              )}
+              Source evidence
             </div>
-          </section>
-
-          {/* Rule summary */}
-          <section className="border-b border-border pb-5">
-            <div className={evidenceLabelClassName}>Rule summary</div>
-            <div className={evidenceValueClassName}>{ruleDetail.data.ruleSummary}</div>
-          </section>
-
-          {/* Source */}
-          <section className="border-b border-border pb-5">
-            <div className={evidenceLabelClassName}>Official source</div>
-            <div className="mt-2 rounded-[8px] border border-ddhq-accent/25 bg-ddhq-accent-soft/45 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.72)]">
-              <div className="flex items-start gap-2.5">
-                <span className="grid size-7 shrink-0 place-items-center rounded-[6px] border border-ddhq-accent/25 bg-background text-ddhq-accent">
-                  <ShieldCheck className="size-4" aria-hidden="true" />
-                </span>
-                <div className="min-w-0">
-                  <div className="text-sm font-semibold leading-5 text-foreground">
-                    {ruleDetail.data.sourceName}
-                  </div>
-                  {ruleDetail.data.sourceUrl && (
-                    <a
-                      href={ruleDetail.data.sourceUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-1.5 inline-flex max-w-full items-start gap-1.5 font-mono text-[12px] leading-5 text-ddhq-accent [overflow-wrap:anywhere] hover:text-foreground"
-                    >
-                      <ExternalLink className="mt-0.5 size-3 shrink-0" />
-                      {ruleDetail.data.sourceUrl}
-                    </a>
-                  )}
-                </div>
+            <div className="space-y-3 text-xs">
+              <div className="flex items-center justify-between rounded-lg border border-border bg-muted px-2 py-1.5">
+                <span className="text-muted-foreground">Verification</span>
+                <VerificationBadge
+                  statusKey={getStatusKey(ruleDetail.data.verificationStatus)}
+                />
               </div>
-            </div>
-          </section>
-
-          {/* Timestamps */}
-          <section className="grid grid-cols-2 gap-x-4 gap-y-4 border-b border-border pb-5">
-            <EvidenceDateCard
-              label="Last verified"
-              value={
-                ruleDetail.data.lastVerifiedAt
-                  ? formatDate(ruleDetail.data.lastVerifiedAt)
-                  : "-"
-              }
-            />
-            <EvidenceDateCard
-              label="Source last checked"
-              value={
-                ruleDetail.data.sourceLastCheckedAt
-                  ? formatDate(ruleDetail.data.sourceLastCheckedAt)
-                  : "-"
-              }
-            />
-            <EvidenceDateCard
-              label="Source last changed"
-              tone={ruleDetail.data.sourceLastChangedAt ? "changed" : "stable"}
-              value={
-                ruleDetail.data.sourceLastChangedAt
-                  ? formatDate(ruleDetail.data.sourceLastChangedAt)
-                  : "No changes detected"
-              }
-            />
-            <div>
-              <div className={evidenceLabelClassName}>Rule version</div>
-              <div className={evidenceMetadataValueClassName}>v{ruleDetail.data.currentVersion}</div>
+              <p className="leading-5 text-muted-foreground">{ruleDetail.data.ruleSummary}</p>
+              <div className="grid gap-2">
+                <RuleEvidenceField label="Source name" value={ruleDetail.data.sourceName ?? "None"} />
+                {ruleDetail.data.sourceUrl ? (
+                  <a
+                    className="inline-flex items-center gap-1 font-mono text-xs font-medium text-primary [overflow-wrap:anywhere]"
+                    href={ruleDetail.data.sourceUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {ruleDetail.data.sourceUrl}
+                    <ExternalLink className="size-3 shrink-0" />
+                  </a>
+                ) : null}
+                <RuleEvidenceField
+                  label="Last verified"
+                  value={
+                    ruleDetail.data.lastVerifiedAt
+                      ? formatDateTime(ruleDetail.data.lastVerifiedAt)
+                      : "Not verified"
+                  }
+                  mono
+                />
+                <RuleEvidenceField
+                  label="Source last checked"
+                  value={
+                    ruleDetail.data.sourceLastCheckedAt
+                      ? formatDateTime(ruleDetail.data.sourceLastCheckedAt)
+                      : "Not checked"
+                  }
+                  mono
+                />
+                <RuleEvidenceField
+                  label="Source last changed"
+                  value={
+                    ruleDetail.data.sourceLastChangedAt
+                      ? formatDateTime(ruleDetail.data.sourceLastChangedAt)
+                      : "No change recorded"
+                  }
+                  mono
+                />
+                <RuleEvidenceField
+                  label="Rule version"
+                  value={`v${ruleDetail.data.currentVersion}`}
+                  mono
+                />
+              </div>
             </div>
           </section>
 
           {/* Verification notes */}
           {ruleDetail.data.verificationNotes && (
-            <section className="border-b border-border pb-5">
+            <section className="border-b border-border py-4">
               <div className={evidenceLabelClassName}>Verification notes</div>
               <div className="mt-1.5 text-sm leading-5 text-muted-foreground">
                 {ruleDetail.data.verificationNotes}
@@ -734,7 +729,7 @@ function RuleDetailContent({
           )}
 
           {/* Example due dates */}
-          <section>
+          <section className="py-4">
             <div className={evidenceLabelClassName}>Calculated due dates</div>
             <div className="mt-2 overflow-hidden rounded-[8px] border border-border bg-background">
               <Table>
@@ -779,28 +774,11 @@ function RuleDetailContent({
   );
 }
 
-function EvidenceDateCard({
-  label,
-  tone = "date",
-  value,
-}: {
-  label: string;
-  tone?: "date" | "changed" | "stable";
-  value: string;
-}) {
-  const toneClassName =
-    tone === "stable"
-      ? "border-ddhq-verified/25 bg-ddhq-verified-soft/45"
-      : tone === "changed"
-        ? "border-ddhq-review/35 bg-ddhq-review-soft/55"
-        : "border-ddhq-accent/25 bg-ddhq-accent-soft/45";
-
+function RuleEvidenceField({ label, mono, value }: { label: string; mono?: boolean; value: string }) {
   return (
-    <div className={`rounded-[8px] border px-3 py-2.5 ${toneClassName}`}>
-      <div className={evidenceLabelClassName}>{label}</div>
-      <div className="mt-1 font-mono text-[12px] font-semibold leading-5 text-foreground">
-        {value}
-      </div>
+    <div className="grid gap-1">
+      <span className="text-muted-foreground">{label}</span>
+      <span className={`font-medium ${mono ? "font-mono" : ""}`}>{value}</span>
     </div>
   );
 }
@@ -819,5 +797,15 @@ function formatDate(value: string) {
     day: "numeric",
     year: "numeric",
     timeZone: "UTC",
+  }).format(new Date(value));
+}
+
+function formatDateTime(value: string): string {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
   }).format(new Date(value));
 }
