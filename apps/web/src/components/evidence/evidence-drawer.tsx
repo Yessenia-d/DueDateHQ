@@ -54,6 +54,9 @@ export function EvidenceDrawer({
 }
 
 function EvidenceContent({ evidence }: { evidence: TaskEvidenceResponse }) {
+  const historyItems = createHistoryItems(evidence);
+  const showTaskHistory = false;
+
   return (
     <div className="min-h-0 flex-1 overflow-auto p-4">
       <section className="border-b border-border pb-4">
@@ -163,76 +166,49 @@ function EvidenceContent({ evidence }: { evidence: TaskEvidenceResponse }) {
         )}
       </section>
 
-      <section className="py-4">
-        <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
-          <History className="size-4" />
-          Date event history
-        </div>
-        {evidence.dateEvents.length === 0 ? (
-          <div className="rounded-lg border border-border bg-muted p-3 text-xs text-muted-foreground">
-            No date events recorded.
+      {/* Task history entry is temporarily hidden; keep the timeline implementation for later restore. */}
+      {showTaskHistory ? (
+        <section className="py-4">
+          <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
+            <History className="size-4" />
+            Task history
           </div>
-        ) : (
-          <ol className="space-y-3">
-            {evidence.dateEvents.map((event) => (
-              <li key={event.id} className="rounded-lg border border-border p-3 text-xs">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="font-semibold">{event.eventType}</div>
-                  <div className="text-right font-mono text-muted-foreground">{formatDateTime(event.createdAt)}</div>
-                </div>
-                <div className="mt-2 grid gap-1 text-muted-foreground">
-                  {event.previousCurrentDueDate || event.newCurrentDueDate ? (
-                    <span>
-                      Official due date: {event.previousCurrentDueDate ?? "None"} to{" "}
-                      {event.newCurrentDueDate ?? "None"}
-                    </span>
-                  ) : null}
-                  {event.previousFirmTargetDate || event.newFirmTargetDate ? (
-                    <span>
-                      Firm target date: {event.previousFirmTargetDate ?? "None"} to{" "}
-                      {event.newFirmTargetDate ?? "None"}
-                    </span>
-                  ) : null}
-                  {event.sourceName ? <span>Source: {event.sourceName}</span> : null}
-                  {event.notes ? <span>{event.notes}</span> : null}
-                </div>
-              </li>
-            ))}
-          </ol>
-        )}
-      </section>
-
-      <section className="border-t border-border py-4">
-        <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
-          <History className="size-4" />
-          Task update history
-        </div>
-        {evidence.updateRecords.length === 0 ? (
-          <div className="rounded-lg border border-border bg-muted p-3 text-xs text-muted-foreground">
-            No task updates recorded.
-          </div>
-        ) : (
-          <ol className="space-y-3">
-            {evidence.updateRecords.map((record) => (
-              <li key={record.id} className="rounded-lg border border-border p-3 text-xs">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="font-semibold">{formatTaskUpdateField(record.fieldName)}</div>
-                  <div className="text-right font-mono text-muted-foreground">
-                    {formatDateTime(record.createdAt)}
+          {historyItems.length === 0 ? (
+            <div className="rounded-lg border border-border bg-muted p-3 text-xs text-muted-foreground">
+              No task history recorded.
+            </div>
+          ) : (
+            <ol className="space-y-3">
+              {historyItems.map((item) => (
+                <li key={item.id} className="rounded-lg border border-border p-3 text-xs">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="font-semibold">{item.title}</div>
+                    <div className="text-right font-mono text-muted-foreground">
+                      {formatDateTime(item.createdAt)}
+                    </div>
                   </div>
-                </div>
-                <div className="mt-2 grid gap-1 text-muted-foreground">
-                  <span>
-                    {formatTaskUpdateValue(record.fieldName, record.previousValue)} to{" "}
-                    {formatTaskUpdateValue(record.fieldName, record.newValue)}
-                  </span>
-                  <span>{formatTaskUpdateAction(record.action)}</span>
-                </div>
-              </li>
-            ))}
-          </ol>
-        )}
-      </section>
+                  <div className="mt-2 grid gap-1 text-muted-foreground">
+                    {item.details.map((detail) => (
+                      <span key={detail}>{detail}</span>
+                    ))}
+                    {item.sourceUrl ? (
+                      <a
+                        className="inline-flex min-w-0 items-center gap-1 font-mono text-xs font-medium text-primary"
+                        href={item.sourceUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        <span className="break-all">{item.sourceUrl}</span>
+                        <ExternalLink className="size-3 shrink-0" />
+                      </a>
+                    ) : null}
+                  </div>
+                </li>
+              ))}
+            </ol>
+          )}
+        </section>
+      ) : null}
     </div>
   );
 }
@@ -300,6 +276,93 @@ function formatDateTime(value: string): string {
     hour: "numeric",
     minute: "2-digit",
   }).format(new Date(value));
+}
+
+type HistoryItem = {
+  id: string;
+  createdAt: string;
+  details: string[];
+  sourceUrl?: string | null;
+  title: string;
+};
+
+function createHistoryItems(evidence: TaskEvidenceResponse): HistoryItem[] {
+  const dateItems = evidence.dateEvents.map((event) => ({
+    id: `date-${event.id}`,
+    createdAt: event.createdAt,
+    title: formatDateEventTitle(event.eventType),
+    details: [
+      event.previousCurrentDueDate || event.newCurrentDueDate
+        ? `Official due date: ${event.previousCurrentDueDate ?? "None"} to ${
+            event.newCurrentDueDate ?? "None"
+          }`
+        : null,
+      event.previousFirmTargetDate || event.newFirmTargetDate
+        ? `Firm target date: ${event.previousFirmTargetDate ?? "None"} to ${
+            event.newFirmTargetDate ?? "None"
+          }`
+        : null,
+      event.sourceName ? `Source: ${event.sourceName}` : null,
+      event.notes,
+    ].filter((detail): detail is string => Boolean(detail)),
+    sourceUrl: event.sourceUrl,
+  }));
+  const updateItems = evidence.updateRecords
+    .filter((record) => !isDateEventBackedTaskUpdate(record, evidence.dateEvents))
+    .map((record) => ({
+      id: `update-${record.id}`,
+      createdAt: record.createdAt,
+      title: formatTaskUpdateField(record.fieldName),
+      details: [
+        `${formatTaskUpdateValue(record.fieldName, record.previousValue)} to ${formatTaskUpdateValue(
+          record.fieldName,
+          record.newValue,
+        )}`,
+        formatTaskUpdateAction(record.action),
+      ],
+    }));
+
+  return [...dateItems, ...updateItems].sort((left, right) =>
+    left.createdAt.localeCompare(right.createdAt),
+  );
+}
+
+function isDateEventBackedTaskUpdate(
+  record: TaskEvidenceResponse["updateRecords"][number],
+  events: TaskEvidenceResponse["dateEvents"],
+): boolean {
+  return events.some((event) => {
+    if (record.fieldName === "currentDueDate") {
+      return (
+        event.previousCurrentDueDate === record.previousValue &&
+        event.newCurrentDueDate === record.newValue
+      );
+    }
+
+    if (record.fieldName === "firmTargetDate") {
+      return (
+        event.previousFirmTargetDate === record.previousValue &&
+        event.newFirmTargetDate === record.newValue
+      );
+    }
+
+    return false;
+  });
+}
+
+function formatDateEventTitle(eventType: TaskEvidenceResponse["dateEvents"][number]["eventType"]): string {
+  switch (eventType) {
+    case "official_original_due_date":
+      return "Original due date recorded";
+    case "official_extension":
+      return "Official extension";
+    case "official_relief_change":
+      return "Official relief change";
+    case "entered_deadline_adjustment":
+      return "Entered deadline adjusted";
+    case "firm_target_change":
+      return "Firm target date";
+  }
 }
 
 function formatTaskUpdateField(fieldName: TaskEvidenceResponse["updateRecords"][number]["fieldName"]): string {

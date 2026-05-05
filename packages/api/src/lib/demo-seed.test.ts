@@ -52,7 +52,7 @@ test("demo datasets cover triage, coverage, and notice workflows", () => {
   assert.ok(triage.clientRelationships.length >= 7);
   assert.ok(triage.filingProfiles.length >= 8);
   assert.ok(triage.deadlineTasks.length >= 18);
-  assert.ok(triage.deadlineTasks.filter(isDueThisWeek).length >= 8);
+  assert.equal(triage.deadlineTasks.filter(isDueThisWeek).length, 200);
   assert.ok(triage.deadlineTasks.some((task) => task.currentDueDate < "2026-05-05"));
   assert.ok(triage.deadlineTasks.some((task) => task.currentDueDate > "2026-05-11"));
   assert.ok(
@@ -76,6 +76,24 @@ test("demo datasets cover triage, coverage, and notice workflows", () => {
         event.eventType === "official_extension" &&
         event.previousCurrentDueDate === "2026-05-05" &&
         event.newCurrentDueDate === "2026-05-07",
+    ),
+  );
+  assert.ok(triage.updateRecords.length >= 5);
+  assert.ok(
+    triage.updateRecords.some(
+      (record) =>
+        record.deadlineTaskId === "demo-triage-task-1040" &&
+        record.fieldName === "status" &&
+        record.previousValue === "not_started" &&
+        record.newValue === "waiting_on_client",
+    ),
+  );
+  assert.ok(
+    triage.updateRecords.some(
+      (record) =>
+        record.deadlineTaskId === "demo-triage-task-hawthorne-100es-q1" &&
+        record.fieldName === "notes" &&
+        record.newValue?.includes("Partner asked"),
     ),
   );
   assert.ok(triage.filingProfiles.some((profile) => profile.ssnLast4 === "2198"));
@@ -126,6 +144,7 @@ function rowsForFirm(plan: ReturnType<typeof buildDemoSeedPlan>, firmId: string)
     dateEvents: plan.deadlineDateEvents.filter((row) => row.firmId === firmId),
     deadlineTasks: plan.deadlineTasks.filter((row) => row.firmId === firmId),
     filingProfiles: plan.filingProfiles.filter((row) => row.firmId === firmId),
+    updateRecords: plan.deadlineTaskUpdateRecords.filter((row) => row.firmId === firmId),
     verificationRequests: plan.verificationRequests.filter((row) => row.firmId === firmId),
   };
 }

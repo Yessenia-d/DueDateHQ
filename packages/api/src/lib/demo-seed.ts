@@ -6,6 +6,7 @@ import { account, user } from "@due-date-hq/db/schema/auth";
 import {
   clientRelationships,
   deadlineDateEvents,
+  deadlineTaskUpdateRecords,
   deadlineTasks,
   filingProfiles,
 } from "@due-date-hq/db/schema/deadline-domain";
@@ -66,6 +67,8 @@ export const DEMO_ACCOUNTS = [
 ] as const;
 
 const DEMO_SEEDED_AT = new Date("2026-05-05T12:00:00.000Z");
+const DEMO_TRIAGE_DUE_THIS_WEEK_TARGET = 200;
+const DEMO_TRIAGE_BASE_DUE_THIS_WEEK_TASK_COUNT = 8;
 
 type DemoAccount = (typeof DEMO_ACCOUNTS)[number];
 type DemoSlug = DemoAccount["slug"];
@@ -197,6 +200,48 @@ export function buildDemoSeedPlan({
         notes: "Notice proposal accepted by the CPA for affected profiles.",
       }),
     ] satisfies Array<typeof deadlineDateEvents.$inferInsert>,
+    deadlineTaskUpdateRecords: [
+      taskUpdateRecord(identity(DEMO_ACCOUNTS[0]).firmId, "demo-triage-update-1040-status", {
+        action: "deadline_task.update_status",
+        deadlineTaskId: "demo-triage-task-1040",
+        fieldName: "status",
+        previousValue: "not_started",
+        newValue: "waiting_on_client",
+        createdAt: new Date("2026-05-02T15:30:00.000Z"),
+      }),
+      taskUpdateRecord(identity(DEMO_ACCOUNTS[0]).firmId, "demo-triage-update-540-status", {
+        action: "deadline_task.update_status",
+        deadlineTaskId: "demo-triage-task-540",
+        fieldName: "status",
+        previousValue: "not_started",
+        newValue: "in_progress",
+        createdAt: new Date("2026-05-03T16:00:00.000Z"),
+      }),
+      taskUpdateRecord(identity(DEMO_ACCOUNTS[0]).firmId, "demo-triage-update-hawthorne-notes", {
+        action: "client_relationship.update_notes",
+        deadlineTaskId: "demo-triage-task-hawthorne-100es-q1",
+        fieldName: "notes",
+        previousValue: "Imported from TaxDome for dashboard triage.",
+        newValue: "Imported from TaxDome for dashboard triage. Partner asked for Q1 estimate follow-up.",
+        createdAt: new Date("2026-05-04T14:15:00.000Z"),
+      }),
+      taskUpdateRecord(identity(DEMO_ACCOUNTS[0]).firmId, "demo-triage-update-100es-target", {
+        action: "deadline_task.update_firm_target_date",
+        deadlineTaskId: "demo-triage-task-hawthorne-100es-q1",
+        fieldName: "firmTargetDate",
+        previousValue: "2026-04-30",
+        newValue: "2026-05-02",
+        createdAt: new Date("2026-05-04T18:45:00.000Z"),
+      }),
+      taskUpdateRecord(identity(DEMO_ACCOUNTS[0]).firmId, "demo-triage-update-barton-status", {
+        action: "deadline_task.update_status",
+        deadlineTaskId: "demo-triage-task-barton-tx-sales",
+        fieldName: "status",
+        previousValue: "in_progress",
+        newValue: "not_started",
+        createdAt: new Date("2026-05-05T09:00:00.000Z"),
+      }),
+    ] satisfies Array<typeof deadlineTaskUpdateRecords.$inferInsert>,
     deadlineTasks: [
       task("demo-firm-triage", "demo-triage-task-1040", "demo-triage-client-rivera", "demo-triage-profile-rivera-1040", "rule-irs-1040-filing", "Form 1040 Filing", "federal", "Income tax", "2026-05-01", "2026-04-15", "2026-04-25", "waiting_on_client", "urgent"),
       task("demo-firm-triage", "demo-triage-task-540", "demo-triage-client-rivera", "demo-triage-profile-rivera-1040", "rule-ca-540-filing", "CA Form 540 Filing", "CA", "Income tax", "2026-05-05", "2026-04-15", "2026-05-01", "in_progress", "high"),
@@ -217,6 +262,7 @@ export function buildDemoSeedPlan({
       task("demo-firm-triage", "demo-triage-task-alameda-1041", "demo-triage-client-alameda", "demo-triage-profile-alameda-1041", "rule-irs-1041-filing", "Form 1041 Filing", "federal", "Income tax", "2026-09-30", "2026-04-15", "2026-09-15", "not_started", "normal"),
       task("demo-firm-triage", "demo-triage-task-oakpine-fl-1120", "demo-triage-client-oakpine", "demo-triage-profile-oakpine-1120", "rule-fl-f1120-filing", "FL F-1120 Filing", "FL", "Income tax", "2026-05-01", "2026-05-01", "2026-04-25", "done", "low"),
       task("demo-firm-triage", "demo-triage-task-oakpine-1120w-q2", "demo-triage-client-oakpine", "demo-triage-profile-oakpine-1120", "rule-irs-1120w-quarterly", "Form 1120-W Q2 Payment", "federal", "Estimated tax", "2026-05-11", "2026-06-15", "2026-05-08", "not_started", "low"),
+      ...triageDueThisWeekLoadTestTasks(),
       task("demo-firm-coverage", "demo-coverage-task-tx-franchise", "demo-coverage-client-northstar", "demo-coverage-profile-northstar-tx", "rule-tx-franchise-filing", "TX Franchise Tax Filing", "TX", "Franchise tax", "2026-05-15", "2026-05-15", "2026-05-08", "not_started", "high"),
       enteredTask("demo-firm-coverage", "demo-coverage-task-orchid-entered", "demo-coverage-client-orchid", "demo-coverage-profile-orchid-trust", "Trust state estimate payment", "OR", "Income tax", "2026-06-17", "2026-06-10", "Reference: prior-year workpaper and CPA judgment for trust estimate cadence."),
       enteredTask("demo-firm-coverage", "demo-coverage-task-lakeview-local", "demo-coverage-client-lakeview", "demo-coverage-profile-lakeview-llc", "City gross receipts filing", "Denver", "Local compliance", "2026-07-31", null, "Reference: client city notice uploaded to the firm workpaper system."),
@@ -583,6 +629,7 @@ export async function seedDemoData(dbBinding: D1DatabaseBinding) {
   await insertIfAny(db, deadlineTasks, plan.deadlineTasks);
   await insertIfAny(db, auditLogs, plan.auditLogs);
   await insertIfAny(db, deadlineDateEvents, plan.deadlineDateEvents);
+  await insertIfAny(db, deadlineTaskUpdateRecords, plan.deadlineTaskUpdateRecords, { optional: true });
   await insertIfAny(db, verificationRequests, plan.verificationRequests, { optional: true });
   await insertIfAny(db, importBatches, plan.importBatches, { optional: true });
   await insertIfAny(db, importReviewItems, plan.importReviewItems, { optional: true });
@@ -728,6 +775,78 @@ function enteredTask(
   } satisfies typeof deadlineTasks.$inferInsert;
 }
 
+function triageDueThisWeekLoadTestTasks() {
+  const templates = [
+    {
+      clientRelationshipId: "demo-triage-client-rivera",
+      filingProfileId: "demo-triage-profile-rivera-1040",
+      jurisdiction: "federal",
+      taxCategory: "Estimated tax",
+      taxRuleId: "rule-irs-1040es-quarterly",
+      title: "Form 1040-ES review",
+    },
+    {
+      clientRelationshipId: "demo-triage-client-hawthorne",
+      filingProfileId: "demo-triage-profile-hawthorne-1120s",
+      jurisdiction: "CA",
+      taxCategory: "Estimated tax",
+      taxRuleId: "rule-ca-100es-quarterly",
+      title: "CA Form 100-ES review",
+    },
+    {
+      clientRelationshipId: "demo-triage-client-barton",
+      filingProfileId: "demo-triage-profile-barton-sales",
+      jurisdiction: "TX",
+      taxCategory: "Sales tax",
+      taxRuleId: "rule-tx-sales-quarterly",
+      title: "TX Sales and Use Tax review",
+    },
+    {
+      clientRelationshipId: "demo-triage-client-summit",
+      filingProfileId: "demo-triage-profile-summit-1065",
+      jurisdiction: "CA",
+      taxCategory: "Franchise tax",
+      taxRuleId: "rule-ca-565-filing",
+      title: "CA Form 565 review",
+    },
+  ] as const;
+  const statuses = ["not_started", "in_progress", "waiting_on_client"] as const;
+  const priorities = ["normal", "high", "urgent", "low"] as const;
+  const dates = [
+    "2026-05-05",
+    "2026-05-06",
+    "2026-05-07",
+    "2026-05-08",
+    "2026-05-09",
+    "2026-05-10",
+    "2026-05-11",
+  ] as const;
+  const generatedCount =
+    DEMO_TRIAGE_DUE_THIS_WEEK_TARGET - DEMO_TRIAGE_BASE_DUE_THIS_WEEK_TASK_COUNT;
+
+  return Array.from({ length: generatedCount }, (_, index) => {
+    const template = templates[index % templates.length]!;
+    const dueDate = dates[index % dates.length]!;
+    const sequence = String(index + 1).padStart(3, "0");
+
+    return task(
+      "demo-firm-triage",
+      `demo-triage-load-due-week-${sequence}`,
+      template.clientRelationshipId,
+      template.filingProfileId,
+      template.taxRuleId,
+      `${template.title} ${sequence}`,
+      template.jurisdiction,
+      template.taxCategory,
+      dueDate,
+      dueDate,
+      dates[(index + 5) % dates.length]!,
+      statuses[index % statuses.length]!,
+      priorities[index % priorities.length]!,
+    );
+  });
+}
+
 function auditLog(
   firmId: string,
   id: string,
@@ -787,6 +906,33 @@ function dateEvent(
   } satisfies typeof deadlineDateEvents.$inferInsert;
 }
 
+function taskUpdateRecord(
+  firmId: string,
+  id: string,
+  overrides: Pick<
+    typeof deadlineTaskUpdateRecords.$inferInsert,
+    | "action"
+    | "createdAt"
+    | "deadlineTaskId"
+    | "fieldName"
+    | "newValue"
+    | "previousValue"
+  >,
+) {
+  return {
+    id,
+    firmId,
+    deadlineTaskId: overrides.deadlineTaskId,
+    fieldName: overrides.fieldName,
+    previousValue: overrides.previousValue,
+    newValue: overrides.newValue,
+    action: overrides.action,
+    auditLogId: null,
+    actorUserId: null,
+    createdAt: overrides.createdAt,
+  } satisfies typeof deadlineTaskUpdateRecords.$inferInsert;
+}
+
 function remapFirm(identities: IdentityOverride) {
   const firmMap = new Map<string, string>(
     DEMO_ACCOUNTS.map((account) => [
@@ -812,6 +958,9 @@ async function resetFirmWorkspace(db: ReturnType<typeof createDb>, firmId: strin
   await ignoreMissingTable(db.delete(importBatches).where(eq(importBatches.firmId, firmId)));
   await ignoreMissingTable(
     db.delete(verificationRequests).where(eq(verificationRequests.firmId, firmId)),
+  );
+  await ignoreMissingTable(
+    db.delete(deadlineTaskUpdateRecords).where(eq(deadlineTaskUpdateRecords.firmId, firmId)),
   );
   await db.delete(deadlineDateEvents).where(eq(deadlineDateEvents.firmId, firmId));
   await db.delete(deadlineTasks).where(eq(deadlineTasks.firmId, firmId));
