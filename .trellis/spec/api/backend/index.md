@@ -343,6 +343,123 @@ export const deadlineTasksRouter = router({
 });
 ```
 
+## Scenario: Monday Triage Dashboard
+
+### 1. Scope / Trigger
+
+- Trigger: the Monday triage surface crosses deadline-domain tables, tRPC
+  read/write procedures, TanStack React Query consumers, task-table UI,
+  evidence drawer UI, CSV export, and audit/date-event history.
+- Use this pattern for deadline task work surfaces. Do not add bulk official
+  due-date editing to the dashboard API.
+
+### 2. Signatures
+
+- API procedures:
+  `dashboard.summary(input?): DashboardSummaryResponse`,
+  `dashboard.export(input?): DashboardExportResponse`,
+  `dashboard.bulkExportCurrentFilteredView(input?): DashboardExportResponse`,
+  `tasks.updateStatus(input): { taskId, status }`,
+  `tasks.bulkUpdateStatus(input): { updatedCount }`,
+  `tasks.updateFirmTargetDate(input): { taskId, firmTargetDate }`,
+  `tasks.bulkUpdateFirmTargetDate(input): { updatedCount }`, and
+  `tasks.getEvidence(input): TaskEvidenceResponse`.
+- Dashboard filters:
+  `horizon`, `clientRelationshipId`, `filingProfileId`, `obligation`,
+  `jurisdiction`, `entityType`, `taxCategory`, `taskStatus`,
+  `verificationStatus`, and `sort`.
+- Web consumer: `/` uses `trpc.dashboard.summary.queryOptions(filters)` and
+  dashboard/task mutations from the typed router.
+
+### 3. Contracts
+
+- `dashboard.summary` returns `Overdue`, `Due this week`, `This month`, and
+  `Long range` sections by default, plus `allTasks`, `summary`,
+  `filterOptions`, `today`, and `generatedAt`.
+- Task rows expose client relationship, filing profile, obligation,
+  jurisdiction, entity type, tax category, current official due date, optional
+  firm target date, countdown/days overdue, work-progress status, priority,
+  extension state, verification badge data, and evidence availability.
+- Row UI must show only the current due date inline; original due date and date
+  event history belong in `tasks.getEvidence`.
+- Firm target dates are planning metadata. Updating them must not mutate
+  `current_due_date` or represent the target as an official due date.
+- `dashboard.export` and `dashboard.bulkExportCurrentFilteredView` export the
+  current filtered task view with official due date, original due date, firm
+  target date, verification status, source evidence, priority, extension state,
+  and notes in separate columns.
+- Evidence responses include current due date, original due date, optional firm
+  target date, source details, verification status, current and previous rule
+  version context, and date events with source names/URLs when present.
+
+### 4. Validation & Error Matrix
+
+- Missing session on dashboard/task business procedures -> `UNAUTHORIZED` from
+  `requireFirmSession`.
+- Task ID outside the firm -> `NOT_FOUND`.
+- Status outside `not_started | in_progress | waiting_on_client | done` -> Zod
+  validation failure.
+- Firm target date outside real `YYYY-MM-DD` form -> Zod validation failure.
+- Bulk mutation with no task IDs -> Zod validation failure.
+- Evidence request for a missing task -> `NOT_FOUND`.
+- Attempt to add a bulk official due-date edit endpoint under dashboard/tasks
+  -> invalid implementation for Beta.
+
+### 5. Good/Base/Bad Cases
+
+- Good: filter by `obligation`, jurisdiction, entity type, tax category,
+  status, and verification; the API returns updated sections and export uses
+  the same filtered rows.
+- Good: a source-changed task remains visible with warning trust state and
+  evidence explaining source/version lineage.
+- Base: a new firm with no tasks sees all four dashboard sections with zero
+  counts and empty-state rows.
+- Bad: firm target date update rewrites `current_due_date`.
+- Bad: original due date is displayed inline in the task row instead of only in
+  the evidence drawer.
+
+### 6. Tests Required
+
+- API test asserts dashboard rows group into the four default horizons,
+  including `Overdue`.
+- API test asserts filters cover horizon, client, filing profile, obligation,
+  jurisdiction, entity type, tax category, task status, verification status,
+  and deterministic sorting.
+- API test asserts export keeps official due date, firm target date,
+  verification status, and source evidence in separate columns.
+- API tests assert status and firm-target mutations write audit/date-event
+  records without mutating official due dates.
+- API test asserts evidence returns date-event history and source/version
+  lineage.
+- Browser check verifies authenticated `/` renders the four sections and core
+  filters through the app shell.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```typescript
+export const tasksRouter = router({
+  bulkUpdateDueDate: publicProcedure.mutation(({ ctx, input }) => {
+    return ctx.db.update(deadlineTasks).set({ currentDueDate: input.date });
+  }),
+});
+```
+
+#### Correct
+
+```typescript
+export const tasksRouter = router({
+  bulkUpdateFirmTargetDate: publicProcedure
+    .input(bulkFirmTargetDateSchema)
+    .mutation(async ({ ctx, input }) => {
+      const session = requireFirmSession(ctx);
+
+      return updateFirmScopedPlanningDates(ctx.db, session.firm.id, input);
+    }),
+});
+```
+
 ## Verification
 
 - Run `pnpm check-types`.
