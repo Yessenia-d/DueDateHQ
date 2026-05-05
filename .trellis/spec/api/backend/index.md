@@ -47,6 +47,69 @@ into tRPC context. `routers/index.ts` registers the app router and exports
   user-provided.
 - Notice proposal APIs must expose before/after diffs and never apply workspace
   mutations until approval.
+- IRS due-date adjustment logic must treat District of Columbia legal holidays
+  as legal holidays, not only federal holidays. For example, if April 15 falls
+  on a Saturday and DC Emancipation Day is observed on Monday, the adjusted
+  deadline moves to Tuesday.
+
+## Scenario: Tax Due-Date Calendar Adjustment
+
+### 1. Scope / Trigger
+
+- Trigger: code calculates official filing or extension due dates from stored
+  tax rules.
+
+### 2. Signatures
+
+- `adjustForWeekendAndHoliday(date: Date): Date`.
+- `calculateDueDates(rule: DueDateRule, taxYear: number): CalculatedDueDate[]`.
+
+### 3. Contracts
+
+- Fixed annual rules produce dates in `taxYear + 1`.
+- Extension rules are adjusted with the same weekend/legal-holiday logic as the
+  original due date.
+- IRS legal-holiday adjustment includes legal holidays in the District of
+  Columbia, including observed DC Emancipation Day.
+
+### 4. Validation & Error Matrix
+
+- Unsupported future `DueDateRule.type` -> throw through the exhaustive branch.
+- Weekend due date -> next non-weekend, non-legal-holiday business day.
+- Weekend followed by observed DC legal holiday -> skip both days.
+
+### 5. Good/Base/Bad Cases
+
+- Good: tax year 2027 Form 1040 April 15, 2028 adjusts to April 18, 2028
+  because April 15 is Saturday and observed DC Emancipation Day is Monday,
+  April 17.
+- Base: tax year 2026 Form 1040 remains April 15, 2027.
+- Bad: adjusting April 15, 2028 only to Monday, April 17, 2028.
+
+### 6. Tests Required
+
+- Unit test `adjustForWeekendAndHoliday` for weekend plus observed DC
+  Emancipation Day.
+- Unit test `calculateDueDates` for fixed rule original and extension dates
+  across the same edge case.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```typescript
+while (isWeekend(adjusted) || isFederalHoliday(adjusted)) {
+  adjusted.setDate(adjusted.getDate() + 1);
+}
+```
+
+#### Correct
+
+```typescript
+while (isWeekend(adjusted) || isTaxDueDateLegalHoliday(adjusted)) {
+  adjusted.setDate(adjusted.getDate() + 1);
+}
+```
 
 ## Scenario: Auth and Firm Workspace Session
 
@@ -339,6 +402,96 @@ export const deadlineTasksRouter = router({
     }
 
     return createManualDeadlineVerificationRequest(ctx.db, deadline.id);
+  }),
+});
+```
+
+## Scenario: Client Relationship List Read Model
+
+### 1. Scope / Trigger
+
+- Trigger: a client index surface crosses firm-scoped tRPC reads, deadline-domain
+  tables, TanStack Router navigation, and React Query consumers.
+- Use this pattern when adding a browsable relationship list before create or
+  detail workflows.
+
+### 2. Signatures
+
+- API procedure: `clients.list(): { clients: ClientListItemResponse[] }`.
+- List item fields: all `ClientRelationshipResponse` fields plus
+  `filingProfileCount: number` and `deadlineTaskCount: number`.
+- Web route: `/clients` consumes `trpc.clients.list.queryOptions()`.
+- Related routes: `/clients/new` creates a relationship and
+  `/clients/:clientId` shows detail.
+- DB tables used: `client_relationships`, `filing_profiles`, and
+  `deadline_tasks`.
+
+### 3. Contracts
+
+- `clients.list` must call `requireFirmSession(ctx)` and must scope every DB
+  read by `firm_id = session.firm.id`.
+- The response must be ordered by `client_relationships.display_name`
+  ascending for stable scan order.
+- Count fields are non-negative integers derived from firm-scoped
+  `filing_profiles` and `deadline_tasks`; missing counts return `0`.
+- The `/clients` route is the sidebar destination. Creation remains an
+  explicit action to `/clients/new`.
+- Row navigation must target `/clients/:clientId`; the list route must not
+  inline the detail or creation forms.
+
+### 4. Validation & Error Matrix
+
+- Missing session -> `UNAUTHORIZED` from `requireFirmSession`.
+- No firm-owned relationships -> return `{ clients: [] }`, not an error.
+- Relationships, profiles, or deadline tasks from another firm -> excluded by
+  the firm-scoped query.
+- Future filter/search input with invalid shape -> Zod validation failure at
+  the procedure boundary before querying.
+
+### 5. Good/Base/Bad Cases
+
+- Good: a firm with two relationships sees both rows sorted by display name
+  with profile and deadline counts.
+- Base: a new firm sees an empty list state with a create action.
+- Bad: clicking `Clients` opens `/clients/new` and bypasses the relationship
+  list.
+- Bad: counts are computed from all firms and leak cross-firm totals.
+
+### 6. Tests Required
+
+- API test asserts `clients.list` returns firm-owned relationships with profile
+  and deadline counts.
+- API test or mock setup should cover the empty response path.
+- Typecheck must cover the API response type consumed by `/clients`.
+- Route/browser check verifies sidebar `Clients` opens `/clients`, row links
+  open detail, and the create action opens `/clients/new`.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```typescript
+export const clientsRouter = router({
+  list: publicProcedure.query(({ ctx }) => {
+    return ctx.db.select().from(clientRelationships);
+  }),
+});
+```
+
+#### Correct
+
+```typescript
+export const clientsRouter = router({
+  list: publicProcedure.query(async ({ ctx }) => {
+    const session = requireFirmSession(ctx);
+
+    const clients = await ctx.db
+      .select()
+      .from(clientRelationships)
+      .where(eq(clientRelationships.firmId, session.firm.id))
+      .orderBy(asc(clientRelationships.displayName));
+
+    return { clients: clients.map(serializeClientRelationship) };
   }),
 });
 ```

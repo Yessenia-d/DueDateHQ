@@ -1,0 +1,10 @@
+{"file":".trellis/spec/guides/due-date-hq-project-conventions.md","reason":"Project invariants for verified rules, official deadlines, frontend/API boundaries, and verification expectations."}
+{"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"Due-date holiday logic changes modify a shared constant and must avoid duplicate date adjustment behavior."}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"The task spans API date calculation output and web rendering of serialized due-date examples."}
+{"file":".trellis/spec/api/backend/index.md","reason":"packages/api due-date calculation and coverage router behavior must follow API backend conventions."}
+{"file":".trellis/spec/web/frontend/index.md","reason":"apps/web coverage route uses tRPC data and must keep trust/verification state visible and scannable."}
+{"file":".trellis/spec/ui/frontend/index.md","reason":"Drawer polish should preserve the shared operational UI style without unnecessary primitive changes."}
+{"file":"specs/coverage-matrix.md","reason":"Coverage rule evidence is part of the coverage matrix product flow and acceptance criteria."}
+{"file":"specs/tax-rule-verification.md","reason":"Evidence drawer must expose source, rule, calculation, and verification trust clearly."}
+{"file":"DESIGN.md","reason":"Rule evidence drawer visual hierarchy and spacing must follow the DueDateHQ design system."}
+{"file":".trellis/tasks/05-05-rule-evidence-drawer-polish/research/irs-1040-due-date-rules.md","reason":"Official IRS/DC findings establish the due-date correction and regression case."}

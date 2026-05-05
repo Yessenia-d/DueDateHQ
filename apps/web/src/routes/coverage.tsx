@@ -99,6 +99,10 @@ const coverageFilterSelectTriggerClassName = "h-8 w-auto !rounded-[6px]";
 const coverageFilterSelectContentClassName = "!rounded-[6px]";
 const coverageFilterSelectItemClassName =
   "data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground data-[selected]:bg-accent data-[selected]:text-accent-foreground";
+const evidenceLabelClassName =
+  "text-[11px] font-semibold uppercase leading-4 text-muted-foreground";
+const evidenceValueClassName = "mt-1.5 text-sm leading-5 text-foreground";
+const evidenceMetadataValueClassName = "mt-1 font-mono text-[12px] leading-5 text-foreground";
 
 function getStatusKey(status: string | null): VerificationStatusKey {
   if (status === "verified") return "verified";
@@ -590,8 +594,8 @@ function RuleDetailContent({
 
   return (
     <>
-      <div className="flex items-center justify-between border-b border-border px-4 py-3">
-        <h2 className="text-base font-medium">Rule evidence</h2>
+      <div className="flex items-center justify-between border-b border-border px-5 py-4">
+        <h2 className="text-base font-semibold">Rule evidence</h2>
       </div>
 
       {ruleDetail.isPending && (
@@ -603,25 +607,25 @@ function RuleDetailContent({
       )}
 
       {ruleDetail.data && (
-        <div className="flex flex-col gap-4 overflow-y-auto p-4">
+        <div className="flex flex-col gap-5 overflow-y-auto px-5 py-5">
           {/* Obligation info */}
-          <div>
-            <div className="text-xs font-medium uppercase text-muted-foreground">Obligation</div>
-            <div className="mt-1 font-medium">{ruleDetail.data.obligationName}</div>
-            <div className="mt-0.5 text-xs text-muted-foreground">
+          <section className="border-b border-border pb-5">
+            <div className={evidenceLabelClassName}>Obligation</div>
+            <div className="mt-1.5 text-sm font-semibold leading-5 text-foreground">
+              {ruleDetail.data.obligationName}
+            </div>
+            <div className="mt-1 text-xs leading-4 text-muted-foreground">
               {ruleDetail.data.jurisdiction === "federal"
                 ? "Federal"
                 : ruleDetail.data.jurisdiction}{" "}
               / {ruleDetail.data.taxCategory}
             </div>
-          </div>
+          </section>
 
           {/* Entity types */}
-          <div>
-            <div className="text-xs font-medium uppercase text-muted-foreground">
-              Entity types
-            </div>
-            <div className="mt-1 flex flex-wrap gap-1">
+          <section className="border-b border-border pb-5">
+            <div className={evidenceLabelClassName}>Entity types</div>
+            <div className="mt-2 flex flex-wrap gap-1.5">
               {ruleDetail.data.entityTypes.map((et) => (
                 <span
                   key={et}
@@ -631,105 +635,87 @@ function RuleDetailContent({
                 </span>
               ))}
             </div>
-          </div>
+          </section>
 
           {/* Verification status */}
-          <div>
-            <div className="text-xs font-medium uppercase text-muted-foreground">
-              Verification status
-            </div>
-            <div className="mt-1">
+          <section className="border-b border-border pb-5">
+            <div className={evidenceLabelClassName}>Verification status</div>
+            <div className="mt-2">
               <VerificationBadge
                 statusKey={getStatusKey(ruleDetail.data.verificationStatus)}
               />
             </div>
-          </div>
+          </section>
 
           {/* Rule summary */}
-          <div>
-            <div className="text-xs font-medium uppercase text-muted-foreground">
-              Rule summary
-            </div>
-            <div className="mt-1 text-sm leading-relaxed">{ruleDetail.data.ruleSummary}</div>
-          </div>
+          <section className="border-b border-border pb-5">
+            <div className={evidenceLabelClassName}>Rule summary</div>
+            <div className={evidenceValueClassName}>{ruleDetail.data.ruleSummary}</div>
+          </section>
 
           {/* Source */}
-          <div>
-            <div className="text-xs font-medium uppercase text-muted-foreground">
-              Official source
-            </div>
-            <div className="mt-1 text-sm">{ruleDetail.data.sourceName}</div>
+          <section className="border-b border-border pb-5">
+            <div className={evidenceLabelClassName}>Official source</div>
+            <div className={evidenceValueClassName}>{ruleDetail.data.sourceName}</div>
             {ruleDetail.data.sourceUrl && (
               <a
                 href={ruleDetail.data.sourceUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-1 inline-flex items-center gap-1 font-mono text-xs text-muted-foreground hover:text-foreground"
+                className="mt-2 inline-flex max-w-full items-start gap-1.5 font-mono text-[12px] leading-5 text-muted-foreground [overflow-wrap:anywhere] hover:text-foreground"
               >
-                <ExternalLink className="size-3" />
+                <ExternalLink className="mt-0.5 size-3 shrink-0" />
                 {ruleDetail.data.sourceUrl}
               </a>
             )}
-          </div>
+          </section>
 
           {/* Timestamps */}
-          <div className="grid grid-cols-2 gap-3">
+          <section className="grid grid-cols-2 gap-x-4 gap-y-4 border-b border-border pb-5">
             <div>
-              <div className="text-xs font-medium uppercase text-muted-foreground">
-                Last verified
-              </div>
-              <div className="mt-1 font-mono text-xs">
+              <div className={evidenceLabelClassName}>Last verified</div>
+              <div className={evidenceMetadataValueClassName}>
                 {ruleDetail.data.lastVerifiedAt
                   ? formatDate(ruleDetail.data.lastVerifiedAt)
                   : "-"}
               </div>
             </div>
             <div>
-              <div className="text-xs font-medium uppercase text-muted-foreground">
-                Source last checked
-              </div>
-              <div className="mt-1 font-mono text-xs">
+              <div className={evidenceLabelClassName}>Source last checked</div>
+              <div className={evidenceMetadataValueClassName}>
                 {ruleDetail.data.sourceLastCheckedAt
                   ? formatDate(ruleDetail.data.sourceLastCheckedAt)
                   : "-"}
               </div>
             </div>
             <div>
-              <div className="text-xs font-medium uppercase text-muted-foreground">
-                Source last changed
-              </div>
-              <div className="mt-1 font-mono text-xs">
+              <div className={evidenceLabelClassName}>Source last changed</div>
+              <div className={evidenceMetadataValueClassName}>
                 {ruleDetail.data.sourceLastChangedAt
                   ? formatDate(ruleDetail.data.sourceLastChangedAt)
                   : "No changes detected"}
               </div>
             </div>
             <div>
-              <div className="text-xs font-medium uppercase text-muted-foreground">
-                Rule version
-              </div>
-              <div className="mt-1 font-mono text-xs">v{ruleDetail.data.currentVersion}</div>
+              <div className={evidenceLabelClassName}>Rule version</div>
+              <div className={evidenceMetadataValueClassName}>v{ruleDetail.data.currentVersion}</div>
             </div>
-          </div>
+          </section>
 
           {/* Verification notes */}
           {ruleDetail.data.verificationNotes && (
-            <div>
-              <div className="text-xs font-medium uppercase text-muted-foreground">
-                Verification notes
-              </div>
-              <div className="mt-1 text-sm text-muted-foreground">
+            <section className="border-b border-border pb-5">
+              <div className={evidenceLabelClassName}>Verification notes</div>
+              <div className="mt-1.5 text-sm leading-5 text-muted-foreground">
                 {ruleDetail.data.verificationNotes}
               </div>
-            </div>
+            </section>
           )}
 
           {/* Example due dates */}
-          <div>
-            <div className="text-xs font-medium uppercase text-muted-foreground">
-              Calculated due dates
-            </div>
-            <div className="mt-2 rounded-xl border border-border">
+          <section>
+            <div className={evidenceLabelClassName}>Calculated due dates</div>
+            <div className="mt-2 overflow-hidden rounded-[8px] border border-border bg-background">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/40">
@@ -744,12 +730,12 @@ function RuleDetailContent({
                     <TableRow
                       key={`${ed.taxYear}-${ed.quarter ?? "annual"}`}
                     >
-                      <TableCell className="font-mono">{ed.taxYear}</TableCell>
-                      <TableCell className="font-mono">
+                      <TableCell className="font-mono text-[12px]">{ed.taxYear}</TableCell>
+                      <TableCell className="font-mono text-[12px]">
                         {ed.quarter ? `Q${ed.quarter}` : "-"}
                       </TableCell>
-                      <TableCell className="font-mono">{formatDate(ed.dueDate)}</TableCell>
-                      <TableCell className="font-mono">
+                      <TableCell className="font-mono text-[12px]">{formatDate(ed.dueDate)}</TableCell>
+                      <TableCell className="font-mono text-[12px]">
                         {ed.extensionDate ? formatDate(ed.extensionDate) : "-"}
                       </TableCell>
                     </TableRow>
@@ -757,7 +743,7 @@ function RuleDetailContent({
                 </TableBody>
               </Table>
             </div>
-          </div>
+          </section>
         </div>
       )}
     </>
@@ -777,5 +763,6 @@ function formatDate(value: string) {
     month: "short",
     day: "numeric",
     year: "numeric",
+    timeZone: "UTC",
   }).format(new Date(value));
 }

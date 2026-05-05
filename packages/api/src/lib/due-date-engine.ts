@@ -71,13 +71,31 @@ function isFederalHoliday(date: Date): boolean {
   return FEDERAL_HOLIDAYS.has(formatDateKey(date));
 }
 
+function isObservedDcEmancipationDay(date: Date): boolean {
+  const emancipationDay = new Date(date.getFullYear(), 3, 16);
+  const observed = new Date(emancipationDay);
+
+  if (emancipationDay.getDay() === 6) {
+    observed.setDate(15);
+  } else if (emancipationDay.getDay() === 0) {
+    observed.setDate(17);
+  }
+
+  return formatDateKey(date) === formatDateKey(observed);
+}
+
+function isTaxDueDateLegalHoliday(date: Date): boolean {
+  return isFederalHoliday(date) || isObservedDcEmancipationDay(date);
+}
+
 /**
- * If a due date falls on a weekend or federal holiday, move it to the next
- * business day (Monday-Friday, non-holiday).
+ * If a due date falls on a weekend or legal holiday, move it to the next
+ * business day. IRS filing due-date adjustments include District of Columbia
+ * legal holidays such as observed Emancipation Day.
  */
 export function adjustForWeekendAndHoliday(date: Date): Date {
   const adjusted = new Date(date);
-  while (isWeekend(adjusted) || isFederalHoliday(adjusted)) {
+  while (isWeekend(adjusted) || isTaxDueDateLegalHoliday(adjusted)) {
     adjusted.setDate(adjusted.getDate() + 1);
   }
   return adjusted;

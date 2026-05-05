@@ -49,6 +49,17 @@ test("adjustForWeekendAndHoliday handles weekend + holiday sequence", () => {
   assert.equal(adjusted.getDay(), 2); // Tuesday
 });
 
+test("adjustForWeekendAndHoliday includes observed DC Emancipation Day", () => {
+  // 2028-04-15 is a Saturday. DC Emancipation Day is Sunday 2028-04-16,
+  // observed on Monday 2028-04-17, so the deadline moves to Tuesday.
+  const date = new Date(2028, 3, 15);
+  const adjusted = adjustForWeekendAndHoliday(date);
+  assert.equal(adjusted.getFullYear(), 2028);
+  assert.equal(adjusted.getMonth(), 3);
+  assert.equal(adjusted.getDate(), 18);
+  assert.equal(adjusted.getDay(), 2); // Tuesday
+});
+
 // ── calculateDueDates: fixed rules ──
 
 test("calculateDueDates handles a fixed rule with April 15 due date", () => {
@@ -80,6 +91,38 @@ test("calculateDueDates handles a fixed rule with April 15 due date", () => {
   assert.equal(result.extensionDate.getFullYear(), 2026);
   assert.equal(result.extensionDate.getMonth(), 9); // October
   assert.equal(result.extensionDate.getDate(), 15);
+});
+
+test("calculateDueDates adjusts Form 1040 dates for 2028 observed DC Emancipation Day", () => {
+  const rule: DueDateRule = {
+    type: "fixed",
+    month: 4,
+    day: 15,
+    adjustForWeekendHoliday: true,
+    extensionRule: {
+      month: 10,
+      day: 15,
+      adjustForWeekendHoliday: true,
+    },
+  };
+
+  // Tax year 2027 -> due April 15, 2028 (Saturday), followed by observed
+  // DC Emancipation Day on Monday, April 17, 2028.
+  const results = calculateDueDates(rule, 2027);
+  assert.equal(results.length, 1);
+
+  const result = results[0];
+  assert.ok(result);
+  assert.equal(result.dueDate.getFullYear(), 2028);
+  assert.equal(result.dueDate.getMonth(), 3);
+  assert.equal(result.dueDate.getDate(), 18);
+  assert.equal(result.dueDate.getDay(), 2); // Tuesday
+
+  assert.ok(result.extensionDate);
+  assert.equal(result.extensionDate.getFullYear(), 2028);
+  assert.equal(result.extensionDate.getMonth(), 9);
+  assert.equal(result.extensionDate.getDate(), 16);
+  assert.equal(result.extensionDate.getDay(), 1); // Monday
 });
 
 test("calculateDueDates handles a fixed rule with March 15 due date", () => {
@@ -204,7 +247,7 @@ test("calculateDueDates handles quarterly without yearOffset", () => {
   assert.equal(q4.dueDate.getDate(), 15);
 });
 
-test("calculateDueDates adjusts quarterly dates that fall on weekends", () => {
+test("calculateDueDates adjusts quarterly dates that fall on weekends and DC holidays", () => {
   const rule: DueDateRule = {
     type: "quarterly",
     quarters: {
@@ -216,12 +259,13 @@ test("calculateDueDates adjusts quarterly dates that fall on weekends", () => {
     adjustForWeekendHoliday: true,
   };
 
-  // Tax year 2028 -> Q1 is April 15, 2028 (Saturday) -> April 17, 2028 (Monday)
+  // Tax year 2028 -> Q1 is April 15, 2028 (Saturday), followed by observed
+  // DC Emancipation Day on Monday, April 17 -> April 18, 2028 (Tuesday)
   const results = calculateDueDates(rule, 2028);
   const q1 = results[0];
   assert.ok(q1);
   assert.equal(q1.dueDate.getFullYear(), 2028);
   assert.equal(q1.dueDate.getMonth(), 3);
-  assert.equal(q1.dueDate.getDate(), 17);
-  assert.equal(q1.dueDate.getDay(), 1);
+  assert.equal(q1.dueDate.getDate(), 18);
+  assert.equal(q1.dueDate.getDay(), 2);
 });

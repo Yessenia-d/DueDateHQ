@@ -1,0 +1,10 @@
+{"file":".trellis/spec/guides/due-date-hq-project-conventions.md","reason":"Quality check should enforce verified-rule/date invariants and required repo verification."}
+{"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"Check shared holiday logic for duplicated or missed date-adjustment behavior."}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"Check backend serialized dates and frontend display remain consistent."}
+{"file":".trellis/spec/api/backend/index.md","reason":"Verify API/backend test and type-check expectations for packages/api changes."}
+{"file":".trellis/spec/web/frontend/index.md","reason":"Verify route-level UI changes preserve frontend conventions and trust visibility."}
+{"file":".trellis/spec/ui/frontend/index.md","reason":"Verify drawer polish stays aligned with shared UI package rules and product aesthetic."}
+{"file":"specs/coverage-matrix.md","reason":"Check coverage evidence behavior against the coverage matrix spec."}
+{"file":"specs/tax-rule-verification.md","reason":"Check evidence drawer clarity against verification evidence requirements."}
+{"file":"DESIGN.md","reason":"Check typography, spacing, drawer, and evidence hierarchy against design system."}
+{"file":".trellis/tasks/05-05-rule-evidence-drawer-polish/research/irs-1040-due-date-rules.md","reason":"Check the implemented due-date correction against the recorded official-source findings."}

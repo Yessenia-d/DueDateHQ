@@ -47,6 +47,10 @@ router context, and wraps the app in `QueryClientProvider`.
   status behind generic "warning" labels.
 - For dashboards, keep due-date horizon, client/profile, jurisdiction, task
   status, and verification status easy to scan.
+- When rendering official due dates received as ISO strings, format them with
+  `timeZone: "UTC"` unless the API explicitly returns a local time event. Due
+  dates are calendar-day facts, and browser-local timezone formatting can show
+  them one day early.
 
 ## Verification
 
