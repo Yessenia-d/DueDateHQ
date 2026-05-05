@@ -251,7 +251,10 @@ function CoverageComponent() {
               <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
                 <span>Jurisdiction</span>
                 <Select value={jurisdictionFilter} onValueChange={(v) => setJurisdictionFilter(v ?? "all")}>
-                  <SelectTrigger className={coverageFilterSelectTriggerClassName}>
+                  <SelectTrigger
+                    aria-label="Filter by jurisdiction"
+                    className={coverageFilterSelectTriggerClassName}
+                  >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent
@@ -277,7 +280,10 @@ function CoverageComponent() {
               <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
                 <span>Status</span>
                 <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
-                  <SelectTrigger className={coverageFilterSelectTriggerClassName}>
+                  <SelectTrigger
+                    aria-label="Filter by verification status"
+                    className={coverageFilterSelectTriggerClassName}
+                  >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent
