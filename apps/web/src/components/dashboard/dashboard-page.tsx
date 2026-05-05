@@ -6,7 +6,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@due-date-hq/ui/components/select";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery } from "@tanstack/react-query";
 import { CalendarDays, Download, Filter } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
@@ -46,36 +46,35 @@ const dashboardHorizons: DashboardTaskHorizon[] = [
 
 const horizonToneStyles = {
   overdue: {
-    activeCard: "border-ddhq-risk/55 bg-ddhq-risk-soft/85 ring-2 ring-ddhq-risk/20 shadow-sm",
+    activeCard: "border-transparent bg-ddhq-risk-soft/45 text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]",
     count: "text-ddhq-risk",
-    currentView: "bg-background/75 text-ddhq-risk ring-1 ring-ddhq-risk/25",
     dot: "bg-ddhq-risk",
-    idleCard: "border-ddhq-risk/25 bg-ddhq-risk-soft/35 hover:border-ddhq-risk/45 hover:bg-ddhq-risk-soft/60",
+    idleCard:
+      "border-transparent bg-transparent text-foreground hover:border-transparent hover:bg-ddhq-risk-soft/25",
     title: "text-ddhq-risk",
   },
   due_this_week: {
-    activeCard: "border-ddhq-review/55 bg-ddhq-review-soft/85 ring-2 ring-ddhq-review/20 shadow-sm",
+    activeCard: "border-transparent bg-ddhq-review-soft/50 text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.72)]",
     count: "text-ddhq-review",
-    currentView: "bg-background/75 text-ddhq-review ring-1 ring-ddhq-review/25",
     dot: "bg-ddhq-review",
     idleCard:
-      "border-ddhq-review/25 bg-ddhq-review-soft/35 hover:border-ddhq-review/45 hover:bg-ddhq-review-soft/60",
+      "border-transparent bg-transparent text-foreground hover:border-transparent hover:bg-ddhq-review-soft/25",
     title: "text-ddhq-review",
   },
   this_month: {
-    activeCard: "border-primary/45 bg-ddhq-accent-soft/80 ring-2 ring-primary/15 shadow-sm",
+    activeCard: "border-transparent bg-ddhq-accent-soft/45 text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.72)]",
     count: "text-primary",
-    currentView: "bg-background/75 text-primary ring-1 ring-primary/20",
     dot: "bg-primary",
-    idleCard: "border-primary/20 bg-ddhq-accent-soft/35 hover:border-primary/40 hover:bg-ddhq-accent-soft/60",
+    idleCard:
+      "border-transparent bg-transparent text-foreground hover:border-transparent hover:bg-ddhq-accent-soft/25",
     title: "text-primary",
   },
   long_range: {
-    activeCard: "border-ddhq-gap/45 bg-ddhq-gap-soft/80 ring-2 ring-ddhq-gap/15 shadow-sm",
+    activeCard: "border-transparent bg-ddhq-gap-soft/45 text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.72)]",
     count: "text-ddhq-gap",
-    currentView: "bg-background/75 text-ddhq-gap ring-1 ring-ddhq-gap/20",
     dot: "bg-ddhq-gap",
-    idleCard: "border-ddhq-gap/20 bg-ddhq-gap-soft/35 hover:border-ddhq-gap/40 hover:bg-ddhq-gap-soft/60",
+    idleCard:
+      "border-transparent bg-transparent text-foreground hover:border-transparent hover:bg-ddhq-gap-soft/25",
     title: "text-ddhq-gap",
   },
 } satisfies Record<
@@ -83,7 +82,6 @@ const horizonToneStyles = {
   {
     activeCard: string;
     count: string;
-    currentView: string;
     dot: string;
     idleCard: string;
     title: string;
@@ -125,7 +123,10 @@ export function DashboardPage() {
   const [evidenceTaskId, setEvidenceTaskId] = React.useState<string | null>(null);
   const [showFilters, setShowFilters] = React.useState(false);
 
-  const dashboard = useQuery(trpc.dashboard.summary.queryOptions(filters));
+  const dashboard = useQuery({
+    ...trpc.dashboard.summary.queryOptions(filters),
+    placeholderData: keepPreviousData,
+  });
   const exportCurrentView = useMutation(
     trpc.dashboard.export.mutationOptions({
       onSuccess: (result) => {
@@ -266,7 +267,7 @@ export function DashboardPage() {
         </section>
 
         {/* Horizon selector */}
-        <section className="grid grid-cols-1 gap-2 md:grid-cols-4">
+        <section className="grid grid-cols-1 gap-1 rounded-xl border border-border/80 bg-card p-1 md:grid-cols-4">
           {dashboardHorizons.map((horizon) => {
             const section = data.sections.find((item) => item.id === horizon);
             const count = section?.count ?? 0;
@@ -294,8 +295,8 @@ export function DashboardPage() {
                 size="sm"
                 className={
                   showFilters
-                    ? "border-primary/30 bg-ddhq-accent-soft/70 text-foreground shadow-none"
-                    : undefined
+                    ? "rounded-lg border-primary/30 bg-ddhq-accent-soft/70 text-foreground shadow-none"
+                    : "rounded-lg"
                 }
                 onClick={() => setShowFilters((current) => !current)}
               >
@@ -320,7 +321,7 @@ export function DashboardPage() {
               type="button"
               variant="outline"
               size="sm"
-              className="h-8 w-32"
+              className="h-8 w-32 rounded-lg"
               disabled={isBusy}
               onClick={() => exportCurrentView.mutate({ ...filters, horizon: activeHorizon })}
             >
@@ -330,7 +331,7 @@ export function DashboardPage() {
           </div>
 
           {showFilters ? (
-            <div className="grid gap-2 rounded-lg border border-border/80 bg-card p-3 shadow-sm md:grid-cols-3 xl:grid-cols-5">
+            <div className="grid gap-2 rounded-xl border border-border/80 bg-card p-3 md:grid-cols-3 xl:grid-cols-5">
               <FilterSelect
                 label="Client"
                 value={filters.clientRelationshipId ?? ""}
@@ -460,26 +461,23 @@ function HorizonCard({
     <button
       type="button"
       aria-pressed={isSelected}
-      className={`min-h-24 rounded-lg border p-3 text-left transition-colors ${cardClass}`}
+      className={`min-h-[76px] rounded-lg border px-3 py-2.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/35 ${cardClass}`}
       onClick={onSelect}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className={`flex items-center gap-2 text-sm font-semibold ${tone.title}`}>
+          <div className={`flex items-center gap-2 text-[13px] font-semibold ${tone.title}`}>
             <span className={`size-1.5 rounded-full ${tone.dot}`} aria-hidden="true" />
             {horizonLabels[horizon]}
           </div>
-          <div className="mt-1 text-xs text-muted-foreground">{summary}</div>
+          <div className="mt-1.5 line-clamp-2 text-xs leading-4 text-muted-foreground">
+            {summary}
+          </div>
         </div>
-        <div className={`text-xl font-semibold leading-none ${tone.count}`}>{count}</div>
+        <div className={`font-mono text-lg font-semibold leading-none tabular-nums ${tone.count}`}>
+          {count}
+        </div>
       </div>
-      {isSelected ? (
-        <div className={`mt-4 inline-flex rounded-full px-2 py-1 text-xs font-semibold ${tone.currentView}`}>
-          Current view
-        </div>
-      ) : (
-        <div className="mt-4 text-xs text-muted-foreground">Open queue</div>
-      )}
     </button>
   );
 }
@@ -519,10 +517,10 @@ function FilterSelect({
     <label className="grid gap-1 text-xs font-medium text-muted-foreground">
       {label}
       <Select value={value} onValueChange={(val) => onChange(val ?? "")}>
-        <SelectTrigger className="h-8 w-full">
+        <SelectTrigger className="h-8 w-full rounded-lg">
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="rounded-lg">
           {placeholder ? <SelectItem value="">{placeholder}</SelectItem> : null}
           {options.map((option) => (
             <SelectItem key={option.value} value={option.value}>
