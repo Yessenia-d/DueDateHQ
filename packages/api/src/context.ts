@@ -1,3 +1,4 @@
+import { createDb } from "@due-date-hq/db";
 import type { Context as HonoContext } from "hono";
 import { TRPCError } from "@trpc/server";
 
@@ -18,6 +19,7 @@ export type SessionContext = AuthSession & {
 };
 
 export async function createContext({ context }: CreateContextOptions) {
+  const db = createDb(context.env.DB);
   const auth = createDueDateAuth({
     corsOrigin: String(context.env.CORS_ORIGIN ?? ""),
     db: context.env.DB,
@@ -33,6 +35,7 @@ export async function createContext({ context }: CreateContextOptions) {
 
   return {
     auth,
+    db,
     firm,
     session: session && firm ? { ...session, firm } : null,
   };

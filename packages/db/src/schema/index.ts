@@ -3,3 +3,4 @@ export * from "./audit";
 export * from "./deadline-domain";
 export * from "./feature-progress";
 export * from "./firms";
+export * from "./tax-rules";
