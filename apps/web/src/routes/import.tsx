@@ -6,6 +6,13 @@ import type {
 import { Button } from "@due-date-hq/ui/components/button";
 import { Input } from "@due-date-hq/ui/components/input";
 import { Label } from "@due-date-hq/ui/components/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@due-date-hq/ui/components/select";
 import { useMutation } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import {
@@ -64,6 +71,10 @@ const entityOptions = [
   { value: "nonprofit", label: "Nonprofit" },
   { value: "other", label: "Other" },
 ] as const satisfies readonly { value: EntityType; label: string }[];
+
+const importSelectTriggerClassName = "h-8 w-full rounded-[6px] bg-background";
+const importSelectContentClassName = "rounded-lg py-1";
+const importSelectItemClassName = "mx-1 rounded-[4px]";
 
 function ImportComponent() {
   const search = Route.useSearch();
@@ -238,21 +249,24 @@ function ImportComponent() {
           </div>
         </section>
 
-        <form className="grid gap-4 border bg-muted/20 p-4" onSubmit={handlePreview}>
+        <form className="grid gap-4 rounded-lg border bg-muted/20 p-4" onSubmit={handlePreview}>
           <div className="grid gap-4 lg:grid-cols-[220px_1fr_auto] lg:items-end">
             <Field label="Source system" htmlFor="source-system">
-              <select
-                id="source-system"
-                className="h-8 w-full border border-input bg-background px-2.5 text-xs outline-none focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring/50"
+              <Select
                 value={sourceSystem}
-                onChange={(event) => setSourceSystem(event.target.value as SourceSystem)}
+                onValueChange={(value) => setSourceSystem((value ?? "taxdome") as SourceSystem)}
               >
-                {sourceOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger id="source-system" className={importSelectTriggerClassName}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className={importSelectContentClassName}>
+                  {sourceOptions.map((option) => (
+                    <SelectItem className={importSelectItemClassName} key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </Field>
 
             <Field label="CSV file" htmlFor="csv-file">
@@ -260,6 +274,7 @@ function ImportComponent() {
                 id="csv-file"
                 type="file"
                 accept=".csv,text/csv"
+                className="rounded-[6px]"
                 onChange={(event) => void handleFileChange(event)}
               />
             </Field>
@@ -273,7 +288,7 @@ function ImportComponent() {
           <Field label={fileName ? `Loaded ${fileName}` : "CSV text"} htmlFor="csv-text">
             <textarea
               id="csv-text"
-              className="min-h-28 w-full resize-y border border-input bg-background px-2.5 py-2 font-mono text-xs leading-5 outline-none focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring/50"
+              className="min-h-28 w-full resize-y rounded-[6px] border border-input bg-background px-2.5 py-2 font-mono text-xs leading-5 outline-none focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring/50"
               value={csvText}
               onChange={(event) => {
                 setCsvText(event.target.value);
@@ -323,7 +338,7 @@ function ImportComponent() {
               />
             </section>
 
-            <section className="flex flex-col gap-3 border bg-muted/20 p-3 md:flex-row md:items-center md:justify-between">
+            <section className="flex flex-col gap-3 rounded-lg border bg-muted/20 p-3 md:flex-row md:items-center md:justify-between">
               <div className="flex flex-wrap gap-2">
                 {pendingDuplicateCount > 0 ? (
                   <StatusBadge tone="review">{pendingDuplicateCount} duplicate pending</StatusBadge>
@@ -354,7 +369,7 @@ function ImportComponent() {
                   <span
                     id="commit-import-disabled-reason"
                     role="tooltip"
-                    className="pointer-events-none absolute bottom-full right-0 z-20 mb-2 w-72 border border-border bg-popover px-2.5 py-2 text-left text-xs leading-5 text-popover-foreground opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus:opacity-100"
+                    className="pointer-events-none absolute bottom-full right-0 z-20 mb-2 w-72 rounded-[6px] border border-border bg-popover px-2.5 py-2 text-left text-xs leading-5 text-popover-foreground opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus:opacity-100"
                   >
                     {commitImportDisabledReason}
                   </span>
@@ -374,7 +389,7 @@ function MappingPreview({ preview }: { preview: ImportPreviewResponse }) {
   const [isExpanded, setIsExpanded] = React.useState(false);
 
   return (
-    <section className="grid content-start gap-3 border bg-muted/20 p-3">
+    <section className="grid content-start gap-3 rounded-lg border bg-muted/20 p-3">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="min-w-0">
           <h2 className="text-base font-semibold">Mapping preview</h2>
@@ -402,7 +417,7 @@ function MappingPreview({ preview }: { preview: ImportPreviewResponse }) {
       </div>
 
       {preview.validationMessages.length > 0 ? (
-        <div className="grid gap-1 border border-amber-600/25 bg-amber-500/10 p-3 text-xs text-amber-800 dark:text-amber-200">
+        <div className="grid gap-1 rounded-[6px] border border-amber-600/25 bg-amber-500/10 p-3 text-xs text-amber-800 dark:text-amber-200">
           {preview.validationMessages.map((message) => (
             <div key={message} className="flex items-center gap-2">
               <AlertTriangle className="size-3.5" />
@@ -413,31 +428,33 @@ function MappingPreview({ preview }: { preview: ImportPreviewResponse }) {
       ) : null}
 
       {isExpanded ? (
-        <div className="overflow-x-auto border bg-background">
-          <table className="w-full min-w-[680px] border-collapse text-left text-xs">
-            <thead className="border-b bg-muted/40 text-muted-foreground">
-              <tr>
-                <th className="px-3 py-2 font-medium">Source column</th>
-                <th className="px-3 py-2 font-medium">Canonical field</th>
-                <th className="px-3 py-2 font-medium">Confidence</th>
-              </tr>
-            </thead>
-            <tbody>
-              {preview.columnMapping.map((column) => (
-                <tr key={column.sourceColumn} className="border-b last:border-b-0">
-                  <td className="px-3 py-2 font-medium">{column.sourceColumn}</td>
-                  <td className="px-3 py-2 text-muted-foreground">
-                    {column.canonicalField ?? "Unmapped"}
-                  </td>
-                  <td className="px-3 py-2">
-                    <StatusBadge tone={column.confidence === "high" ? "verified" : "neutral"}>
-                      {column.confidence}
-                    </StatusBadge>
-                  </td>
+        <div className="overflow-hidden rounded-lg border bg-background">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[680px] border-collapse text-left text-xs">
+              <thead className="border-b bg-muted/40 text-muted-foreground">
+                <tr>
+                  <th className="px-3 py-2 font-medium">Source column</th>
+                  <th className="px-3 py-2 font-medium">Canonical field</th>
+                  <th className="px-3 py-2 font-medium">Confidence</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {preview.columnMapping.map((column) => (
+                  <tr key={column.sourceColumn} className="border-b last:border-b-0">
+                    <td className="px-3 py-2 font-medium">{column.sourceColumn}</td>
+                    <td className="px-3 py-2 text-muted-foreground">
+                      {column.canonicalField ?? "Unmapped"}
+                    </td>
+                    <td className="px-3 py-2">
+                      <StatusBadge tone={column.confidence === "high" ? "verified" : "neutral"}>
+                        {column.confidence}
+                      </StatusBadge>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       ) : null}
     </section>
@@ -474,22 +491,23 @@ function ReviewRows({
         <h2 className="text-base font-semibold">Filing profile review</h2>
       </div>
 
-      <div className="overflow-x-auto border">
-        <table className="w-full min-w-[1320px] border-collapse text-left text-xs">
-          <thead className="border-b bg-muted/40 text-muted-foreground">
-            <tr>
-              <th className="w-28 px-3 py-2 font-medium">Row</th>
-              <th className="px-3 py-2 font-medium">Client</th>
-              <th className="px-3 py-2 font-medium">Entity</th>
-              <th className="px-3 py-2 font-medium">State</th>
-              <th className="px-3 py-2 font-medium">EIN</th>
-              <th className="px-3 py-2 font-medium">SSN last 4</th>
-              <th className="px-3 py-2 font-medium">Problems</th>
-              <th className="w-44 px-3 py-2 font-medium">Duplicate</th>
-              <th className="w-72 px-3 py-2 font-medium">Relationship</th>
-            </tr>
-          </thead>
-          <tbody>
+      <div className="overflow-hidden rounded-lg border">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[1320px] border-collapse text-left text-xs">
+            <thead className="border-b bg-muted/40 text-muted-foreground">
+              <tr>
+                <th className="w-28 px-3 py-2 font-medium">Row</th>
+                <th className="px-3 py-2 font-medium">Client</th>
+                <th className="px-3 py-2 font-medium">Entity</th>
+                <th className="px-3 py-2 font-medium">State</th>
+                <th className="px-3 py-2 font-medium">EIN</th>
+                <th className="px-3 py-2 font-medium">SSN last 4</th>
+                <th className="px-3 py-2 font-medium">Problems</th>
+                <th className="w-44 px-3 py-2 font-medium">Duplicate</th>
+                <th className="w-72 px-3 py-2 font-medium">Relationship</th>
+              </tr>
+            </thead>
+            <tbody>
             {rows.map((row) => {
               const correction = corrections[row.id] ?? {};
               const duplicateCandidate = duplicateCandidatesByItemId.get(row.id) ?? null;
@@ -501,44 +519,56 @@ function ReviewRows({
                   </td>
                   <td className={`px-3 py-2 ${mappedCellClass("clientName", highConfidenceMappedFields)}`}>
                     <Input
+                      className="rounded-[6px]"
                       value={correction.clientName ?? row.canonicalProfile.clientName ?? ""}
                       onChange={(event) => onChange(row.id, { clientName: event.target.value })}
                     />
                   </td>
                   <td className={`px-3 py-2 ${mappedCellClass("entityType", highConfidenceMappedFields)}`}>
-                    <select
-                      className={`h-8 w-full border border-input px-2.5 text-xs outline-none focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring/50 ${mappedControlClass("entityType", highConfidenceMappedFields)}`}
+                    <Select
                       value={correction.entityType ?? row.canonicalProfile.entityType ?? ""}
-                      onChange={(event) =>
+                      onValueChange={(value) =>
                         onChange(row.id, {
-                          entityType: event.target.value
-                            ? (event.target.value as EntityType)
+                          entityType: value
+                            ? (value as EntityType)
                             : null,
                         })
                       }
                     >
-                      <option value="">Needs review</option>
-                      {entityOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
+                      <SelectTrigger
+                        className={`h-8 w-full rounded-[6px] ${mappedControlClass("entityType", highConfidenceMappedFields)}`}
+                      >
+                        <SelectValue placeholder="Needs review" />
+                      </SelectTrigger>
+                      <SelectContent className={importSelectContentClassName}>
+                        <SelectItem className={importSelectItemClassName} value="">
+                          Needs review
+                        </SelectItem>
+                        {entityOptions.map((option) => (
+                          <SelectItem className={importSelectItemClassName} key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </td>
                   <td className={`px-3 py-2 ${mappedCellClass("state", highConfidenceMappedFields)}`}>
                     <Input
+                      className="rounded-[6px]"
                       value={correction.state ?? row.canonicalProfile.state ?? ""}
                       onChange={(event) => onChange(row.id, { state: event.target.value })}
                     />
                   </td>
                   <td className={`px-3 py-2 ${mappedCellClass("ein", highConfidenceMappedFields)}`}>
                     <Input
+                      className="rounded-[6px]"
                       value={correction.ein ?? row.canonicalProfile.ein ?? ""}
                       onChange={(event) => onChange(row.id, { ein: event.target.value })}
                     />
                   </td>
                   <td className={`px-3 py-2 ${mappedCellClass("ssnLast4", highConfidenceMappedFields)}`}>
                     <Input
+                      className="rounded-[6px]"
                       value={correction.ssnLast4 ?? row.canonicalProfile.ssnLast4 ?? ""}
                       onChange={(event) => onChange(row.id, { ssnLast4: event.target.value })}
                     />
@@ -579,6 +609,7 @@ function ReviewRows({
             })}
           </tbody>
         </table>
+        </div>
       </div>
     </section>
   );
@@ -618,18 +649,30 @@ function DuplicateDecisionCell({
           </StatusBadge>
         ))}
       </div>
-      <select
-        className="h-8 border border-input bg-background px-2.5 text-xs outline-none focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring/50"
+      <Select
         value={resolution}
-        onChange={(event) =>
-          onChange(candidate.id, event.target.value as DuplicateResolution | "pending")
+        onValueChange={(value) =>
+          onChange(candidate.id, (value ?? "pending") as DuplicateResolution | "pending")
         }
       >
-        <option value="pending">Pending</option>
-        <option value="create">Create new</option>
-        <option value="update_existing">Update existing</option>
-        <option value="skip">Skip row</option>
-      </select>
+        <SelectTrigger className={importSelectTriggerClassName}>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent className={importSelectContentClassName}>
+          <SelectItem className={importSelectItemClassName} value="pending">
+            Pending
+          </SelectItem>
+          <SelectItem className={importSelectItemClassName} value="create">
+            Create new
+          </SelectItem>
+          <SelectItem className={importSelectItemClassName} value="update_existing">
+            Update existing
+          </SelectItem>
+          <SelectItem className={importSelectItemClassName} value="skip">
+            Skip row
+          </SelectItem>
+        </SelectContent>
+      </Select>
     </div>
   );
 }
@@ -687,7 +730,7 @@ function CommitSummary({ result }: { result: ImportCommitResponse }) {
         <Metric label="Coverage gaps" value={result.coverageGapCount} tone="neutral" />
       </div>
       {result.profileResults.length > 0 ? (
-        <div className="border bg-muted/20">
+        <div className="overflow-hidden rounded-lg border bg-muted/20">
           <div className="flex items-center justify-between gap-3 border-b px-3 py-2">
             <h3 className="text-sm font-semibold">Imported tax info</h3>
             <Link
@@ -759,7 +802,7 @@ type Tone = "neutral" | "verified" | "review";
 
 function Metric({ label, tone, value }: { label: string; tone: Tone; value: number }) {
   return (
-    <div className="border bg-muted/20 px-3 py-2">
+    <div className="rounded-lg border bg-muted/20 px-3 py-2">
       <div className="text-xs text-muted-foreground">{label}</div>
       <div className="mt-1 flex items-center gap-2">
         <span className="text-xl font-semibold">{value}</span>
@@ -778,7 +821,7 @@ function StatusBadge({ children, tone }: { children: React.ReactNode; tone: Tone
         : "border-slate-500/30 bg-slate-400/10 text-slate-600 dark:border-slate-400/30 dark:text-slate-300";
 
   return (
-    <span className={`inline-flex items-center border px-1.5 py-0.5 text-[11px] font-semibold ${className}`}>
+    <span className={`inline-flex items-center rounded-[6px] border px-1.5 py-0.5 text-[11px] font-semibold ${className}`}>
       {children}
     </span>
   );
@@ -792,7 +835,7 @@ function StatusDot({ tone }: { tone: Tone }) {
         ? "bg-amber-500"
         : "bg-slate-400";
 
-  return <span className={`size-1.5 ${className}`} />;
+  return <span className={`size-1.5 rounded-full ${className}`} />;
 }
 
 function formatProblem(problem: string) {
