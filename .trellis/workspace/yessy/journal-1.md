@@ -20,13 +20,51 @@ Filled DueDateHQ Trellis project conventions, updated package spec indexes with 
 
 ### Main Changes
 
-(Add details)
+- Rewrote `docs/due-date-hq-user-journey.html` as a standalone Verified Operations Console journey map.
+- Added journey coverage for onboarding, CSV/manual setup, import review, coverage matrix, verified task generation, Monday triage, evidence drawer, official notice proposal review, and feature progress visibility.
+- Archived `.trellis/tasks/05-05-update-user-journey-html` after completion.
 
 ### Git Commits
 
 | Hash | Message |
 |------|---------|
 | `c15556d` | (see git log) |
+
+### Testing
+
+- [OK] `pnpm check-types`
+- [OK] `python3 ./.trellis/scripts/task.py validate .trellis/tasks/05-05-update-user-journey-html`
+- [OK] Chrome headless/CDP desktop and mobile standalone HTML rendering checks
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 2: Refresh user journey HTML
+
+**Date**: 2026-05-05
+**Task**: Refresh user journey HTML
+**Package**: web
+**Branch**: `main`
+
+### Summary
+
+Updated docs/due-date-hq-user-journey.html from the latest DueDateHQ product and design documents, verified standalone desktop/mobile rendering and pnpm check-types.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `6544af7` | (see git log) |
 
 ### Testing
 
