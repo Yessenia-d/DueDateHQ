@@ -50,6 +50,7 @@ import { publicProcedure, router } from "../index";
 const csvTextSchema = z.string().trim().min(1).max(2_000_000);
 const optionalTextCorrectionSchema = z.string().trim().max(200).nullable().optional();
 const relationshipDecisionStatusSchema = z.enum(["accepted", "rejected"]);
+const previewInsertChunkSize = 8;
 
 const profileCorrectionSchema = z.object({
   clientName: z.string().trim().min(1).max(200).optional(),
@@ -192,6 +193,16 @@ function serializeReviewItem(item: ImportReviewItemDraft): ImportReviewRowRespon
     sourceFields: item.sourceFields,
     messages: item.messages,
   };
+}
+
+function chunkArray<T>(items: readonly T[], size: number): T[][] {
+  const chunks: T[][] = [];
+
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size));
+  }
+
+  return chunks;
 }
 
 function normalizeText(value: string | null | undefined): string | null {
@@ -503,65 +514,71 @@ export const importsRouter = router({
       }).returning();
 
       if (review.items.length > 0) {
-        await ctx.db
-          .insert(importReviewItems)
-          .values(
-            review.items.map((item) => ({
-              id: item.id,
-              firmId: session.firm.id,
-              batchId,
-              sourceRowId: item.sourceRowId,
-              rowIndex: item.rowIndex,
-              status: item.status,
-              problemTypes: item.problemTypes,
-              canonicalProfile: item.canonicalProfile,
-              sourceFields: item.sourceFields,
-              messages: item.messages,
-              createdAt: now,
-            })),
-          )
-          .returning();
+        for (const chunk of chunkArray(review.items, previewInsertChunkSize)) {
+          await ctx.db
+            .insert(importReviewItems)
+            .values(
+              chunk.map((item) => ({
+                id: item.id,
+                firmId: session.firm.id,
+                batchId,
+                sourceRowId: item.sourceRowId,
+                rowIndex: item.rowIndex,
+                status: item.status,
+                problemTypes: item.problemTypes,
+                canonicalProfile: item.canonicalProfile,
+                sourceFields: item.sourceFields,
+                messages: item.messages,
+                createdAt: now,
+              })),
+            )
+            .returning();
+        }
       }
 
       if (review.duplicateCandidates.length > 0) {
-        await ctx.db
-          .insert(duplicateCandidates)
-          .values(
-            review.duplicateCandidates.map((candidate) => ({
-              id: candidate.id,
-              firmId: session.firm.id,
-              batchId,
-              incomingReviewItemId: candidate.incomingReviewItemId,
-              existingClientRelationshipId: candidate.existingClientRelationshipId,
-              matchedFields: candidate.matchedFields,
-              differingFields: candidate.differingFields,
-              suggestedAction: candidate.suggestedAction,
-              resolution: candidate.resolution,
-              createdAt: now,
-              updatedAt: now,
-            })),
-          )
-          .returning();
+        for (const chunk of chunkArray(review.duplicateCandidates, previewInsertChunkSize)) {
+          await ctx.db
+            .insert(duplicateCandidates)
+            .values(
+              chunk.map((candidate) => ({
+                id: candidate.id,
+                firmId: session.firm.id,
+                batchId,
+                incomingReviewItemId: candidate.incomingReviewItemId,
+                existingClientRelationshipId: candidate.existingClientRelationshipId,
+                matchedFields: candidate.matchedFields,
+                differingFields: candidate.differingFields,
+                suggestedAction: candidate.suggestedAction,
+                resolution: candidate.resolution,
+                createdAt: now,
+                updatedAt: now,
+              })),
+            )
+            .returning();
+        }
       }
 
       if (review.relationshipSuggestions.length > 0) {
-        await ctx.db
-          .insert(relationshipSuggestionsTable)
-          .values(
-            review.relationshipSuggestions.map((suggestion) => ({
-              id: suggestion.id,
-              firmId: session.firm.id,
-              batchId,
-              incomingReviewItemId: suggestion.incomingReviewItemId,
-              suggestedClientRelationshipId: suggestion.suggestedClientRelationshipId,
-              reason: suggestion.reason,
-              suggestedAction: suggestion.suggestedAction,
-              status: suggestion.status,
-              createdAt: now,
-              updatedAt: now,
-            })),
-          )
-          .returning();
+        for (const chunk of chunkArray(review.relationshipSuggestions, previewInsertChunkSize)) {
+          await ctx.db
+            .insert(relationshipSuggestionsTable)
+            .values(
+              chunk.map((suggestion) => ({
+                id: suggestion.id,
+                firmId: session.firm.id,
+                batchId,
+                incomingReviewItemId: suggestion.incomingReviewItemId,
+                suggestedClientRelationshipId: suggestion.suggestedClientRelationshipId,
+                reason: suggestion.reason,
+                suggestedAction: suggestion.suggestedAction,
+                status: suggestion.status,
+                createdAt: now,
+                updatedAt: now,
+              })),
+            )
+            .returning();
+        }
       }
 
       return {
