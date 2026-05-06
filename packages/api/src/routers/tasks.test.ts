@@ -213,6 +213,9 @@ test("tasks.markExtended records official extension and field-level due date his
   const result = await caller.tasks.markExtended({
     taskId: "task-test",
     newCurrentDueDate: "2026-09-15",
+    sourceName: "IRS extension notice",
+    sourceUrl: "https://www.irs.gov/forms-pubs/extension-notice",
+    notes: "CPA confirmed the official extension before updating the task.",
   });
 
   assert.equal(result.currentDueDate, "2026-09-15");
@@ -227,7 +230,12 @@ test("tasks.markExtended records official extension and field-level due date his
   assert.equal(eventWrite?.row.eventType, "official_extension");
   assert.equal(eventWrite?.row.previousCurrentDueDate, "2026-05-15");
   assert.equal(eventWrite?.row.newCurrentDueDate, "2026-09-15");
-  assert.equal(eventWrite?.row.sourceName, "CPA-recorded extension");
+  assert.equal(eventWrite?.row.sourceName, "IRS extension notice");
+  assert.equal(eventWrite?.row.sourceUrl, "https://www.irs.gov/forms-pubs/extension-notice");
+  assert.equal(
+    eventWrite?.row.notes,
+    "CPA confirmed the official extension before updating the task.",
+  );
   assert.deepEqual(
     updateWrites.map((write) => write.row.fieldName).sort(),
     ["currentDueDate", "originalDueDate"],

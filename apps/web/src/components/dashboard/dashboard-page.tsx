@@ -292,6 +292,14 @@ export function DashboardPage() {
     };
   }, [activeHorizon, activePage, focusedTasks]);
   const selectedCount = selectedTaskIds.size;
+  const resultStart =
+    activeSection.count === 0
+      ? 0
+      : (activeSection.pagination.page - 1) * activeSection.pagination.pageSize + 1;
+  const resultEnd = Math.min(
+    activeSection.pagination.page * activeSection.pagination.pageSize,
+    activeSection.count,
+  );
 
   React.useEffect(() => {
     const visibleIds = new Set(activeSection.tasks.map((task) => task.id));
@@ -593,6 +601,13 @@ export function DashboardPage() {
                 taskStatuses={data.filterOptions.taskStatuses}
                 onClearSelection={() => setSelectedTaskIds(new Set())}
               />
+              <span className="inline-flex h-8 items-center rounded-lg border border-ddhq-line bg-ddhq-paper-raised px-2.5 text-xs font-medium text-muted-foreground">
+                Showing {resultStart}-{resultEnd} of{" "}
+                <span className="ml-1 font-mono font-semibold tabular-nums text-foreground">
+                  {activeSection.count}
+                </span>
+                <span className="ml-1">results</span>
+              </span>
               <Button
                 type="button"
                 variant="outline"
@@ -771,7 +786,7 @@ function DeadlineTimeline({
           ))}
         </ol>
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -1234,14 +1249,14 @@ function WorkloadCalendar({
       </div>
 
       <div className="mt-2">
-        <div className="grid grid-cols-7 gap-0.5 text-center text-[10px] font-semibold text-muted-foreground">
+        <div className="grid grid-cols-7 gap-1.5 text-center text-[10px] font-semibold text-muted-foreground">
           {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
             <div key={`${visibleMonth?.id ?? "month"}-${day}`} className="h-4">
               {day}
             </div>
           ))}
         </div>
-        <div className="grid grid-cols-7 gap-0.5">
+        <div className="grid grid-cols-7 gap-1.5">
           {(visibleMonth?.days ?? []).map((day) => (
             <button
               key={day.date}
@@ -1284,7 +1299,7 @@ function WorkloadCalendar({
           ))}
         </div>
       </div>
-    </section>
+    </div>
   );
 }
 

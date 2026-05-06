@@ -1,15 +1,36 @@
+import { Button } from "@due-date-hq/ui/components/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@due-date-hq/ui/components/dialog";
+import { Input } from "@due-date-hq/ui/components/input";
 import {
   Sheet,
   SheetContent,
   SheetTitle,
 } from "@due-date-hq/ui/components/sheet";
-import { useQuery } from "@tanstack/react-query";
-import { CalendarClock, ExternalLink, History, ShieldAlert, ShieldCheck } from "lucide-react";
+import { Textarea } from "@due-date-hq/ui/components/textarea";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import {
+  CalendarClock,
+  CalendarPlus,
+  Check,
+  ExternalLink,
+  History,
+  ShieldAlert,
+  ShieldCheck,
+  X,
+} from "lucide-react";
 import * as React from "react";
+import { toast } from "sonner";
 
 import { StatusBadge } from "@/components/status-badge";
 import { formatDate, formatDateTime } from "@/utils/date-format";
-import { trpc } from "@/utils/trpc";
+import { queryClient, trpc } from "@/utils/trpc";
 
 import type { TaskEvidenceResponse } from "@due-date-hq/api/routers/tasks";
 
@@ -66,14 +87,38 @@ export function EvidenceDrawer({
 
 function EvidenceContent({ evidence }: { evidence: TaskEvidenceResponse }) {
   const [activeTab, setActiveTab] = React.useState<DetailTab>("activity");
+  const [extensionDate, setExtensionDate] = React.useState("");
+  const [extensionNotes, setExtensionNotes] = React.useState("");
+  const [extensionSourceName, setExtensionSourceName] = React.useState("");
+  const [extensionSourceUrl, setExtensionSourceUrl] = React.useState("");
+  const [isExtensionDialogOpen, setIsExtensionDialogOpen] = React.useState(false);
   const tabBaseId = React.useId();
   const activityItems = React.useMemo(() => createActivityItems(evidence), [evidence]);
   const dateHistoryItems = React.useMemo(() => createDateHistoryItems(evidence), [evidence]);
   const hasExtendedDatePair = React.useMemo(() => hasOfficialDatePair(evidence), [evidence]);
   const workState = React.useMemo(() => createEvidenceWorkState(evidence), [evidence]);
+  const markExtended = useMutation(
+    trpc.tasks.markExtended.mutationOptions({
+      onSuccess: () => {
+        toast.success("Extension recorded.");
+        setExtensionDate("");
+        setExtensionNotes("");
+        setExtensionSourceName("");
+        setExtensionSourceUrl("");
+        setIsExtensionDialogOpen(false);
+        void queryClient.invalidateQueries();
+      },
+      onError: (error) => toast.error(error.message),
+    }),
+  );
 
   React.useEffect(() => {
     setActiveTab("activity");
+    setExtensionDate("");
+    setExtensionNotes("");
+    setExtensionSourceName("");
+    setExtensionSourceUrl("");
+    setIsExtensionDialogOpen(false);
   }, [evidence.task.id]);
 
   function handleTabKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
@@ -108,6 +153,7 @@ function EvidenceContent({ evidence }: { evidence: TaskEvidenceResponse }) {
   }
 
   return (
+    <>
     <div className="min-h-0 flex-1 overflow-auto">
       <section className="p-4">
         <div className="text-sm font-semibold">{evidence.task.title}</div>
@@ -148,31 +194,44 @@ function EvidenceContent({ evidence }: { evidence: TaskEvidenceResponse }) {
       </section>
 
       <div className="sticky top-0 z-10 border-b border-border bg-popover px-4">
-        <div
-          role="tablist"
-          aria-label="Deadline detail sections"
-          className="flex min-h-10 items-end gap-4"
-          onKeyDown={handleTabKeyDown}
-        >
-          {detailTabs.map((tab) => (
-            <button
-              key={tab.id}
-              id={getTabId(tabBaseId, tab.id)}
-              type="button"
-              role="tab"
-              aria-selected={activeTab === tab.id}
-              aria-controls={getPanelId(tabBaseId, tab.id)}
-              tabIndex={activeTab === tab.id ? 0 : -1}
-              className={`relative inline-flex h-10 min-w-0 items-center border-b-2 px-0.5 text-xs font-semibold leading-none outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/45 focus-visible:ring-offset-2 focus-visible:ring-offset-popover ${
-                activeTab === tab.id
-                  ? "border-primary text-foreground"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
-              onClick={() => setActiveTab(tab.id)}
-            >
-              <span className="truncate">{tab.label}</span>
-            </button>
-          ))}
+        <div className="flex min-h-10 items-end justify-between gap-4">
+          <div
+            role="tablist"
+            aria-label="Deadline detail sections"
+            className="flex min-w-0 items-end gap-4"
+            onKeyDown={handleTabKeyDown}
+          >
+            {detailTabs.map((tab) => (
+              <button
+                key={tab.id}
+                id={getTabId(tabBaseId, tab.id)}
+                type="button"
+                role="tab"
+                aria-selected={activeTab === tab.id}
+                aria-controls={getPanelId(tabBaseId, tab.id)}
+                tabIndex={activeTab === tab.id ? 0 : -1}
+                className={`relative inline-flex h-10 min-w-0 items-center border-b-2 px-0.5 text-xs font-semibold leading-none outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/45 focus-visible:ring-offset-2 focus-visible:ring-offset-popover ${
+                  activeTab === tab.id
+                    ? "border-primary text-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+                onClick={() => setActiveTab(tab.id)}
+              >
+                <span className="truncate">{tab.label}</span>
+              </button>
+            ))}
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="mb-1 h-7 shrink-0 border-ddhq-line bg-ddhq-paper text-xs hover:bg-muted/55"
+            disabled={markExtended.isPending}
+            onClick={() => setIsExtensionDialogOpen(true)}
+          >
+            <CalendarPlus className="size-3.5" />
+            Mark extended
+          </Button>
         </div>
       </div>
 
@@ -200,6 +259,127 @@ function EvidenceContent({ evidence }: { evidence: TaskEvidenceResponse }) {
         </DetailTabPanel>
       </div>
     </div>
+    <Dialog
+      open={isExtensionDialogOpen}
+      onOpenChange={(open) => {
+        if (!open && !markExtended.isPending) {
+          setIsExtensionDialogOpen(false);
+        }
+      }}
+    >
+      <DialogContent
+        showCloseButton={false}
+        className="w-[calc(100vw-2rem)] max-w-sm gap-0 rounded-lg p-0 sm:max-w-sm"
+      >
+        <DialogHeader className="border-b border-border p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <DialogTitle>Mark task extended</DialogTitle>
+              <DialogDescription className="mt-1">
+                Record a new official due date for {evidence.task.title}.
+              </DialogDescription>
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              aria-label="Cancel extension entry"
+              disabled={markExtended.isPending}
+              onClick={() => setIsExtensionDialogOpen(false)}
+            >
+              <X className="size-3" />
+            </Button>
+          </div>
+        </DialogHeader>
+        <div className="grid gap-1.5 p-4">
+          <label className="text-xs font-medium" htmlFor="detail-extension-date">
+            New official due date
+          </label>
+          <Input
+            id="detail-extension-date"
+            aria-label={`Extension date for ${evidence.task.title}`}
+            className="h-8 text-xs"
+            type="date"
+            value={extensionDate}
+            onChange={(event) => setExtensionDate(event.target.value)}
+          />
+          <p className="text-xs leading-5 text-muted-foreground">
+            Use this only when an official extension or relief change moves the deadline.
+          </p>
+          <label className="mt-2 text-xs font-medium" htmlFor="detail-extension-source">
+            Trusted source or reference
+          </label>
+          <Input
+            id="detail-extension-source"
+            aria-label={`Extension source for ${evidence.task.title}`}
+            className="h-8 text-xs"
+            placeholder="IRS notice, state agency page, client notice, or internal evidence"
+            value={extensionSourceName}
+            onChange={(event) => setExtensionSourceName(event.target.value)}
+          />
+          <label className="mt-2 text-xs font-medium" htmlFor="detail-extension-source-url">
+            Source URL
+            <span className="ml-1 font-normal text-muted-foreground">optional</span>
+          </label>
+          <Input
+            id="detail-extension-source-url"
+            aria-label={`Extension source URL for ${evidence.task.title}`}
+            className="h-8 text-xs"
+            placeholder="https://..."
+            type="url"
+            value={extensionSourceUrl}
+            onChange={(event) => setExtensionSourceUrl(event.target.value)}
+          />
+          <label className="mt-2 text-xs font-medium" htmlFor="detail-extension-notes">
+            Notes
+            <span className="ml-1 font-normal text-muted-foreground">optional</span>
+          </label>
+          <Textarea
+            id="detail-extension-notes"
+            aria-label={`Extension notes for ${evidence.task.title}`}
+            className="min-h-20 text-xs"
+            maxLength={500}
+            placeholder="Why this deadline changed, or what evidence was reviewed."
+            value={extensionNotes}
+            onChange={(event) => setExtensionNotes(event.target.value)}
+          />
+        </div>
+        <DialogFooter className="flex-row justify-end border-t border-border p-4">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            disabled={markExtended.isPending}
+            onClick={() => setIsExtensionDialogOpen(false)}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            disabled={
+              !extensionDate ||
+              !extensionSourceName.trim() ||
+              extensionDate === evidence.task.currentDueDate ||
+              markExtended.isPending
+            }
+            onClick={() =>
+              markExtended.mutate({
+                taskId: evidence.task.id,
+                newCurrentDueDate: extensionDate,
+                sourceName: extensionSourceName,
+                sourceUrl: extensionSourceUrl,
+                notes: extensionNotes,
+              })
+            }
+          >
+            <Check className="size-3.5" />
+            Save extension
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
 

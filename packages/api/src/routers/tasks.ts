@@ -361,12 +361,14 @@ async function updateFirmTargetDate({
 async function markTaskExtended({
   ctx,
   newCurrentDueDate,
+  notes,
   sourceName,
   sourceUrl,
   taskId,
 }: {
   ctx: Context;
   newCurrentDueDate: string;
+  notes: string | null;
   sourceName: string;
   sourceUrl: string | null;
   taskId: string;
@@ -429,7 +431,7 @@ async function markTaskExtended({
     createdBy: session.user.id,
     auditLogId,
     createdAt: now,
-    notes: "Official extension recorded from the dashboard.",
+    notes: notes ?? "Official extension recorded from the dashboard.",
   });
 
   await recordTaskUpdateRecords({
@@ -516,8 +518,21 @@ export const tasksRouter = router({
       z.object({
         taskId: taskIdSchema,
         newCurrentDueDate: dateStringSchema,
-        sourceName: z.string().trim().min(1).default("CPA-recorded extension"),
-        sourceUrl: z.string().trim().url().nullable().default(null),
+        sourceName: z.string().trim().min(1),
+        sourceUrl: z
+          .string()
+          .trim()
+          .optional()
+          .default("")
+          .transform((value) => (value.length === 0 ? null : value))
+          .pipe(z.string().url().nullable()),
+        notes: z
+          .string()
+          .trim()
+          .optional()
+          .default("")
+          .transform((value) => (value.length === 0 ? null : value))
+          .pipe(z.string().max(500).nullable()),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -525,6 +540,7 @@ export const tasksRouter = router({
         ctx,
         taskId: input.taskId,
         newCurrentDueDate: input.newCurrentDueDate,
+        notes: input.notes,
         sourceName: input.sourceName,
         sourceUrl: input.sourceUrl,
       });

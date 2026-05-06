@@ -518,7 +518,7 @@ function ImportModeSelector({
             aria-pressed={isSelected}
             className={`rounded-[6px] px-3 py-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/25 ${
               isSelected
-                ? "bg-ddhq-paper-raised text-foreground shadow-[0_1px_0_oklch(0.44_0.025_78/0.04)] ring-1 ring-primary/20"
+                ? "bg-ddhq-paper-raised text-foreground"
                 : "text-muted-foreground hover:bg-ddhq-paper/70 hover:text-foreground"
             }`}
             onClick={() => onChange(option.value)}
