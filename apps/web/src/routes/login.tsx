@@ -74,21 +74,21 @@ function LoginComponent() {
   }
 
   return (
-    <main className="min-h-svh overflow-auto bg-background">
+    <main className="min-h-svh overflow-auto bg-background text-foreground">
       <div className="mx-auto grid min-h-svh w-full min-w-0 max-w-[1000px] grid-cols-[minmax(0,1fr)] content-center gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[minmax(0,420px)_minmax(400px,440px)] lg:items-center lg:gap-10 lg:py-12 lg:pb-20">
-        <section className="min-w-0 max-w-full border-b pb-5 sm:max-w-[34rem] lg:border-b-0 lg:pb-0">
+        <section className="min-w-0 max-w-full border-b border-border pb-5 sm:max-w-[34rem] lg:border-b-0 lg:pb-0">
           <h1 className="text-2xl font-semibold tracking-normal">DueDateHQ</h1>
           <p className="mt-3 max-w-full text-sm leading-6 text-muted-foreground sm:max-w-md">
-            Manage CPA deadline work for one firm workspace.
+            Control tax deadline risk for your CPA firm.
           </p>
           <ul className="mt-5 grid gap-2 text-xs text-muted-foreground">
-            <WorkspaceCue>Firm-scoped workspace data</WorkspaceCue>
-            <WorkspaceCue>Verified source status stays visible</WorkspaceCue>
-            <WorkspaceCue>Entered deadlines are marked not verified</WorkspaceCue>
+            <WorkspaceCue>Verified IRS and state deadline evidence</WorkspaceCue>
+            <WorkspaceCue>One queue for every client filing</WorkspaceCue>
+            <WorkspaceCue>AI flags source changes for CPA review</WorkspaceCue>
           </ul>
         </section>
 
-        <section className="w-full min-w-0 max-w-full justify-self-center border border-ddhq-border-strong bg-card p-5 shadow-sm sm:max-w-[440px] sm:p-6 lg:justify-self-end">
+        <section className="w-full min-w-0 max-w-full justify-self-center rounded-[8px] border border-ddhq-border-strong bg-card p-5 shadow-sm sm:max-w-[440px] sm:p-6 lg:justify-self-end">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <p className="text-xs text-muted-foreground">Secure firm access</p>
@@ -99,7 +99,7 @@ function LoginComponent() {
             <Button
               type="button"
               variant="outline"
-              className="h-10 w-full sm:w-auto sm:min-w-[8.75rem]"
+              className="h-10 w-full border-ddhq-border-strong/70 bg-background hover:bg-muted focus-visible:ring-primary/25 sm:w-auto sm:min-w-[8.75rem]"
               onClick={() => handleModeChange(mode === "register" ? "login" : "register")}
             >
               {mode === "register" ? (
@@ -159,12 +159,16 @@ function LoginComponent() {
             />
 
             {errorMessage ? (
-              <div className="border border-destructive/30 bg-destructive/10 p-2 text-xs text-destructive">
+              <div className="rounded-[6px] border border-destructive/30 bg-destructive/10 p-2 text-xs text-destructive">
                 {errorMessage}
               </div>
             ) : null}
 
-            <Button type="submit" disabled={isSubmitting} className="mt-1 h-10 w-full md:h-9">
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="mt-1 h-10 w-full bg-primary hover:bg-primary/90 focus-visible:ring-primary/25 md:h-9"
+            >
               {mode === "register" ? (
                 <>
                   <UserPlus className="size-3.5" />
@@ -226,7 +230,7 @@ function Field({
         placeholder={placeholder}
         onChange={(event) => onChange(event.target.value)}
         required={!placeholder}
-        className="h-10 text-sm md:h-9 md:text-xs"
+        className="h-10 rounded-[6px] border-ddhq-border-strong/65 bg-background text-sm focus-visible:border-primary focus-visible:ring-primary/25 md:h-9 md:text-xs"
       />
     </div>
   );
@@ -235,8 +239,8 @@ function Field({
 function WorkspaceCue({ children }: { children: React.ReactNode }) {
   return (
     <li className="flex min-h-6 items-center gap-2">
-      <span className="size-1.5 shrink-0 bg-ddhq-verified" aria-hidden="true" />
-      <span>{children}</span>
+      <span className="size-1.5 shrink-0 rounded-[2px] bg-ddhq-ink-soft" aria-hidden="true" />
+      <span className="min-w-0 leading-5">{children}</span>
     </li>
   );
 }
