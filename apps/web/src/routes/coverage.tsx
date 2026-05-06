@@ -1,6 +1,7 @@
 import type {
   CoverageJurisdictionGroup,
   CoverageObligationItem,
+  CoverageRuleDetail,
 } from "@due-date-hq/api/routers/coverage";
 import { Button } from "@due-date-hq/ui/components/button";
 import {
@@ -41,7 +42,7 @@ import {
   ShieldAlert,
   ShieldCheck,
 } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useId, useState, type KeyboardEvent, type ReactNode } from "react";
 import { toast } from "sonner";
 
 import { StatusBadge } from "@/components/status-badge";
@@ -67,6 +68,13 @@ type StatusFilter = "all" | VerificationStatusKey;
 type SelectedCoverageDetail =
   | { mode: "coverage"; obligationId: string }
   | { mode: "evidence"; ruleId: string };
+
+const coverageDetailTabs = [
+  { id: "overview", label: "Overview" },
+  { id: "evidence", label: "Evidence" },
+] as const;
+
+type CoverageDetailTab = (typeof coverageDetailTabs)[number]["id"];
 
 const statusIcons: Record<VerificationStatusKey, typeof CheckCircle2> = {
   verified: ShieldCheck,
@@ -130,38 +138,38 @@ const statusSummaryButtonStyles: Record<
 > = {
   verified: {
     active:
-      "border-ddhq-verified/70 bg-ddhq-verified-soft text-ddhq-verified shadow-[0_1px_2px_rgba(21,128,61,0.12),inset_0_0_0_1px_rgba(21,128,61,0.16)] ring-ddhq-verified/20",
+      "border-ddhq-verified/70 bg-ddhq-verified-soft text-ddhq-verified",
     idle:
-      "border-ddhq-verified/25 bg-ddhq-verified-soft/65 text-ddhq-verified shadow-[0_1px_1px_rgba(21,128,61,0.05)] hover:border-ddhq-verified/55 hover:bg-ddhq-verified-soft hover:shadow-[0_2px_5px_rgba(21,128,61,0.12)]",
+      "border-transparent bg-ddhq-verified-soft/65 text-ddhq-verified hover:bg-ddhq-verified-soft",
   },
   needs_review: {
     active:
-      "border-ddhq-review/75 bg-ddhq-review-soft text-ddhq-review shadow-[0_1px_2px_rgba(180,121,22,0.13),inset_0_0_0_1px_rgba(180,121,22,0.18)] ring-ddhq-review/20",
+      "border-ddhq-review/75 bg-ddhq-review-soft text-ddhq-review",
     idle:
-      "border-ddhq-review/30 bg-ddhq-review-soft/70 text-ddhq-review shadow-[0_1px_1px_rgba(180,121,22,0.06)] hover:border-ddhq-review/60 hover:bg-ddhq-review-soft hover:shadow-[0_2px_5px_rgba(180,121,22,0.13)]",
+      "border-transparent bg-ddhq-review-soft/70 text-ddhq-review hover:bg-ddhq-review-soft",
   },
   source_changed: {
     active:
-      "border-[oklch(0.72_0.055_285)] bg-[oklch(0.955_0.026_285)] text-[oklch(0.46_0.105_285)] shadow-[0_1px_2px_rgba(105,73,163,0.10),inset_0_0_0_1px_rgba(105,73,163,0.13)] ring-[oklch(0.46_0.105_285/0.16)]",
+      "border-[oklch(0.72_0.055_285)] bg-[oklch(0.955_0.026_285)] text-[oklch(0.46_0.105_285)]",
     idle:
-      "border-[oklch(0.72_0.055_285/0.40)] bg-[oklch(0.955_0.026_285/0.72)] text-[oklch(0.46_0.105_285)] shadow-[0_1px_1px_rgba(105,73,163,0.05)] hover:border-[oklch(0.72_0.055_285/0.70)] hover:bg-[oklch(0.955_0.026_285)] hover:shadow-[0_2px_5px_rgba(105,73,163,0.10)]",
+      "border-transparent bg-[oklch(0.955_0.026_285/0.72)] text-[oklch(0.46_0.105_285)] hover:bg-[oklch(0.955_0.026_285)]",
   },
   unsupported: {
     active:
-      "border-ddhq-gap/65 bg-ddhq-gap-soft text-ddhq-gap shadow-[0_1px_2px_rgba(71,91,133,0.12),inset_0_0_0_1px_rgba(71,91,133,0.16)] ring-ddhq-gap/20",
+      "border-ddhq-gap/65 bg-ddhq-gap-soft text-ddhq-gap",
     idle:
-      "border-ddhq-gap/25 bg-ddhq-gap-soft/75 text-ddhq-gap shadow-[0_1px_1px_rgba(71,91,133,0.05)] hover:border-ddhq-gap/55 hover:bg-ddhq-gap-soft hover:shadow-[0_2px_5px_rgba(71,91,133,0.12)]",
+      "border-transparent bg-ddhq-gap-soft/75 text-ddhq-gap hover:bg-ddhq-gap-soft",
   },
   no_rule: {
     active:
-      "border-ddhq-gap/65 bg-ddhq-gap-soft text-ddhq-gap shadow-[0_1px_2px_rgba(71,91,133,0.12),inset_0_0_0_1px_rgba(71,91,133,0.16)] ring-ddhq-gap/20",
+      "border-ddhq-gap/65 bg-ddhq-gap-soft text-ddhq-gap",
     idle:
-      "border-ddhq-gap/25 bg-ddhq-gap-soft/75 text-ddhq-gap shadow-[0_1px_1px_rgba(71,91,133,0.05)] hover:border-ddhq-gap/55 hover:bg-ddhq-gap-soft hover:shadow-[0_2px_5px_rgba(71,91,133,0.12)]",
+      "border-transparent bg-ddhq-gap-soft/75 text-ddhq-gap hover:bg-ddhq-gap-soft",
   },
 };
 
 const sourceMonitorBadgeStatus: Record<SourceMonitorStatus, Parameters<typeof StatusBadge>[0]["status"]> = {
-  monitored: "verified",
+  monitored: "monitoring",
   source_changed: "source_changed",
   not_monitored: "neutral",
   unsupported: "unsupported",
@@ -172,7 +180,7 @@ const coverageFilterSelectContentClassName = "!rounded-[6px]";
 const coverageFilterSelectItemClassName =
   "data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground data-[selected]:bg-accent data-[selected]:text-accent-foreground";
 const coverageActionButtonClassName =
-  "min-h-7 w-full cursor-pointer rounded-[6px] !border-ddhq-line !bg-ddhq-paper px-2 py-1 text-[11px] font-semibold leading-3 shadow-none hover:!border-primary/45 hover:!bg-ddhq-accent-soft/45 hover:!text-foreground focus-visible:!border-primary focus-visible:!ring-primary/25";
+  "h-5 w-full cursor-pointer rounded-[5px] !border-ddhq-line !bg-ddhq-paper px-1 py-0 text-[10px] font-semibold leading-none shadow-none hover:!border-primary/45 hover:!bg-ddhq-accent-soft/45 hover:!text-foreground focus-visible:!border-primary focus-visible:!ring-primary/25";
 const evidenceLabelClassName =
   "text-[11px] font-semibold uppercase leading-4 text-muted-foreground";
 const dateHighlightClassName =
@@ -514,8 +522,8 @@ function CoverageComponent() {
                     <col className="w-[27%]" />
                     <col className="w-[18%]" />
                     <col className="w-[13%]" />
-                    <col className="w-[21%]" />
-                    <col className="w-[9%]" />
+                    <col className="w-[20%]" />
+                    <col className="w-[10%]" />
                     <col className="w-[12%]" />
                   </colgroup>
                   <TableHeader>
@@ -570,20 +578,12 @@ function CoverageComponent() {
                           <TableCell className="font-mono text-xs text-muted-foreground">
                             {obligation.lastVerifiedAt ? formatDate(obligation.lastVerifiedAt) : "Not verified"}
                           </TableCell>
-                          <TableCell className="align-top">
+                          <TableCell className="align-middle">
                             <CoverageActions
-                              addEnteredDeadlinePending={addEnteredDeadline.isPending}
-                              dismissGapPending={dismissGap.isPending}
                               obligation={obligation}
-                              requestCoveragePending={requestCoverage.isPending}
-                              statusKey={statusKey}
-                              onAddEnteredDeadline={startEnteredDeadline}
-                              onDismissGap={dismissCoverageGap}
                               onOpenCoverage={(obligationId) =>
                                 setSelectedDetail({ mode: "coverage", obligationId })
                               }
-                              onOpenEvidence={(ruleId) => setSelectedDetail({ mode: "evidence", ruleId })}
-                              onRequestCoverage={requestVerification}
                             />
                           </TableCell>
                         </TableRow>
@@ -619,7 +619,6 @@ function CoverageComponent() {
               requestCoveragePending={requestCoverage.isPending}
               onAddEnteredDeadline={startEnteredDeadline}
               onDismissGap={dismissCoverageGap}
-              onOpenEvidence={(ruleId) => setSelectedDetail({ mode: "evidence", ruleId })}
               onRequestCoverage={requestVerification}
             />
           )}
@@ -663,7 +662,7 @@ function StatusSummaryButton({
       type="button"
       aria-pressed={active}
       title={`Filter by ${statusLabels[statusKey]}`}
-      className={`inline-flex min-h-9 cursor-pointer items-center gap-2 whitespace-nowrap rounded-[7px] border px-3 py-1.5 text-left text-xs font-semibold transition-[background-color,border-color,box-shadow] focus-visible:outline-none focus-visible:ring-2 ${
+      className={`inline-flex min-h-9 cursor-pointer items-center gap-2 whitespace-nowrap rounded-[7px] border px-3 py-1.5 text-left text-xs font-semibold transition-[background-color,border-color] focus-visible:outline-none ${
         active ? tone.active : tone.idle
       }`}
       onClick={onClick}
@@ -712,22 +711,27 @@ function VerificationBadge({ statusKey }: { statusKey: VerificationStatusKey }) 
 }
 
 function SourceMonitorCell({ obligation }: { obligation: CoverageObligationItem }) {
+  const checkedLabel = obligation.sourceLastCheckedAt
+    ? `Checked ${formatDate(obligation.sourceLastCheckedAt)}`
+    : "Not checked";
+  const changedLabel = obligation.sourceLastChangedAt
+    ? `Changed ${formatDate(obligation.sourceLastChangedAt)}`
+    : "No change";
+
   return (
-    <div className="grid min-w-0 gap-1.5 text-xs">
-      <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-        <StatusBadge status={sourceMonitorBadgeStatus[obligation.sourceMonitorStatus]}>
+    <div className="grid min-w-0 gap-1 text-xs">
+      <div className="flex min-w-0 items-center">
+        <StatusBadge
+          status={sourceMonitorBadgeStatus[obligation.sourceMonitorStatus]}
+          className="max-w-full"
+        >
           <SourceMonitorIcon status={obligation.sourceMonitorStatus} />
-          {obligation.sourceMonitorLabel}
+          <span className="truncate">{obligation.sourceMonitorLabel}</span>
         </StatusBadge>
       </div>
-      <div className="min-w-0 truncate text-muted-foreground">
-        {obligation.sourceName ?? obligation.agencyName}
-      </div>
-      <div className="grid gap-0.5 font-mono text-[11px] leading-4 text-muted-foreground">
-        <span>Checked {obligation.sourceLastCheckedAt ? formatDate(obligation.sourceLastCheckedAt) : "not monitored"}</span>
-        <span>
-          Changed {obligation.sourceLastChangedAt ? formatDate(obligation.sourceLastChangedAt) : "none recorded"}
-        </span>
+      <div className="flex min-w-0 flex-wrap gap-x-2 gap-y-0.5 font-mono text-[11px] leading-4 text-muted-foreground">
+        <span className="whitespace-nowrap">{checkedLabel}</span>
+        <span className="whitespace-nowrap text-muted-foreground/75">{changedLabel}</span>
       </div>
     </div>
   );
@@ -771,102 +775,17 @@ function StatusHeaderIcon({ statusKey }: { statusKey: VerificationStatusKey }) {
 }
 
 function CoverageActions({
-  addEnteredDeadlinePending,
-  dismissGapPending,
   obligation,
-  onAddEnteredDeadline,
-  onDismissGap,
   onOpenCoverage,
-  onOpenEvidence,
-  onRequestCoverage,
-  requestCoveragePending,
-  statusKey,
 }: {
-  addEnteredDeadlinePending: boolean;
-  dismissGapPending: boolean;
   obligation: CoverageObligationItem;
-  onAddEnteredDeadline: (obligationId: string) => void;
-  onDismissGap: (obligationId: string) => void;
   onOpenCoverage: (obligationId: string) => void;
-  onOpenEvidence: (ruleId: string) => void;
-  onRequestCoverage: (obligationId: string) => void;
-  requestCoveragePending: boolean;
-  statusKey: VerificationStatusKey;
 }) {
-  const ruleId = obligation.ruleId;
-
-  if (statusKey === "verified" && ruleId) {
-    return (
-      <div className="ml-auto grid w-32 grid-cols-1 gap-1">
-        <ActionButton onClick={() => onOpenEvidence(ruleId)}>Evidence</ActionButton>
-      </div>
-    );
-  }
-
-  if (statusKey === "needs_review" || statusKey === "source_changed") {
-    return (
-      <div className="ml-auto grid w-36 grid-cols-1 gap-1">
-        {ruleId ? (
-          <ActionButton onClick={() => onOpenEvidence(ruleId)}>
-            Review evidence
-          </ActionButton>
-        ) : (
-          <ActionButton onClick={() => onOpenCoverage(obligation.obligationId)}>
-            Review state
-          </ActionButton>
-        )}
-        <ActionButton
-          disabled={requestCoveragePending}
-          onClick={() => onRequestCoverage(obligation.obligationId)}
-        >
-          Request review
-        </ActionButton>
-      </div>
-    );
-  }
-
-  if (statusKey === "unsupported") {
-    return (
-      <div className="ml-auto grid w-36 grid-cols-1 gap-1">
-        <ActionButton onClick={() => onOpenCoverage(obligation.obligationId)}>
-          Explain unsupported
-        </ActionButton>
-        <ActionButton
-          disabled={requestCoveragePending}
-          onClick={() => onRequestCoverage(obligation.obligationId)}
-        >
-          Request verification
-        </ActionButton>
-        <ActionButton
-          disabled={addEnteredDeadlinePending}
-          onClick={() => onAddEnteredDeadline(obligation.obligationId)}
-        >
-          Entered deadline
-        </ActionButton>
-      </div>
-    );
-  }
-
   return (
-    <div className="ml-auto grid w-36 grid-cols-1 gap-1">
-      <ActionButton onClick={() => onOpenCoverage(obligation.obligationId)}>Explain gap</ActionButton>
-      <ActionButton
-        disabled={requestCoveragePending}
-        onClick={() => onRequestCoverage(obligation.obligationId)}
-      >
-        Request verification
-      </ActionButton>
-      <ActionButton
-        disabled={addEnteredDeadlinePending}
-        onClick={() => onAddEnteredDeadline(obligation.obligationId)}
-      >
-        Entered deadline
-      </ActionButton>
-      <ActionButton
-        disabled={dismissGapPending}
-        onClick={() => onDismissGap(obligation.obligationId)}
-      >
-        Dismiss for now
+    <div className="ml-auto grid w-14 grid-cols-1 place-items-center">
+      <ActionButton onClick={() => onOpenCoverage(obligation.obligationId)}>
+        <Eye className="size-2.5" aria-hidden="true" />
+        Detail
       </ActionButton>
     </div>
   );
@@ -901,7 +820,6 @@ function CoverageDetailContent({
   obligation,
   onAddEnteredDeadline,
   onDismissGap,
-  onOpenEvidence,
   onRequestCoverage,
   requestCoveragePending,
 }: {
@@ -910,24 +828,59 @@ function CoverageDetailContent({
   obligation: CoverageObligationItem;
   onAddEnteredDeadline: (obligationId: string) => void;
   onDismissGap: (obligationId: string) => void;
-  onOpenEvidence: (ruleId: string) => void;
   onRequestCoverage: (obligationId: string) => void;
   requestCoveragePending: boolean;
 }) {
   const statusKey = getStatusKey(obligation.verificationStatus);
-  const ruleId = obligation.ruleId;
+  const [activeTab, setActiveTab] = useState<CoverageDetailTab>("overview");
+  const tabBaseId = useId();
+  const ruleDetail = useQuery({
+    ...trpc.coverage.getRule.queryOptions({ ruleId: obligation.ruleId ?? "__none__" }),
+    enabled: Boolean(obligation.ruleId),
+  });
+
+  function handleTabKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    const currentIndex = coverageDetailTabs.findIndex((tab) => tab.id === activeTab);
+    const lastIndex = coverageDetailTabs.length - 1;
+    let nextIndex: number | null = null;
+
+    if (event.key === "ArrowRight") {
+      nextIndex = currentIndex === lastIndex ? 0 : currentIndex + 1;
+    } else if (event.key === "ArrowLeft") {
+      nextIndex = currentIndex === 0 ? lastIndex : currentIndex - 1;
+    } else if (event.key === "Home") {
+      nextIndex = 0;
+    } else if (event.key === "End") {
+      nextIndex = lastIndex;
+    }
+
+    if (nextIndex === null) {
+      return;
+    }
+
+    event.preventDefault();
+    const nextTab = coverageDetailTabs[nextIndex];
+    if (!nextTab) {
+      return;
+    }
+
+    setActiveTab(nextTab.id);
+    requestAnimationFrame(() => {
+      document.getElementById(getCoverageDetailTabId(tabBaseId, nextTab.id))?.focus();
+    });
+  }
 
   return (
     <>
-      <div className="flex items-start justify-between gap-4 border-b border-border px-4 py-3">
+      <div className="flex items-start justify-between gap-4 px-4 py-3">
         <div>
           <div className="text-xs font-semibold text-muted-foreground">Coverage detail</div>
           <h2 className="text-base font-semibold leading-5">{statusLabels[statusKey]}</h2>
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-auto p-4">
-        <section className="border-b border-border pb-4">
+      <div className="min-h-0 flex-1 overflow-auto">
+        <section className="p-4">
           <div className="text-sm font-semibold leading-5 text-foreground">
             {obligation.obligationName}
           </div>
@@ -935,111 +888,308 @@ function CoverageDetailContent({
             {formatJurisdiction(obligation.jurisdiction)} / {obligation.taxCategory} /{" "}
             {obligation.agencyName}
           </div>
-        </section>
-
-        <section className="border-b border-border py-4">
-          <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
-            <Info className="size-4 text-ddhq-gap" />
-            What this means
+          <div className="mt-3">
+            <div className={evidenceLabelClassName}>Scope</div>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {obligation.entityTypes.map((entityType) => (
+                <span
+                  key={entityType}
+                  className="rounded-[6px] border border-ddhq-line bg-ddhq-paper px-1.5 py-0.5 text-[11px] text-muted-foreground"
+                >
+                  {formatEntityType(entityType)}
+                </span>
+              ))}
+            </div>
           </div>
-          <p className="text-sm leading-6 text-muted-foreground">
-            {getCoverageStateExplanation(statusKey)}
-          </p>
         </section>
 
-        <section className="border-b border-border py-4">
-          <div className={evidenceLabelClassName}>Scope</div>
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            {obligation.entityTypes.map((entityType) => (
-              <span
-                key={entityType}
-                className="rounded-[6px] border border-ddhq-line bg-ddhq-paper px-1.5 py-0.5 text-[11px] text-muted-foreground"
+        <div className="sticky top-0 z-10 border-b border-border bg-popover px-4">
+          <div
+            role="tablist"
+            aria-label="Coverage detail sections"
+            className="flex min-w-0 items-end gap-4"
+            onKeyDown={handleTabKeyDown}
+          >
+            {coverageDetailTabs.map((tab) => (
+              <button
+                key={tab.id}
+                id={getCoverageDetailTabId(tabBaseId, tab.id)}
+                type="button"
+                role="tab"
+                aria-selected={activeTab === tab.id}
+                aria-controls={getCoverageDetailPanelId(tabBaseId, tab.id)}
+                tabIndex={activeTab === tab.id ? 0 : -1}
+                className={`relative inline-flex h-10 min-w-0 items-center border-b-2 px-0.5 text-xs font-semibold leading-none outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/45 focus-visible:ring-offset-2 focus-visible:ring-offset-popover ${
+                  activeTab === tab.id
+                    ? "border-primary text-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+                onClick={() => setActiveTab(tab.id)}
               >
-                {formatEntityType(entityType)}
-              </span>
+                <span className="truncate">{tab.label}</span>
+              </button>
             ))}
           </div>
-        </section>
+        </div>
 
-        <section className="border-b border-border py-4">
-          <div className={evidenceLabelClassName}>Source monitor</div>
-          <div className="mt-2 grid gap-2 text-xs">
-            <div className="flex items-center justify-between rounded-lg border border-border bg-muted px-2 py-1.5">
-              <span className="text-muted-foreground">Monitor</span>
-              <StatusBadge status={sourceMonitorBadgeStatus[obligation.sourceMonitorStatus]}>
-                <SourceMonitorIcon status={obligation.sourceMonitorStatus} />
-                {obligation.sourceMonitorLabel}
-              </StatusBadge>
-            </div>
-            <RuleEvidenceField label="Source agency" value={obligation.sourceName ?? obligation.agencyName} />
-            {obligation.sourceUrl ? (
+        <div className="p-4">
+          <CoverageDetailTabPanel activeTab={activeTab} baseId={tabBaseId} tabId="overview">
+            <section className="pb-4">
+              <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
+                <Info className="size-4 text-ddhq-gap" />
+                What this means
+              </div>
+              <p className="text-sm leading-6 text-muted-foreground">
+                {getCoverageStateExplanation(statusKey)}
+              </p>
+            </section>
+
+            <section className="py-4">
+              <div className={evidenceLabelClassName}>Source monitor</div>
+              <div className="mt-2 grid gap-2 text-xs">
+                <div className="flex items-center justify-between rounded-lg border border-border bg-muted px-2 py-1.5">
+                  <span className="text-muted-foreground">Monitor</span>
+                  <StatusBadge status={sourceMonitorBadgeStatus[obligation.sourceMonitorStatus]}>
+                    <SourceMonitorIcon status={obligation.sourceMonitorStatus} />
+                    {obligation.sourceMonitorLabel}
+                  </StatusBadge>
+                </div>
+                <RuleEvidenceField label="Source agency" value={obligation.sourceName ?? obligation.agencyName} />
+                {obligation.sourceUrl ? (
+                  <a
+                    className="inline-flex items-center gap-1 font-mono text-xs font-medium text-primary [overflow-wrap:anywhere]"
+                    href={obligation.sourceUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {obligation.sourceUrl}
+                    <ExternalLink className="size-3 shrink-0" />
+                  </a>
+                ) : null}
+                <RuleEvidenceField
+                  label="Last checked"
+                  value={obligation.sourceLastCheckedAt ? formatDateTime(obligation.sourceLastCheckedAt) : "Not monitored"}
+                  mono
+                />
+                <RuleEvidenceField
+                  label="Last changed"
+                  value={obligation.sourceLastChangedAt ? formatDateTime(obligation.sourceLastChangedAt) : "No change recorded"}
+                  mono
+                />
+                <RuleEvidenceField
+                  label="Last verified"
+                  value={obligation.lastVerifiedAt ? formatDateTime(obligation.lastVerifiedAt) : "Not verified by DueDateHQ"}
+                  mono
+                />
+              </div>
+            </section>
+
+            <section className="py-4">
+              <div className={evidenceLabelClassName}>Safe next actions</div>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <DrawerActionButton
+                  disabled={requestCoveragePending}
+                  onClick={() => onRequestCoverage(obligation.obligationId)}
+                >
+                  <ShieldAlert className="size-3.5" />
+                  {statusKey === "needs_review" || statusKey === "source_changed"
+                    ? "Request review"
+                    : "Request verification"}
+                </DrawerActionButton>
+                {(statusKey === "unsupported" || statusKey === "no_rule") && (
+                  <DrawerActionButton
+                    disabled={addEnteredDeadlinePending}
+                    onClick={() => onAddEnteredDeadline(obligation.obligationId)}
+                  >
+                    <FilePlus2 className="size-3.5" />
+                    Add entered deadline
+                  </DrawerActionButton>
+                )}
+                {statusKey === "no_rule" && (
+                  <DrawerActionButton
+                    disabled={dismissGapPending}
+                    onClick={() => onDismissGap(obligation.obligationId)}
+                  >
+                    <CircleDashed className="size-3.5" />
+                    Dismiss coverage gap for now
+                  </DrawerActionButton>
+                )}
+              </div>
+            </section>
+          </CoverageDetailTabPanel>
+
+          <CoverageDetailTabPanel activeTab={activeTab} baseId={tabBaseId} tabId="evidence">
+            {!obligation.ruleId ? (
+              <div className="rounded-[8px] border border-ddhq-line bg-muted/40 p-3 text-sm leading-5 text-muted-foreground">
+                No verified rule evidence is available for this obligation yet.
+              </div>
+            ) : ruleDetail.isPending ? (
+              <div className="space-y-3">
+                <div className="h-16 animate-pulse rounded-lg border border-border bg-muted" />
+                <div className="h-40 animate-pulse rounded-lg border border-border bg-muted" />
+              </div>
+            ) : ruleDetail.isError ? (
+              <div className="rounded-lg border border-ddhq-risk/30 bg-ddhq-risk-soft p-3 text-sm text-ddhq-risk">
+                Could not load rule evidence.
+              </div>
+            ) : ruleDetail.data ? (
+              <RuleEvidenceSections ruleDetail={ruleDetail.data} />
+            ) : (
+              <div className="rounded-[8px] border border-ddhq-line bg-muted/40 p-3 text-sm leading-5 text-muted-foreground">
+                Rule evidence could not be found.
+              </div>
+            )}
+          </CoverageDetailTabPanel>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function CoverageDetailTabPanel({
+  activeTab,
+  baseId,
+  children,
+  tabId,
+}: {
+  activeTab: CoverageDetailTab;
+  baseId: string;
+  children: ReactNode;
+  tabId: CoverageDetailTab;
+}) {
+  return (
+    <div
+      id={getCoverageDetailPanelId(baseId, tabId)}
+      role="tabpanel"
+      aria-labelledby={getCoverageDetailTabId(baseId, tabId)}
+      hidden={activeTab !== tabId}
+    >
+      {activeTab === tabId ? children : null}
+    </div>
+  );
+}
+
+function RuleEvidenceSections({
+  ruleDetail,
+}: {
+  ruleDetail: CoverageRuleDetail;
+}) {
+  return (
+    <>
+      <section className="pb-4">
+        <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
+          {ruleDetail.verificationStatus === "verified" ? (
+            <ShieldCheck className="size-4 text-ddhq-verified" />
+          ) : (
+            <ShieldAlert className="size-4 text-ddhq-review" />
+          )}
+          Source evidence
+        </div>
+        <div className="space-y-3 text-xs">
+          <div className="flex items-center justify-between rounded-lg border border-border bg-muted px-2 py-1.5">
+            <span className="text-muted-foreground">Verification</span>
+            <VerificationBadge
+              statusKey={getStatusKey(ruleDetail.verificationStatus)}
+            />
+          </div>
+          <p className="leading-5 text-muted-foreground">{ruleDetail.ruleSummary}</p>
+          <div className="grid gap-2">
+            <RuleEvidenceField label="Source name" value={ruleDetail.sourceName ?? "None"} />
+            {ruleDetail.sourceUrl ? (
               <a
                 className="inline-flex items-center gap-1 font-mono text-xs font-medium text-primary [overflow-wrap:anywhere]"
-                href={obligation.sourceUrl}
+                href={ruleDetail.sourceUrl}
                 target="_blank"
                 rel="noreferrer"
               >
-                {obligation.sourceUrl}
+                {ruleDetail.sourceUrl}
                 <ExternalLink className="size-3 shrink-0" />
               </a>
             ) : null}
             <RuleEvidenceField
-              label="Last checked"
-              value={obligation.sourceLastCheckedAt ? formatDateTime(obligation.sourceLastCheckedAt) : "Not monitored"}
-              mono
-            />
-            <RuleEvidenceField
-              label="Last changed"
-              value={obligation.sourceLastChangedAt ? formatDateTime(obligation.sourceLastChangedAt) : "No change recorded"}
-              mono
-            />
-            <RuleEvidenceField
               label="Last verified"
-              value={obligation.lastVerifiedAt ? formatDateTime(obligation.lastVerifiedAt) : "Not verified by DueDateHQ"}
+              value={
+                ruleDetail.lastVerifiedAt
+                  ? formatDateTime(ruleDetail.lastVerifiedAt)
+                  : "Not verified"
+              }
+              mono
+            />
+            <RuleEvidenceField
+              label="Source last checked"
+              value={
+                ruleDetail.sourceLastCheckedAt
+                  ? formatDateTime(ruleDetail.sourceLastCheckedAt)
+                  : "Not checked"
+              }
+              mono
+            />
+            <RuleEvidenceField
+              label="Source last changed"
+              value={
+                ruleDetail.sourceLastChangedAt
+                  ? formatDateTime(ruleDetail.sourceLastChangedAt)
+                  : "No change recorded"
+              }
+              mono
+            />
+            <RuleEvidenceField
+              label="Rule version"
+              value={`v${ruleDetail.currentVersion}`}
               mono
             />
           </div>
-        </section>
+        </div>
+      </section>
 
+      {ruleDetail.verificationNotes && (
         <section className="py-4">
-          <div className={evidenceLabelClassName}>Safe next actions</div>
-          <div className="mt-2 grid gap-2">
-            {ruleId && (
-              <DrawerActionButton onClick={() => onOpenEvidence(ruleId)}>
-                <Eye className="size-3.5" />
-                Review evidence
-              </DrawerActionButton>
-            )}
-            <DrawerActionButton
-              disabled={requestCoveragePending}
-              onClick={() => onRequestCoverage(obligation.obligationId)}
-            >
-              <ShieldAlert className="size-3.5" />
-              {statusKey === "needs_review" || statusKey === "source_changed"
-                ? "Request review"
-                : "Request verification"}
-            </DrawerActionButton>
-            {(statusKey === "unsupported" || statusKey === "no_rule") && (
-              <DrawerActionButton
-                disabled={addEnteredDeadlinePending}
-                onClick={() => onAddEnteredDeadline(obligation.obligationId)}
-              >
-                <FilePlus2 className="size-3.5" />
-                Add entered deadline
-              </DrawerActionButton>
-            )}
-            {statusKey === "no_rule" && (
-              <DrawerActionButton
-                disabled={dismissGapPending}
-                onClick={() => onDismissGap(obligation.obligationId)}
-              >
-                <CircleDashed className="size-3.5" />
-                Dismiss coverage gap for now
-              </DrawerActionButton>
-            )}
+          <div className={evidenceLabelClassName}>Verification notes</div>
+          <div className="mt-1.5 text-sm leading-5 text-muted-foreground">
+            {ruleDetail.verificationNotes}
           </div>
         </section>
-      </div>
+      )}
+
+      <section className="py-4">
+        <div className={evidenceLabelClassName}>Calculated due dates</div>
+        <div className="mt-2 overflow-hidden rounded-[8px] border border-border bg-background">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/40">
+                <TableHead className="text-[11px] font-semibold uppercase text-muted-foreground">Tax year</TableHead>
+                <TableHead className="text-[11px] font-semibold uppercase text-muted-foreground">Quarter</TableHead>
+                <TableHead className="text-[11px] font-semibold uppercase text-muted-foreground">Due date</TableHead>
+                <TableHead className="text-[11px] font-semibold uppercase text-muted-foreground">Extension</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {ruleDetail.exampleDueDates.map((exampleDate) => (
+                <TableRow
+                  key={`${exampleDate.taxYear}-${exampleDate.quarter ?? "annual"}`}
+                >
+                  <TableCell className="font-mono text-[12px]">{exampleDate.taxYear}</TableCell>
+                  <TableCell className="font-mono text-[12px]">
+                    {exampleDate.quarter ? `Q${exampleDate.quarter}` : "-"}
+                  </TableCell>
+                  <TableCell>
+                    <span className={dateHighlightClassName}>{formatDate(exampleDate.dueDate)}</span>
+                  </TableCell>
+                  <TableCell className="font-mono text-[12px]">
+                    {exampleDate.extensionDate ? (
+                      <span className={extensionDateHighlightClassName}>
+                        {formatDate(exampleDate.extensionDate)}
+                      </span>
+                    ) : (
+                      "-"
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </section>
     </>
   );
 }
@@ -1057,7 +1207,8 @@ function DrawerActionButton({
     <Button
       type="button"
       variant="outline"
-      className="h-9 justify-start rounded-[6px]"
+      size="xs"
+      className="h-7 w-auto rounded-[6px] px-2 text-xs shadow-none"
       disabled={disabled}
       onClick={onClick}
     >
@@ -1075,7 +1226,7 @@ function RuleDetailContent({
 
   return (
     <>
-      <div className="flex items-center justify-between border-b border-border px-4 py-3">
+      <div className="flex items-center justify-between px-4 py-3">
         <div>
           <div className="text-xs font-semibold text-muted-foreground">Evidence</div>
           <h2 className="text-base font-semibold">Rule evidence</h2>
@@ -1097,7 +1248,7 @@ function RuleDetailContent({
 
       {ruleDetail.data && (
         <div className="min-h-0 flex-1 overflow-auto p-4">
-          <section className="border-b border-border pb-4">
+          <section className="pb-4">
             <div className="text-sm font-semibold leading-5 text-foreground">
               {ruleDetail.data.obligationName}
             </div>
@@ -1106,7 +1257,7 @@ function RuleDetailContent({
             </div>
           </section>
 
-          <section className="border-b border-border py-4">
+          <section className="py-4">
             <div className={evidenceLabelClassName}>Entity types</div>
             <div className="mt-2 flex flex-wrap gap-1.5">
               {ruleDetail.data.entityTypes.map((entityType) => (
@@ -1120,7 +1271,7 @@ function RuleDetailContent({
             </div>
           </section>
 
-          <section className="border-b border-border py-4">
+          <section className="py-4">
             <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
               {ruleDetail.data.verificationStatus === "verified" ? (
                 <ShieldCheck className="size-4 text-ddhq-verified" />
@@ -1187,7 +1338,7 @@ function RuleDetailContent({
           </section>
 
           {ruleDetail.data.verificationNotes && (
-            <section className="border-b border-border py-4">
+            <section className="py-4">
               <div className={evidenceLabelClassName}>Verification notes</div>
               <div className="mt-1.5 text-sm leading-5 text-muted-foreground">
                 {ruleDetail.data.verificationNotes}
@@ -1311,6 +1462,14 @@ function getCoverageStateExplanation(statusKey: VerificationStatusKey): string {
     return "DueDateHQ does not have a verified scheduling rule for this obligation. It is visible so the gap is explicit.";
   }
   return "This rule is verified against official source evidence and can generate official DueDateHQ deadline tasks.";
+}
+
+function getCoverageDetailTabId(baseId: string, tabId: CoverageDetailTab): string {
+  return `${baseId}-${tabId}-tab`;
+}
+
+function getCoverageDetailPanelId(baseId: string, tabId: CoverageDetailTab): string {
+  return `${baseId}-${tabId}-panel`;
 }
 
 function formatEntityType(entityType: string): string {

@@ -11,6 +11,7 @@ type StatusBadgeStatus =
   | "at_risk"
   | "on_track"
   | "resolved"
+  | "monitoring"
   | "unsupported"
   | "coverage_gap"
   | "no_rule"
@@ -36,6 +37,7 @@ const statusStyles: Record<string, string> = {
   at_risk: "bg-ddhq-review-soft text-ddhq-review",
   on_track: "bg-muted text-muted-foreground",
   resolved: "bg-ddhq-verified-soft text-ddhq-verified",
+  monitoring: "bg-[oklch(0.93_0.025_220)] text-[oklch(0.42_0.06_220)]",
   risk: "bg-ddhq-risk-soft text-ddhq-risk",
   blocked: "bg-ddhq-risk-soft text-ddhq-risk",
   unsupported: "bg-ddhq-gap-soft text-ddhq-gap",
@@ -59,6 +61,7 @@ const statusLabels: Record<string, string> = {
   at_risk: "At risk",
   on_track: "On track",
   resolved: "Resolved",
+  monitoring: "Source monitored",
   unsupported: "Unsupported",
   coverage_gap: "Coverage gap",
   no_rule: "Coverage gap",
