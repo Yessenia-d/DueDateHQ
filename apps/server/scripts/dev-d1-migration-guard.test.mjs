@@ -8,6 +8,7 @@ import {
   getExpectedMigrationNames,
   parseWranglerConfigPath,
   runLocalD1MigrationGuard,
+  withDefaultEnvFile,
 } from "./dev-d1-migration-guard.mjs";
 
 test("parseWranglerConfigPath reads split and equals config flags", () => {
@@ -24,6 +25,12 @@ test("getExpectedMigrationNames returns sorted SQL migration filenames", () => {
   } finally {
     rmSync(dir, { force: true, recursive: true });
   }
+});
+
+test("withDefaultEnvFile adds the package env file unless already provided", () => {
+  assert.deepEqual(withDefaultEnvFile(["--port", "3000"]), ["--env-file", ".env", "--port", "3000"]);
+  assert.deepEqual(withDefaultEnvFile(["--env-file", ".env.local"]), ["--env-file", ".env.local"]);
+  assert.deepEqual(withDefaultEnvFile(["--env-file=.env.local"]), ["--env-file=.env.local"]);
 });
 
 test("runLocalD1MigrationGuard applies local migrations before validating schema", async () => {

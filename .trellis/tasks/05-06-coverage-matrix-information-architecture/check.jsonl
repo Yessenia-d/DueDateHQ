@@ -1,0 +1,6 @@
+{"file": ".trellis/spec/guides/due-date-hq-project-conventions.md", "reason": "Verify product invariants, especially trust states and non-verified deadline handling."}
+{"file": ".trellis/spec/web/frontend/index.md", "reason": "Verify frontend route conventions, dense scannable UI, and browser-check expectation."}
+{"file": ".trellis/spec/api/backend/index.md", "reason": "Verify API response-shaping and tRPC procedure conventions."}
+{"file": ".trellis/spec/ui/frontend/index.md", "reason": "Verify shared UI and accessibility conventions for actions, badges, and controls."}
+{"file": "specs/coverage-matrix.md", "reason": "Verify coverage matrix acceptance criteria and field visibility."}
+{"file": "DESIGN.md", "reason": "Verify product register, visual hierarchy, copy, and forbidden UI patterns."}

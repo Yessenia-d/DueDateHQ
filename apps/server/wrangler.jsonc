@@ -1,0 +1,19 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "due-date-hq-server",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-03-10",
+  "compatibility_flags": ["nodejs_compat", "nodejs_compat_populate_process_env"],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "due-date-hq-database-local",
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "../../packages/db/src/migrations"
+    }
+  ],
+  "vars": {
+    "CORS_ORIGIN": "http://localhost:3001,http://localhost:3002,http://127.0.0.1:3001,http://127.0.0.1:3002",
+    "DEMO_SEED_TOKEN": ""
+  }
+}

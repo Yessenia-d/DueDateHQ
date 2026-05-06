@@ -1,0 +1,6 @@
+{"file": ".trellis/spec/guides/due-date-hq-project-conventions.md", "reason": "Project-wide product invariants, monorepo boundaries, frontend/API conventions, and verification expectations."}
+{"file": ".trellis/spec/web/frontend/index.md", "reason": "Route-level React, tRPC, and work-focused product UI rules for apps/web."}
+{"file": ".trellis/spec/api/backend/index.md", "reason": "API response-shaping and tRPC procedure conventions for coverage router changes."}
+{"file": ".trellis/spec/ui/frontend/index.md", "reason": "Shared UI primitive and compact operational interface rules used by coverage route components."}
+{"file": "specs/coverage-matrix.md", "reason": "Feature contract for coverage filters, evidence, monitor status, gap actions, and Beta coverage transparency."}
+{"file": "DESIGN.md", "reason": "DueDateHQ product register, visual hierarchy, table, badge, drawer, copy, and forbidden-pattern guidance."}

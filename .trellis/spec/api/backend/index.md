@@ -214,6 +214,71 @@ while (isWeekend(adjusted) || isTaxDueDateLegalHoliday(adjusted)) {
 - Preserve trust state from `serializeDeadlineTask`: `verified_rule` is official; `entered_deadline` is not verified by DueDateHQ.
 - Keep firm target date separate from official due date in the response and UI.
 
+## Scenario: Coverage Matrix Source Monitor Fields
+
+### 1. Scope / Trigger
+
+- Trigger: code exposes coverage matrix rows to product UI, especially when the UI needs to scan source monitoring state without opening a detail drawer.
+
+### 2. Signatures
+
+- tRPC procedure: `coverage.matrix(): CoverageMatrixResponse`.
+- Row fields:
+  - `sourceMonitorStatus: "monitored" | "source_changed" | "not_monitored" | "unsupported"`.
+  - `sourceMonitorLabel: string`.
+  - `sourceName: string | null`.
+  - `sourceLastCheckedAt: string | null`.
+  - `sourceLastChangedAt: string | null`.
+  - `lastVerifiedAt: string | null`.
+
+### 3. Contracts
+
+- Verified, needs-review, and monitored rule rows with a source check should expose `sourceMonitorStatus: "monitored"` unless the rule verification status is `source_changed`.
+- Source-changed rules must expose `sourceMonitorStatus: "source_changed"` and keep `sourceLastChangedAt` visible when known.
+- Coverage gaps without a rule must expose `sourceMonitorStatus: "not_monitored"` and must not imply a verified monitor.
+- Unsupported obligations without a rule must expose `sourceMonitorStatus: "unsupported"` and must not imply beta scheduling support.
+
+### 4. Validation & Error Matrix
+
+- Unknown obligation action id -> `NOT_FOUND`.
+- Verified obligation passed to coverage request -> `BAD_REQUEST`.
+- Missing firm session for coverage mutations -> `UNAUTHORIZED`.
+- Null `ruleId` row -> source monitor fields must still be present with a non-official state.
+
+### 5. Good/Base/Bad Cases
+
+- Good: source-changed Texas sales tax row shows `sourceMonitorStatus: "source_changed"`, source agency, last checked date, and last changed date in the matrix.
+- Base: verified IRS row shows `sourceMonitorStatus: "monitored"` and last verified date.
+- Bad: NY partnership coverage gap shows a green monitored badge or a last verified date.
+
+### 6. Tests Required
+
+- Router test that every coverage matrix row has `sourceMonitorStatus` and `sourceMonitorLabel`.
+- Router test that coverage gaps return `not_monitored` and unsupported rows return `unsupported`.
+- Router test that at least one source-changed row exposes `source_changed` plus source checked/changed timestamps.
+- Web type-check for route consumers of the added fields.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```typescript
+return {
+  verificationStatus: null,
+  sourceMonitorStatus: "monitored",
+};
+```
+
+#### Correct
+
+```typescript
+return {
+  verificationStatus: null,
+  sourceMonitorStatus: "not_monitored",
+  sourceMonitorLabel: "No verified source monitor",
+};
+```
+
 ### 4. Validation & Error Matrix
 
 - Missing session -> `UNAUTHORIZED` from `requireFirmSession`.
