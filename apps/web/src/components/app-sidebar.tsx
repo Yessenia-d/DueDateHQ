@@ -1,18 +1,31 @@
 import { Button } from "@due-date-hq/ui/components/button";
-import { Link, useRouterState } from "@tanstack/react-router";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@due-date-hq/ui/components/dropdown-menu";
+import { cn } from "@due-date-hq/ui/lib/utils";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   BellRing,
   CalendarDays,
+  ChevronDown,
+  CircleUserRound,
   ClipboardList,
   FileUp,
   LogOut,
+  Settings,
   Shield,
+  TrendingUp,
   Users,
 } from "lucide-react";
 
 interface AppSidebarProps {
   firmName?: string;
   userEmail?: string;
+  userName?: string | null;
   isLoggingOut?: boolean;
   onLogout: () => void;
 }
@@ -36,7 +49,19 @@ const sidebarSections = [
   },
 ] as const;
 
-export function AppSidebar({ firmName, isLoggingOut, onLogout, userEmail }: AppSidebarProps) {
+const accountMenuLinks = [
+  { to: "/account/profile", label: "Profile", icon: CircleUserRound },
+  { to: "/account/settings", label: "Settings", icon: Settings },
+  { to: "/account/achievements", label: "Achievements", icon: TrendingUp },
+] as const;
+
+export function AppSidebar({
+  firmName,
+  isLoggingOut,
+  onLogout,
+  userEmail,
+  userName,
+}: AppSidebarProps) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
 
   return (
@@ -53,29 +78,14 @@ export function AppSidebar({ firmName, isLoggingOut, onLogout, userEmail }: AppS
 
       <SidebarNav pathname={pathname} />
 
-      {(firmName || userEmail) && (
-        <div className="border-t border-border px-4 py-3">
-          <div className="min-w-0 text-xs">
-            {firmName && (
-              <div className="truncate font-medium text-foreground">{firmName}</div>
-            )}
-            {userEmail && (
-              <div className="mt-0.5 truncate text-muted-foreground">{userEmail}</div>
-            )}
-          </div>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="mt-2 w-full justify-start text-muted-foreground"
-            disabled={isLoggingOut}
-            onClick={onLogout}
-          >
-            <LogOut className="size-3.5" />
-            Log out
-          </Button>
-        </div>
-      )}
+      <SidebarAccountMenu
+        firmName={firmName}
+        isLoggingOut={isLoggingOut}
+        onLogout={onLogout}
+        pathname={pathname}
+        userEmail={userEmail}
+        userName={userName}
+      />
     </aside>
   );
 }
@@ -85,6 +95,7 @@ export function AppSidebarContent({
   isLoggingOut,
   onLogout,
   userEmail,
+  userName,
 }: AppSidebarProps) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
 
@@ -102,29 +113,14 @@ export function AppSidebarContent({
 
       <SidebarNav pathname={pathname} />
 
-      {(firmName || userEmail) && (
-        <div className="border-t border-border px-4 py-3">
-          <div className="min-w-0 text-xs">
-            {firmName && (
-              <div className="truncate font-medium text-foreground">{firmName}</div>
-            )}
-            {userEmail && (
-              <div className="mt-0.5 truncate text-muted-foreground">{userEmail}</div>
-            )}
-          </div>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="mt-2 w-full justify-start text-muted-foreground"
-            disabled={isLoggingOut}
-            onClick={onLogout}
-          >
-            <LogOut className="size-3.5" />
-            Log out
-          </Button>
-        </div>
-      )}
+      <SidebarAccountMenu
+        firmName={firmName}
+        isLoggingOut={isLoggingOut}
+        onLogout={onLogout}
+        pathname={pathname}
+        userEmail={userEmail}
+        userName={userName}
+      />
     </div>
   );
 }
@@ -162,5 +158,102 @@ function SidebarNav({ pathname }: { pathname: string }) {
         </div>
       ))}
     </nav>
+  );
+}
+
+function SidebarAccountMenu({
+  firmName,
+  isLoggingOut,
+  onLogout,
+  pathname,
+  userEmail,
+  userName,
+}: AppSidebarProps & { pathname: string }) {
+  const navigate = useNavigate();
+  const primaryLabel = firmName ?? userName ?? userEmail ?? "Account";
+  const secondaryLabel = userEmail ?? userName ?? "Account settings";
+
+  if (!firmName && !userEmail && !userName) {
+    return null;
+  }
+
+  return (
+    <div className="border-t border-border px-3 py-3">
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button
+              type="button"
+              variant="ghost"
+              className="h-auto min-h-12 w-full justify-between gap-2 rounded-lg px-2 py-2 text-left"
+              aria-label={`Open account menu for ${secondaryLabel}`}
+            />
+          }
+        >
+          <span className="flex min-w-0 items-center gap-2">
+            <span className="grid size-8 shrink-0 place-items-center rounded-lg border border-border bg-background text-xs font-semibold text-primary">
+              {primaryLabel.slice(0, 1).toUpperCase()}
+            </span>
+            <span className="min-w-0 text-xs">
+              <span className="block truncate font-medium text-foreground">
+                {primaryLabel}
+              </span>
+              <span className="mt-0.5 block truncate text-muted-foreground">
+                {secondaryLabel}
+              </span>
+            </span>
+          </span>
+          <ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          align="start"
+          className="min-w-[220px] rounded-lg p-1.5"
+          side="top"
+          sideOffset={8}
+        >
+          <div className="px-2 py-2">
+            <div className="text-[11px] font-medium uppercase text-muted-foreground">
+              Signed in
+            </div>
+            <div className="mt-1 truncate text-sm font-semibold text-foreground">
+              {userName || userEmail || "Current user"}
+            </div>
+            {firmName ? (
+              <div className="mt-0.5 truncate text-xs text-muted-foreground">
+                {firmName}
+              </div>
+            ) : null}
+          </div>
+          <DropdownMenuSeparator className="my-1" />
+          {accountMenuLinks.map((link) => {
+            const isActive = pathname === link.to;
+
+            return (
+              <DropdownMenuItem
+                key={link.to}
+                className={cn(
+                  "rounded-md text-sm",
+                  isActive && "bg-ddhq-accent-soft text-foreground",
+                )}
+                onClick={() => void navigate({ to: link.to })}
+              >
+                <link.icon className="size-4" />
+                {link.label}
+              </DropdownMenuItem>
+            );
+          })}
+          <DropdownMenuSeparator className="my-1" />
+          <DropdownMenuItem
+            variant="destructive"
+            className="rounded-md text-sm"
+            disabled={isLoggingOut}
+            onClick={onLogout}
+          >
+            <LogOut className="size-4" />
+            {isLoggingOut ? "Logging out" : "Log out"}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   );
 }

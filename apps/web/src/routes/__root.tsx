@@ -86,6 +86,7 @@ function RootComponent() {
               <AppSidebar
                 firmName={session.data?.firm.name}
                 userEmail={session.data?.user.email}
+                userName={session.data?.user.name}
                 isLoggingOut={logout.isPending}
                 onLogout={handleLogout}
               />
@@ -106,6 +107,7 @@ function RootComponent() {
                   <AppSidebarContent
                     firmName={session.data?.firm.name}
                     userEmail={session.data?.user.email}
+                    userName={session.data?.user.name}
                     isLoggingOut={logout.isPending}
                     onLogout={handleLogout}
                   />

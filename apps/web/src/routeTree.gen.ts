@@ -19,6 +19,9 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ClientsIndexRouteImport } from './routes/clients/index'
 import { Route as NoticesNoticeIdRouteImport } from './routes/notices/$noticeId'
 import { Route as ClientsClientIdRouteImport } from './routes/clients/$clientId'
+import { Route as AccountSettingsRouteImport } from './routes/account/settings'
+import { Route as AccountProfileRouteImport } from './routes/account/profile'
+import { Route as AccountAchievementsRouteImport } from './routes/account/achievements'
 import { Route as ClientsClientIdDeadlinesNewRouteImport } from './routes/clients/$clientId/deadlines/new'
 
 const TaxWorkRoute = TaxWorkRouteImport.update({
@@ -71,6 +74,21 @@ const ClientsClientIdRoute = ClientsClientIdRouteImport.update({
   path: '/clients/$clientId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AccountSettingsRoute = AccountSettingsRouteImport.update({
+  id: '/account/settings',
+  path: '/account/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountProfileRoute = AccountProfileRouteImport.update({
+  id: '/account/profile',
+  path: '/account/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountAchievementsRoute = AccountAchievementsRouteImport.update({
+  id: '/account/achievements',
+  path: '/account/achievements',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ClientsClientIdDeadlinesNewRoute =
   ClientsClientIdDeadlinesNewRouteImport.update({
     id: '/deadlines/new',
@@ -86,6 +104,9 @@ export interface FileRoutesByFullPath {
   '/notices': typeof NoticesRouteWithChildren
   '/progress': typeof ProgressRoute
   '/tax-work': typeof TaxWorkRoute
+  '/account/achievements': typeof AccountAchievementsRoute
+  '/account/profile': typeof AccountProfileRoute
+  '/account/settings': typeof AccountSettingsRoute
   '/clients/$clientId': typeof ClientsClientIdRouteWithChildren
   '/notices/$noticeId': typeof NoticesNoticeIdRoute
   '/clients/': typeof ClientsIndexRoute
@@ -99,6 +120,9 @@ export interface FileRoutesByTo {
   '/notices': typeof NoticesRouteWithChildren
   '/progress': typeof ProgressRoute
   '/tax-work': typeof TaxWorkRoute
+  '/account/achievements': typeof AccountAchievementsRoute
+  '/account/profile': typeof AccountProfileRoute
+  '/account/settings': typeof AccountSettingsRoute
   '/clients/$clientId': typeof ClientsClientIdRouteWithChildren
   '/notices/$noticeId': typeof NoticesNoticeIdRoute
   '/clients': typeof ClientsIndexRoute
@@ -113,6 +137,9 @@ export interface FileRoutesById {
   '/notices': typeof NoticesRouteWithChildren
   '/progress': typeof ProgressRoute
   '/tax-work': typeof TaxWorkRoute
+  '/account/achievements': typeof AccountAchievementsRoute
+  '/account/profile': typeof AccountProfileRoute
+  '/account/settings': typeof AccountSettingsRoute
   '/clients/$clientId': typeof ClientsClientIdRouteWithChildren
   '/notices/$noticeId': typeof NoticesNoticeIdRoute
   '/clients/': typeof ClientsIndexRoute
@@ -128,6 +155,9 @@ export interface FileRouteTypes {
     | '/notices'
     | '/progress'
     | '/tax-work'
+    | '/account/achievements'
+    | '/account/profile'
+    | '/account/settings'
     | '/clients/$clientId'
     | '/notices/$noticeId'
     | '/clients/'
@@ -141,6 +171,9 @@ export interface FileRouteTypes {
     | '/notices'
     | '/progress'
     | '/tax-work'
+    | '/account/achievements'
+    | '/account/profile'
+    | '/account/settings'
     | '/clients/$clientId'
     | '/notices/$noticeId'
     | '/clients'
@@ -154,6 +187,9 @@ export interface FileRouteTypes {
     | '/notices'
     | '/progress'
     | '/tax-work'
+    | '/account/achievements'
+    | '/account/profile'
+    | '/account/settings'
     | '/clients/$clientId'
     | '/notices/$noticeId'
     | '/clients/'
@@ -168,6 +204,9 @@ export interface RootRouteChildren {
   NoticesRoute: typeof NoticesRouteWithChildren
   ProgressRoute: typeof ProgressRoute
   TaxWorkRoute: typeof TaxWorkRoute
+  AccountAchievementsRoute: typeof AccountAchievementsRoute
+  AccountProfileRoute: typeof AccountProfileRoute
+  AccountSettingsRoute: typeof AccountSettingsRoute
   ClientsClientIdRoute: typeof ClientsClientIdRouteWithChildren
   ClientsIndexRoute: typeof ClientsIndexRoute
 }
@@ -244,6 +283,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ClientsClientIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/account/settings': {
+      id: '/account/settings'
+      path: '/account/settings'
+      fullPath: '/account/settings'
+      preLoaderRoute: typeof AccountSettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account/profile': {
+      id: '/account/profile'
+      path: '/account/profile'
+      fullPath: '/account/profile'
+      preLoaderRoute: typeof AccountProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account/achievements': {
+      id: '/account/achievements'
+      path: '/account/achievements'
+      fullPath: '/account/achievements'
+      preLoaderRoute: typeof AccountAchievementsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/clients/$clientId/deadlines/new': {
       id: '/clients/$clientId/deadlines/new'
       path: '/deadlines/new'
@@ -285,6 +345,9 @@ const rootRouteChildren: RootRouteChildren = {
   NoticesRoute: NoticesRouteWithChildren,
   ProgressRoute: ProgressRoute,
   TaxWorkRoute: TaxWorkRoute,
+  AccountAchievementsRoute: AccountAchievementsRoute,
+  AccountProfileRoute: AccountProfileRoute,
+  AccountSettingsRoute: AccountSettingsRoute,
   ClientsClientIdRoute: ClientsClientIdRouteWithChildren,
   ClientsIndexRoute: ClientsIndexRoute,
 }
