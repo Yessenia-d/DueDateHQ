@@ -12,8 +12,6 @@ DROP INDEX IF EXISTS `deadline_tasks_filing_profile_idx`;
 --> statement-breakpoint
 DROP INDEX IF EXISTS `deadline_tasks_tax_rule_idx`;
 --> statement-breakpoint
-DROP INDEX IF EXISTS `deadline_tasks_firm_id_id_unique`;
---> statement-breakpoint
 CREATE TABLE `__new_deadline_tasks_0010` (
 	`id` text PRIMARY KEY NOT NULL,
 	`firm_id` text NOT NULL,
