@@ -16,7 +16,17 @@ import {
   SelectValue,
 } from "@due-date-hq/ui/components/select";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { AlertTriangle, CalendarDays, Check, Download, Filter, RotateCcw, X } from "lucide-react";
+import {
+  AlertTriangle,
+  CalendarDays,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  Filter,
+  RotateCcw,
+  X,
+} from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
 
@@ -104,6 +114,76 @@ const horizonToneStyles = {
   }
 >;
 
+const horizonCalendarToneStyles = {
+  overdue: {
+    focusRing: "focus-visible:ring-ddhq-risk/35",
+    icon: "text-ddhq-risk",
+    selectedBorder: "border-ddhq-risk/60",
+    selectedRing: "ring-2 ring-ddhq-risk/35",
+    selectedSwatch: "border-ddhq-risk/60 bg-ddhq-risk-soft ring-2 ring-ddhq-risk/35",
+    workloadSwatch: "bg-ddhq-risk-soft",
+    tones: {
+      low: "bg-ddhq-risk-soft/55 text-ddhq-risk hover:bg-ddhq-risk-soft",
+      medium: "bg-ddhq-risk-soft/70 text-ddhq-risk hover:bg-ddhq-risk-soft",
+      high: "bg-ddhq-risk-soft/85 text-ddhq-risk hover:bg-ddhq-risk-soft",
+      risk: "bg-ddhq-risk-soft text-ddhq-risk hover:bg-ddhq-risk-soft/85",
+    },
+  },
+  due_this_week: {
+    focusRing: "focus-visible:ring-ddhq-review/35",
+    icon: "text-ddhq-review",
+    selectedBorder: "border-ddhq-review/60",
+    selectedRing: "ring-2 ring-ddhq-review/35",
+    selectedSwatch: "border-ddhq-review/60 bg-ddhq-review-soft ring-2 ring-ddhq-review/35",
+    workloadSwatch: "bg-ddhq-review-soft",
+    tones: {
+      low: "bg-ddhq-review-soft/55 text-ddhq-review hover:bg-ddhq-review-soft",
+      medium: "bg-ddhq-review-soft/70 text-ddhq-review hover:bg-ddhq-review-soft",
+      high: "bg-ddhq-review-soft/85 text-ddhq-review hover:bg-ddhq-review-soft",
+      risk: "bg-ddhq-review-soft text-ddhq-review hover:bg-ddhq-review-soft/85",
+    },
+  },
+  this_month: {
+    focusRing: "focus-visible:ring-primary/35",
+    icon: "text-primary",
+    selectedBorder: "border-primary/60",
+    selectedRing: "ring-2 ring-primary/35",
+    selectedSwatch: "border-primary/60 bg-ddhq-accent-soft ring-2 ring-primary/35",
+    workloadSwatch: "bg-ddhq-accent-soft",
+    tones: {
+      low: "bg-ddhq-accent-soft/55 text-primary hover:bg-ddhq-accent-soft",
+      medium: "bg-ddhq-accent-soft/70 text-primary hover:bg-ddhq-accent-soft",
+      high: "bg-ddhq-accent-soft/85 text-primary hover:bg-ddhq-accent-soft",
+      risk: "bg-ddhq-accent-soft text-primary hover:bg-ddhq-accent-soft/85",
+    },
+  },
+  long_range: {
+    focusRing: "focus-visible:ring-ddhq-gap/35",
+    icon: "text-ddhq-gap",
+    selectedBorder: "border-ddhq-gap/60",
+    selectedRing: "ring-2 ring-ddhq-gap/35",
+    selectedSwatch: "border-ddhq-gap/60 bg-ddhq-gap-soft ring-2 ring-ddhq-gap/35",
+    workloadSwatch: "bg-ddhq-gap-soft",
+    tones: {
+      low: "bg-ddhq-gap-soft/55 text-ddhq-gap hover:bg-ddhq-gap-soft",
+      medium: "bg-ddhq-gap-soft/70 text-ddhq-gap hover:bg-ddhq-gap-soft",
+      high: "bg-ddhq-gap-soft/85 text-ddhq-gap hover:bg-ddhq-gap-soft",
+      risk: "bg-ddhq-gap-soft text-ddhq-gap hover:bg-ddhq-gap-soft/85",
+    },
+  },
+} satisfies Record<
+  DashboardTaskHorizon,
+  {
+    focusRing: string;
+    icon: string;
+    selectedBorder: string;
+    selectedRing: string;
+    selectedSwatch: string;
+    workloadSwatch: string;
+    tones: Record<Exclude<WorkloadTone, "empty" | "overdue">, string>;
+  }
+>;
+
 const sortLabels: Record<DashboardSort, string> = {
   smart_priority: "Smart priority",
   due_date: "Due date",
@@ -153,6 +233,7 @@ export function DashboardPage() {
   const [showFilters, setShowFilters] = React.useState(false);
   const [selectedDate, setSelectedDate] = React.useState<string | null>(null);
   const [exceptionFocus, setExceptionFocus] = React.useState<DashboardExceptionFocus | null>(null);
+  const [calendarMonthId, setCalendarMonthId] = React.useState<string | null>(null);
   const activePage = sectionPages[activeHorizon] ?? 1;
   const dashboardInput = React.useMemo(
     () => ({
@@ -223,12 +304,14 @@ export function DashboardPage() {
     setSectionPages(createInitialSectionPages);
     setSelectedDate(null);
     setExceptionFocus(null);
+    setCalendarMonthId(null);
   }
 
   function selectHorizon(horizon: DashboardTaskHorizon) {
     setActiveHorizon(horizon);
     setSelectedDate(null);
     setExceptionFocus(null);
+    setCalendarMonthId(null);
   }
 
   function setActiveSectionPage(page: number) {
@@ -320,6 +403,12 @@ export function DashboardPage() {
     activeHorizon,
     selectedDate,
   );
+  const visibleCalendarMonthId = getVisibleCalendarMonthId(
+    calendarMonths,
+    calendarMonthId,
+    selectedDate,
+    data.today,
+  );
   const exceptionItems = createExceptionItems(activeHorizonTasks);
   const focusSummary = createFocusSummary({ exceptionFocus, selectedDate });
 
@@ -371,8 +460,11 @@ export function DashboardPage() {
             selectedDate={selectedDate}
             taskCount={activeHorizonTasks.length}
             today={data.today}
+            visibleMonthId={visibleCalendarMonthId}
+            onChangeMonth={setCalendarMonthId}
             onSelectDate={(date) => {
               setSelectedDate((current) => (current === date ? null : date));
+              setCalendarMonthId(date.slice(0, 7));
               setSectionPages(createInitialSectionPages);
             }}
           />
@@ -780,6 +872,23 @@ function getCalendarMonthKeys(
   return monthKeys;
 }
 
+function getVisibleCalendarMonthId(
+  months: WorkloadCalendarMonth[],
+  requestedMonthId: string | null,
+  selectedDate: string | null,
+  today: string,
+): string {
+  const selectedMonthId = selectedDate?.slice(0, 7);
+
+  for (const candidate of [requestedMonthId, selectedMonthId, today.slice(0, 7)]) {
+    if (candidate && months.some((month) => month.id === candidate)) {
+      return candidate;
+    }
+  }
+
+  return months[0]?.id ?? today.slice(0, 7);
+}
+
 function groupTasksByDueDate(tasks: DashboardTaskRow[]): Map<string, DashboardTaskRow[]> {
   const map = new Map<string, DashboardTaskRow[]>();
 
@@ -869,24 +978,26 @@ function createFocusSummary({
   return parts.length > 0 ? `Focused: ${parts.join(" + ")}` : null;
 }
 
-function getCalendarDayClassName(day: WorkloadCalendarDay): string {
-  const toneClass = {
-    empty: "bg-background text-muted-foreground/50 hover:bg-muted",
-    low: "bg-ddhq-review-soft/55 text-ddhq-review hover:bg-ddhq-review-soft",
-    medium: "bg-ddhq-review-soft/70 text-ddhq-review hover:bg-ddhq-review-soft",
-    high: "bg-ddhq-review-soft/85 text-ddhq-review hover:bg-ddhq-review-soft",
-    risk: "bg-ddhq-review-soft text-ddhq-review hover:bg-ddhq-review-soft/85",
-    overdue: "bg-ddhq-risk-soft text-ddhq-risk hover:bg-ddhq-risk-soft/85",
-  } satisfies Record<WorkloadTone, string>;
+function getCalendarDayClassName(
+  day: WorkloadCalendarDay,
+  activeHorizon: DashboardTaskHorizon,
+): string {
+  const calendarTone = horizonCalendarToneStyles[activeHorizon];
+  const toneClass =
+    day.tone === "empty"
+      ? "bg-background text-muted-foreground/50 hover:bg-muted"
+      : day.tone === "overdue"
+        ? "bg-ddhq-risk-soft text-ddhq-risk hover:bg-ddhq-risk-soft/85"
+        : calendarTone.tones[day.tone];
   const currentMonthClass = day.isCurrentMonth ? "" : "opacity-45";
-  const selectedClass = day.isSelected
-    ? "ring-2 ring-ddhq-review/35"
-    : "";
-  const borderClass = day.isSelected || day.isToday ? "border-ddhq-review/60" : "border-border/70";
+  const selectedClass = day.isSelected ? calendarTone.selectedRing : "";
+  const borderClass =
+    day.isSelected || day.isToday ? calendarTone.selectedBorder : "border-border/70";
 
   return [
-    "min-h-9 rounded-[6px] border p-1 text-left text-[11px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ddhq-review/35",
-    toneClass[day.tone],
+    "min-h-9 rounded-[6px] border p-1 text-left text-[11px] transition-colors focus-visible:outline-none focus-visible:ring-2",
+    calendarTone.focusRing,
+    toneClass,
     currentMonthClass,
     selectedClass,
     borderClass,
@@ -919,38 +1030,85 @@ type ExceptionItem = {
 function WorkloadCalendar({
   activeHorizon,
   months,
+  onChangeMonth,
   onSelectDate,
   selectedDate,
   taskCount,
   today,
+  visibleMonthId,
 }: {
   activeHorizon: DashboardTaskHorizon;
   months: WorkloadCalendarMonth[];
+  onChangeMonth: (monthId: string) => void;
   onSelectDate: (date: string) => void;
   selectedDate: string | null;
   taskCount: number;
   today: string;
+  visibleMonthId: string;
 }) {
-  const visibleRange =
-    months.length > 1 ? `${months[0]?.label} - ${months.at(-1)?.label}` : (months[0]?.label ?? today.slice(0, 7));
+  const visibleMonthIndex = Math.max(
+    0,
+    months.findIndex((month) => month.id === visibleMonthId),
+  );
+  const visibleMonth = months[visibleMonthIndex] ?? months[0];
+  const visibleRange = visibleMonth?.label ?? today.slice(0, 7);
   const hasOverdueDays = months.some((month) =>
     month.days.some((day) => day.tone === "overdue"),
   );
+  const calendarTone = horizonCalendarToneStyles[activeHorizon];
+  const canGoPrevious = visibleMonthIndex > 0;
+  const canGoNext = visibleMonthIndex < months.length - 1;
+  const showOverdueLegend = hasOverdueDays && activeHorizon !== "overdue";
 
   return (
     <section className="rounded-lg border border-border/80 bg-card p-2.5">
       <div className="flex flex-col gap-1.5 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <div className="flex items-center gap-2 text-sm font-semibold">
-            <CalendarDays className="size-4 text-ddhq-review" />
+            <CalendarDays className={`size-4 ${calendarTone.icon}`} />
             Workload calendar
           </div>
           <p className="mt-0.5 text-xs text-muted-foreground">
             {visibleRange} density for {horizonLabels[activeHorizon].toLowerCase()} deadlines
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+        <div className="flex flex-wrap items-center justify-end gap-1.5 text-xs text-muted-foreground">
           <span className="font-mono tabular-nums">{taskCount} tasks</span>
+          {months.length > 1 ? (
+            <div className="inline-flex items-center rounded-md border border-border bg-background p-0.5">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-xs"
+                className="size-6"
+                disabled={!canGoPrevious}
+                aria-label="Previous workload month"
+                onClick={() => {
+                  const previousMonth = months[visibleMonthIndex - 1];
+                  if (previousMonth) onChangeMonth(previousMonth.id);
+                }}
+              >
+                <ChevronLeft className="size-3.5" />
+              </Button>
+              <span className="px-1.5 font-mono text-[11px] font-semibold tabular-nums text-foreground">
+                {visibleMonthIndex + 1}/{months.length}
+              </span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-xs"
+                className="size-6"
+                disabled={!canGoNext}
+                aria-label="Next workload month"
+                onClick={() => {
+                  const nextMonth = months[visibleMonthIndex + 1];
+                  if (nextMonth) onChangeMonth(nextMonth.id);
+                }}
+              >
+                <ChevronRight className="size-3.5" />
+              </Button>
+            </div>
+          ) : null}
           {selectedDate ? (
             <button
               type="button"
@@ -963,54 +1121,43 @@ function WorkloadCalendar({
         </div>
       </div>
 
-      <div className="mt-2 max-h-56 overflow-y-auto pr-1">
-        <div className="grid gap-3">
-          {months.map((month) => (
-            <div key={month.id}>
-              {months.length > 1 ? (
-                <div className="mb-1 font-mono text-[11px] font-semibold text-muted-foreground">
-                  {month.label}
-                </div>
-              ) : null}
-              <div className="grid grid-cols-7 gap-0.5 text-center text-[10px] font-semibold text-muted-foreground">
-                {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-                  <div key={`${month.id}-${day}`} className="h-4">
-                    {day}
-                  </div>
-                ))}
-              </div>
-              <div className="grid grid-cols-7 gap-0.5">
-                {month.days.map((day) => (
-                  <button
-                    key={day.date}
-                    type="button"
-                    className={getCalendarDayClassName(day)}
-                    aria-pressed={day.isSelected}
-                    aria-label={`${day.date}: ${day.count} deadline task${day.count === 1 ? "" : "s"}`}
-                    onClick={() => onSelectDate(day.date)}
-                  >
-                    <span className="flex items-center justify-between gap-1">
-                      <span className="font-mono tabular-nums">{day.dayOfMonth}</span>
-                      {day.tone === "risk" || day.tone === "overdue" ? (
-                        <AlertTriangle className="size-3" />
-                      ) : null}
-                    </span>
-                    <span className="block truncate text-[10px] font-semibold leading-4">
-                      {day.count > 0 ? `${day.count} task${day.count === 1 ? "" : "s"}` : " "}
-                    </span>
-                  </button>
-                ))}
-              </div>
+      <div className="mt-2">
+        <div className="grid grid-cols-7 gap-0.5 text-center text-[10px] font-semibold text-muted-foreground">
+          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+            <div key={`${visibleMonth?.id ?? "month"}-${day}`} className="h-4">
+              {day}
             </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-7 gap-0.5">
+          {(visibleMonth?.days ?? []).map((day) => (
+            <button
+              key={day.date}
+              type="button"
+              className={getCalendarDayClassName(day, activeHorizon)}
+              aria-pressed={day.isSelected}
+              aria-label={`${day.date}: ${day.count} deadline task${day.count === 1 ? "" : "s"}`}
+              onClick={() => onSelectDate(day.date)}
+            >
+              <span className="flex items-center justify-between gap-1">
+                <span className="font-mono tabular-nums">{day.dayOfMonth}</span>
+                {day.tone === "risk" || day.tone === "overdue" ? (
+                  <AlertTriangle className="size-3" />
+                ) : null}
+              </span>
+              <span className="block truncate text-[10px] font-semibold leading-4">
+                {day.count > 0 ? `${day.count} task${day.count === 1 ? "" : "s"}` : " "}
+              </span>
+            </button>
           ))}
         </div>
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-        <CalendarLegendSwatch className="bg-ddhq-review-soft" label="Workload" />
-        {hasOverdueDays ? (
+        <CalendarLegendSwatch className={calendarTone.workloadSwatch} label="Workload" />
+        {showOverdueLegend ? (
           <CalendarLegendSwatch className="bg-ddhq-risk-soft" label="Overdue" />
         ) : null}
-        <CalendarLegendSwatch className="border-ddhq-review/60 bg-ddhq-review-soft ring-2 ring-ddhq-review/35" label="Selected" />
+        <CalendarLegendSwatch className={calendarTone.selectedSwatch} label="Selected" />
       </div>
     </section>
   );

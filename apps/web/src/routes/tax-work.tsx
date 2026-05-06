@@ -17,6 +17,15 @@ import {
 } from "@due-date-hq/ui/components/dropdown-menu";
 import { Input } from "@due-date-hq/ui/components/input";
 import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@due-date-hq/ui/components/pagination";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -58,6 +67,7 @@ const sectionOrder: Array<DashboardSection["id"]> = [
   "this_month",
   "long_range",
 ];
+const taxWorkPageSize = 25;
 
 const sectionLabels: Record<DashboardSection["id"], string> = {
   overdue: "Overdue",
@@ -153,6 +163,7 @@ function TaxWorkComponent() {
   const [clientSearchQuery, setClientSearchQuery] = React.useState("");
   const [workFilters, setWorkFilters] = React.useState<TaxWorkFilters>(emptyTaxWorkFilters);
   const [showWorkFilters, setShowWorkFilters] = React.useState(false);
+  const [queuePage, setQueuePage] = React.useState(1);
   const [selectedTaskIds, setSelectedTaskIds] = React.useState<Set<string>>(new Set());
   const [evidenceTaskId, setEvidenceTaskId] = React.useState<string | null>(null);
 
@@ -184,7 +195,7 @@ function TaxWorkComponent() {
     [selectedClientTasks, workFilters],
   );
   const sections = React.useMemo(() => buildSections(filteredTasks), [filteredTasks]);
-  const activeSection = React.useMemo(
+  const fullActiveSection = React.useMemo(
     () =>
       sections.find((section) => section.id === activeHorizon) ?? {
         id: activeHorizon,
@@ -199,6 +210,24 @@ function TaxWorkComponent() {
       },
     [activeHorizon, sections],
   );
+  const totalQueuePages = Math.max(
+    1,
+    Math.ceil(fullActiveSection.count / taxWorkPageSize),
+  );
+  const activePage = Math.min(queuePage, totalQueuePages);
+  const activeSection = React.useMemo<DashboardSection>(() => {
+    const start = (activePage - 1) * taxWorkPageSize;
+
+    return {
+      ...fullActiveSection,
+      pagination: {
+        page: activePage,
+        pageSize: taxWorkPageSize,
+        totalPages: totalQueuePages,
+      },
+      tasks: fullActiveSection.tasks.slice(start, start + taxWorkPageSize),
+    };
+  }, [activePage, fullActiveSection, totalQueuePages]);
   const clientQueueSummary = React.useMemo(
     () => summarizeClientQueue(selectedClientTasks),
     [selectedClientTasks],
@@ -221,6 +250,14 @@ function TaxWorkComponent() {
       current.filingProfileId ? { ...current, filingProfileId: undefined } : current,
     );
   }, [selectedClientId]);
+
+  React.useEffect(() => {
+    setQueuePage(1);
+  }, [activeHorizon, selectedClientId, workFilters]);
+
+  React.useEffect(() => {
+    setQueuePage((current) => Math.min(current, totalQueuePages));
+  }, [totalQueuePages]);
 
   function updateWorkFilter<K extends keyof TaxWorkFilters>(
     key: K,
@@ -355,27 +392,41 @@ function TaxWorkComponent() {
                           <Building2 className="size-3.5" />
                           Client summary
                         </div>
-                        <div className="mt-1 flex flex-wrap items-center gap-2">
-                          <h2 className="text-lg font-semibold leading-tight">
-                            {selectedClient.displayName}
-                          </h2>
-                          <StatusBadge status="neutral">
-                            {selectedClient.filingProfileCount} profiles
-                          </StatusBadge>
-                          <StatusBadge status="neutral">
-                            {clientQueueSummary.total} tasks
-                          </StatusBadge>
+                        <div className="mt-2 flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                          <div className="min-w-0">
+                            <h2 className="truncate text-lg font-semibold leading-tight">
+                              {selectedClient.displayName}
+                            </h2>
+                          </div>
+                          <div className="shrink-0 sm:text-right">
+                            <div className="text-2xl font-semibold leading-none tabular-nums">
+                              {clientQueueSummary.open}
+                            </div>
+                            <div className="mt-1 text-xs font-medium text-muted-foreground">
+                              open tasks
+                            </div>
+                          </div>
                         </div>
-                        <div className="mt-2 flex flex-wrap gap-1.5">
+
+                        <div className="mt-4 grid grid-cols-3 divide-x divide-border/70 rounded-md border border-border/70 bg-muted/20">
+                          <ClientSummaryMetric
+                            label="Profiles"
+                            value={selectedClient.filingProfileCount}
+                          />
+                          <ClientSummaryMetric
+                            label="Total tasks"
+                            value={clientQueueSummary.total}
+                          />
+                          <ClientSummaryMetric label="Open" value={clientQueueSummary.open} />
+                        </div>
+
+                        <div className="mt-3 flex flex-wrap gap-1.5">
                           <TrustBadge status="verified" value={clientQueueSummary.verified} />
                           <TrustBadge status="review" value={clientQueueSummary.needsReview} />
                           <TrustBadge
                             status="entered_deadline"
                             value={clientQueueSummary.enteredDeadline}
                           />
-                          <StatusBadge status="neutral">
-                            {clientQueueSummary.open} open
-                          </StatusBadge>
                           {clientQueueSummary.overdue > 0 ? (
                             <StatusBadge status="overdue">
                               {clientQueueSummary.overdue} overdue
@@ -399,7 +450,7 @@ function TaxWorkComponent() {
                           {scopeSummaryText({
                             activeFilterCount,
                             activeHorizon,
-                            activeHorizonCount: activeSection.count,
+                            activeHorizonCount: fullActiveSection.count,
                             profileName: selectedProfile?.displayName,
                             summary: scopedQueueSummary,
                           })}
@@ -567,6 +618,13 @@ function TaxWorkComponent() {
                       onToggleSection={toggleSection}
                       onOpenEvidence={setEvidenceTaskId}
                     />
+                    <TaxWorkPagination
+                      count={fullActiveSection.count}
+                      page={activeSection.pagination.page}
+                      pageSize={activeSection.pagination.pageSize}
+                      totalPages={activeSection.pagination.totalPages}
+                      onPageChange={setQueuePage}
+                    />
                   </section>
                 </div>
               )}
@@ -636,18 +694,113 @@ function QueueTab({
 function buildSections(tasks: DashboardTaskRow[]): DashboardSection[] {
   return sectionOrder.map((sectionId) => {
     const sectionTasks = tasks.filter((task) => task.horizon === sectionId);
+    const totalPages = Math.max(1, Math.ceil(sectionTasks.length / taxWorkPageSize));
+
     return {
       id: sectionId,
       label: sectionLabels[sectionId],
       count: sectionTasks.length,
       pagination: {
         page: 1,
-        pageSize: Math.max(sectionTasks.length, 1),
-        totalPages: 1,
+        pageSize: taxWorkPageSize,
+        totalPages,
       },
       tasks: sectionTasks,
     };
   });
+}
+
+function TaxWorkPagination({
+  count,
+  onPageChange,
+  page,
+  pageSize,
+  totalPages,
+}: {
+  count: number;
+  onPageChange: (page: number) => void;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}) {
+  if (totalPages <= 1) return null;
+
+  const start = (page - 1) * pageSize + 1;
+  const end = Math.min(page * pageSize, count);
+  const items = getVisiblePageItems(page, totalPages);
+
+  function goToPage(nextPage: number) {
+    return (event: React.MouseEvent<HTMLAnchorElement>) => {
+      event.preventDefault();
+      onPageChange(nextPage);
+    };
+  }
+
+  return (
+    <div className="flex shrink-0 flex-col gap-2 rounded-lg border border-border/80 bg-card px-3 py-2 md:flex-row md:items-center md:justify-between">
+      <div className="text-xs text-muted-foreground">
+        Showing {start}-{end} of {count} rows
+      </div>
+      <Pagination className="mx-0 w-auto justify-end">
+        <PaginationContent>
+          <PaginationItem>
+            <PaginationPrevious
+              href="#"
+              className={page === 1 ? "pointer-events-none opacity-50" : undefined}
+              aria-disabled={page === 1}
+              onClick={goToPage(page - 1)}
+              text="Prev"
+            />
+          </PaginationItem>
+          {items.map((item) => (
+            <PaginationItem key={item}>
+              {typeof item === "number" ? (
+                <PaginationLink
+                  href="#"
+                  isActive={item === page}
+                  onClick={goToPage(item)}
+                >
+                  {item}
+                </PaginationLink>
+              ) : (
+                <PaginationEllipsis />
+              )}
+            </PaginationItem>
+          ))}
+          <PaginationItem>
+            <PaginationNext
+              href="#"
+              className={page === totalPages ? "pointer-events-none opacity-50" : undefined}
+              aria-disabled={page === totalPages}
+              onClick={goToPage(page + 1)}
+            />
+          </PaginationItem>
+        </PaginationContent>
+      </Pagination>
+    </div>
+  );
+}
+
+function getVisiblePageItems(page: number, totalPages: number): Array<number | string> {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1);
+  }
+
+  const pages = new Set([1, totalPages, page - 1, page, page + 1]);
+  const sortedPages = [...pages]
+    .filter((item) => item >= 1 && item <= totalPages)
+    .sort((a, b) => a - b);
+  const items: Array<number | string> = [];
+
+  for (const current of sortedPages) {
+    const previous = items.at(-1);
+    if (typeof previous === "number" && current - previous > 1) {
+      items.push(`ellipsis-${previous}-${current}`);
+    }
+    items.push(current);
+  }
+
+  return items;
 }
 
 function scopeSummaryText({
@@ -668,6 +821,17 @@ function scopeSummaryText({
     activeFilterCount > 0 ? `${activeFilterCount} filters active` : "full queue";
 
   return `${scope}: ${sectionLabels[activeHorizon]} shows ${activeHorizonCount}; ${summary.open} open total (${filterCopy}).`;
+}
+
+function ClientSummaryMetric({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="min-w-0 px-3 py-2">
+      <div className="text-[11px] font-medium leading-tight text-muted-foreground">
+        {label}
+      </div>
+      <div className="mt-1 text-sm font-semibold leading-tight tabular-nums">{value}</div>
+    </div>
+  );
 }
 
 function TrustBadge({

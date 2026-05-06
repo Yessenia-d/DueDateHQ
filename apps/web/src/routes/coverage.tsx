@@ -1,3 +1,7 @@
+import type {
+  CoverageJurisdictionGroup,
+  CoverageObligationItem,
+} from "@due-date-hq/api/routers/coverage";
 import { Button } from "@due-date-hq/ui/components/button";
 import {
   Select,
@@ -22,17 +26,22 @@ import {
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
+  AlertTriangle,
   CheckCircle2,
   CircleDashed,
   ExternalLink,
   Eye,
+  FilePlus2,
+  FilterX,
   Globe,
   HelpCircle,
+  Info,
+  ListFilter,
   Shield,
   ShieldAlert,
   ShieldCheck,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
 import { StatusBadge } from "@/components/status-badge";
@@ -43,14 +52,21 @@ export const Route = createFileRoute("/coverage")({
   component: CoverageComponent,
 });
 
-// -- Status display config --
-
 type VerificationStatusKey =
   | "verified"
   | "needs_review"
   | "source_changed"
   | "unsupported"
   | "no_rule";
+
+type SourceMonitorStatus = CoverageObligationItem["sourceMonitorStatus"];
+type JurisdictionFilter = "all" | string;
+type EntityTypeFilter = "all" | string;
+type TaxCategoryFilter = "all" | string;
+type StatusFilter = "all" | VerificationStatusKey;
+type SelectedCoverageDetail =
+  | { mode: "coverage"; obligationId: string }
+  | { mode: "evidence"; ruleId: string };
 
 const statusIcons: Record<VerificationStatusKey, typeof CheckCircle2> = {
   verified: ShieldCheck,
@@ -84,6 +100,14 @@ const statusDescriptions: Record<VerificationStatusKey, string> = {
   no_rule: "Coverage gap with no verified scheduling rule yet.",
 };
 
+const statusSummaryOrder = [
+  "source_changed",
+  "needs_review",
+  "no_rule",
+  "unsupported",
+  "verified",
+] as const;
+
 const statusHeaderKeys = [
   "verified",
   "needs_review",
@@ -95,37 +119,30 @@ const statusHeaderKeys = [
 const statusHeaderIconStyles: Record<VerificationStatusKey, string> = {
   verified: "bg-ddhq-verified-soft text-ddhq-verified",
   needs_review: "bg-ddhq-review-soft text-ddhq-review",
-  source_changed:
-    "bg-[oklch(0.94_0.035_285)] text-[oklch(0.45_0.12_285)]",
+  source_changed: "border-ddhq-review/30 bg-ddhq-review-soft text-ddhq-review",
   unsupported: "bg-ddhq-gap-soft text-ddhq-gap",
   no_rule: "bg-ddhq-gap-soft text-ddhq-gap",
 };
 
-const coverageFilterSelectTriggerClassName = "h-8 w-auto !rounded-[6px]";
+const sourceMonitorBadgeStatus: Record<SourceMonitorStatus, Parameters<typeof StatusBadge>[0]["status"]> = {
+  monitored: "verified",
+  source_changed: "source_changed",
+  not_monitored: "neutral",
+  unsupported: "unsupported",
+};
+
+const coverageFilterSelectTriggerClassName = "h-8 min-w-36 !rounded-[6px]";
 const coverageFilterSelectContentClassName = "!rounded-[6px]";
 const coverageFilterSelectItemClassName =
   "data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground data-[selected]:bg-accent data-[selected]:text-accent-foreground";
 const coverageActionButtonClassName =
-  "w-full cursor-pointer rounded-[6px] !border-ddhq-border-strong !bg-background px-2 text-[11px] font-semibold shadow-[inset_0_-1px_0_rgba(0,0,0,0.04)] hover:!border-primary/60 hover:!bg-ddhq-accent-soft/60 hover:!text-foreground focus-visible:!border-primary focus-visible:!ring-primary/25";
+  "min-h-7 w-full cursor-pointer rounded-[6px] !border-ddhq-border-strong !bg-background px-2 py-1 text-[11px] font-semibold leading-3 shadow-[inset_0_-1px_0_rgba(0,0,0,0.04)] hover:!border-primary/60 hover:!bg-ddhq-accent-soft/60 hover:!text-foreground focus-visible:!border-primary focus-visible:!ring-primary/25";
 const evidenceLabelClassName =
   "text-[11px] font-semibold uppercase leading-4 text-muted-foreground";
 const dateHighlightClassName =
   "inline-flex min-w-[6.5rem] items-center rounded-[6px] border border-ddhq-review/35 bg-ddhq-review-soft/55 px-2 py-1 font-mono text-[12px] font-semibold leading-4 text-foreground";
 const extensionDateHighlightClassName =
   "inline-flex min-w-[6.5rem] items-center rounded-[6px] border border-ddhq-accent/25 bg-ddhq-accent-soft/50 px-2 py-1 font-mono text-[12px] font-semibold leading-4 text-foreground";
-
-function getStatusKey(status: string | null): VerificationStatusKey {
-  if (status === "verified") return "verified";
-  if (status === "needs_review") return "needs_review";
-  if (status === "source_changed") return "source_changed";
-  if (status === "unsupported") return "unsupported";
-  return "no_rule";
-}
-
-// -- Filters --
-
-type JurisdictionFilter = "all" | string;
-type StatusFilter = "all" | VerificationStatusKey;
 
 function CoverageComponent() {
   const coverage = useQuery(trpc.coverage.matrix.queryOptions());
@@ -148,8 +165,10 @@ function CoverageComponent() {
     }),
   );
   const [jurisdictionFilter, setJurisdictionFilter] = useState<JurisdictionFilter>("all");
+  const [entityTypeFilter, setEntityTypeFilter] = useState<EntityTypeFilter>("all");
+  const [taxCategoryFilter, setTaxCategoryFilter] = useState<TaxCategoryFilter>("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const [selectedRuleId, setSelectedRuleId] = useState<string | null>(null);
+  const [selectedDetail, setSelectedDetail] = useState<SelectedCoverageDetail | null>(null);
 
   if (coverage.isPending) {
     return (
@@ -175,25 +194,76 @@ function CoverageComponent() {
   }
 
   const { data } = coverage;
+  const allObligations = data.groups.flatMap((group) => group.obligations);
+  const jurisdictions = data.groups.map((group) => group.jurisdiction);
+  const entityTypes = [
+    ...new Set(allObligations.flatMap((obligation) => obligation.entityTypes)),
+  ].sort(compareStrings);
+  const taxCategories = [
+    ...new Set(allObligations.map((obligation) => obligation.taxCategory)),
+  ].sort(compareStrings);
+  const filteredGroups: CoverageJurisdictionGroup[] = data.groups.flatMap((group) => {
+      const obligations = group.obligations.filter((obligation) => {
+        if (jurisdictionFilter !== "all" && obligation.jurisdiction !== jurisdictionFilter) {
+          return false;
+        }
+        if (entityTypeFilter !== "all" && !obligation.entityTypes.includes(entityTypeFilter)) {
+          return false;
+        }
+        if (taxCategoryFilter !== "all" && obligation.taxCategory !== taxCategoryFilter) {
+          return false;
+        }
+        if (statusFilter !== "all" && getStatusKey(obligation.verificationStatus) !== statusFilter) {
+          return false;
+        }
+        return true;
+      });
 
-  const jurisdictions = data.groups.map((g) => g.jurisdiction);
+      if (obligations.length === 0) return [];
+      return [{ ...group, obligations, counts: summarizeObligations(obligations) }];
+    });
+  const filteredObligationCount = filteredGroups.reduce(
+    (total, group) => total + group.obligations.length,
+    0,
+  );
+  const activeFilterCount = [
+    jurisdictionFilter,
+    entityTypeFilter,
+    taxCategoryFilter,
+    statusFilter,
+  ].filter((value) => value !== "all").length;
+  const actionableCount =
+    data.summary.totalSourceChanged +
+    data.summary.totalNeedsReview +
+    data.summary.totalNoRule +
+    data.summary.totalUnsupported;
+  const selectedObligation =
+    selectedDetail?.mode === "coverage"
+      ? allObligations.find((obligation) => obligation.obligationId === selectedDetail.obligationId)
+      : null;
 
-  const filteredGroups = data.groups
-    .filter((g) => jurisdictionFilter === "all" || g.jurisdiction === jurisdictionFilter)
-    .map((g) => {
-      if (statusFilter === "all") return g;
-      const filtered = g.obligations.filter(
-        (o) => getStatusKey(o.verificationStatus) === statusFilter,
-      );
-      if (filtered.length === 0) return null;
-      return { ...g, obligations: filtered };
-    })
-    .filter(Boolean) as typeof data.groups;
+  function resetFilters() {
+    setJurisdictionFilter("all");
+    setEntityTypeFilter("all");
+    setTaxCategoryFilter("all");
+    setStatusFilter("all");
+  }
+
+  function requestVerification(obligationId: string) {
+    requestCoverage.mutate({ obligationId });
+  }
+
+  function startEnteredDeadline(obligationId: string) {
+    addEnteredDeadline.mutate({ obligationId });
+  }
+
+  function dismissCoverageGap(obligationId: string) {
+    dismissGap.mutate({ obligationId });
+  }
 
   return (
     <main className="min-h-0 overflow-auto">
-      <div className="mx-auto flex max-w-7xl flex-col gap-6 px-5 py-6">
-        {/* Header */}
+      <div className="mx-auto flex max-w-7xl flex-col gap-5 px-5 py-6">
         <section className="grid gap-4 border-b border-border pb-5 md:grid-cols-[1fr_auto] md:items-end">
           <div className="max-w-3xl">
             <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase text-muted-foreground">
@@ -202,12 +272,12 @@ function CoverageComponent() {
             </div>
             <h1 className="text-2xl font-semibold tracking-normal">Coverage Matrix</h1>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Tax obligations and verified scheduling rules across supported jurisdictions. Beta
-              coverage is limited to P0 official sources. Coverage gaps are visible and do not imply
-              verified deadline support.
+              Beta coverage is limited to P0 official sources. Non-verified obligations stay
+              visible, but they cannot generate DueDateHQ Verified deadline tasks.
             </p>
           </div>
-          <div className="grid min-w-60 gap-1 text-xs text-muted-foreground">
+          <div className="grid min-w-64 gap-1 text-xs text-muted-foreground">
+            <span className="font-medium text-foreground">{actionableCount} non-verified obligations</span>
             <span>Updated {formatDate(data.generatedAt)}</span>
             <span>
               {data.summary.totalObligations} obligations across {data.summary.jurisdictionCount}{" "}
@@ -216,50 +286,21 @@ function CoverageComponent() {
           </div>
         </section>
 
-        {/* Summary counts */}
-        <section className="grid gap-2 border-b border-border pb-3 sm:grid-cols-2 lg:grid-cols-5">
-          <SummaryCount label="Verified" count={data.summary.totalVerified} statusKey="verified" />
-          <SummaryCount
-            label="Needs review"
-            count={data.summary.totalNeedsReview}
-            statusKey="needs_review"
-          />
-          <SummaryCount
-            label="Source changed"
-            count={data.summary.totalSourceChanged}
-            statusKey="source_changed"
-          />
-          <SummaryCount
-            label="Unsupported"
-            count={data.summary.totalUnsupported}
-            statusKey="unsupported"
-          />
-          <SummaryCount label="Coverage gap" count={data.summary.totalNoRule} statusKey="no_rule" />
+        <section className="grid gap-2 border-b border-border pb-4 sm:grid-cols-2 xl:grid-cols-5">
+          {statusSummaryOrder.map((statusKey) => (
+            <StatusSummaryButton
+              key={statusKey}
+              active={statusFilter === statusKey}
+              count={getSummaryCount(data.summary, statusKey)}
+              statusKey={statusKey}
+              onClick={() => setStatusFilter(statusFilter === statusKey ? "all" : statusKey)}
+            />
+          ))}
         </section>
 
-        {/* Supported sources */}
-        <section className="border-b border-border pb-3">
-          <h2 className="mb-2 text-xs font-medium uppercase text-muted-foreground">
-            P0 supported official sources
-          </h2>
-          <div className="flex flex-wrap gap-2">
-            {data.supportedSources.map((source) => (
-              <span
-                key={source}
-                className="inline-flex items-center gap-1.5 rounded-[6px] border border-border bg-card px-2 py-1 text-xs text-muted-foreground"
-              >
-                <Globe className="size-3" />
-                {source}
-              </span>
-            ))}
-          </div>
-        </section>
-
-        {/* Filters */}
-        <section className="flex flex-wrap items-center gap-3">
-          <div className="grid gap-1 text-xs font-medium text-muted-foreground">
-            Jurisdiction
-            <Select value={jurisdictionFilter} onValueChange={(v) => setJurisdictionFilter(v ?? "all")}>
+        <section className="flex flex-wrap items-end gap-3 border-b border-border pb-4">
+          <FilterField label="Jurisdiction">
+            <Select value={jurisdictionFilter} onValueChange={(value) => setJurisdictionFilter(value ?? "all")}>
               <SelectTrigger
                 aria-label="Filter by jurisdiction"
                 className={coverageFilterSelectTriggerClassName}
@@ -273,22 +314,77 @@ function CoverageComponent() {
                 <SelectItem className={coverageFilterSelectItemClassName} value="all">
                   All jurisdictions
                 </SelectItem>
-                {jurisdictions.map((j) => (
+                {jurisdictions.map((jurisdiction) => (
                   <SelectItem
-                    key={j}
+                    key={jurisdiction}
                     className={coverageFilterSelectItemClassName}
-                    value={j}
+                    value={jurisdiction}
                   >
-                    {j === "federal" ? "Federal" : j}
+                    {formatJurisdiction(jurisdiction)}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-          </div>
+          </FilterField>
 
-          <div className="grid gap-1 text-xs font-medium text-muted-foreground">
-            Status
-            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
+          <FilterField label="Entity type">
+            <Select value={entityTypeFilter} onValueChange={(value) => setEntityTypeFilter(value ?? "all")}>
+              <SelectTrigger
+                aria-label="Filter by entity type"
+                className={coverageFilterSelectTriggerClassName}
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent
+                alignItemWithTrigger={false}
+                className={coverageFilterSelectContentClassName}
+              >
+                <SelectItem className={coverageFilterSelectItemClassName} value="all">
+                  All entity types
+                </SelectItem>
+                {entityTypes.map((entityType) => (
+                  <SelectItem
+                    key={entityType}
+                    className={coverageFilterSelectItemClassName}
+                    value={entityType}
+                  >
+                    {formatEntityType(entityType)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FilterField>
+
+          <FilterField label="Tax category">
+            <Select value={taxCategoryFilter} onValueChange={(value) => setTaxCategoryFilter(value ?? "all")}>
+              <SelectTrigger
+                aria-label="Filter by tax category"
+                className={coverageFilterSelectTriggerClassName}
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent
+                alignItemWithTrigger={false}
+                className={coverageFilterSelectContentClassName}
+              >
+                <SelectItem className={coverageFilterSelectItemClassName} value="all">
+                  All tax categories
+                </SelectItem>
+                {taxCategories.map((taxCategory) => (
+                  <SelectItem
+                    key={taxCategory}
+                    className={coverageFilterSelectItemClassName}
+                    value={taxCategory}
+                  >
+                    {taxCategory}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FilterField>
+
+          <FilterField label="Status">
+            <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as StatusFilter)}>
               <SelectTrigger
                 aria-label="Filter by verification status"
                 className={coverageFilterSelectTriggerClassName}
@@ -302,28 +398,61 @@ function CoverageComponent() {
                 <SelectItem className={coverageFilterSelectItemClassName} value="all">
                   All statuses
                 </SelectItem>
-                <SelectItem className={coverageFilterSelectItemClassName} value="verified">
-                  Verified
-                </SelectItem>
-                <SelectItem className={coverageFilterSelectItemClassName} value="needs_review">
-                  Needs review
-                </SelectItem>
-                <SelectItem className={coverageFilterSelectItemClassName} value="source_changed">
-                  Source changed
-                </SelectItem>
-                <SelectItem className={coverageFilterSelectItemClassName} value="unsupported">
-                  Unsupported
-                </SelectItem>
-                <SelectItem className={coverageFilterSelectItemClassName} value="no_rule">
-                  Coverage gap
-                </SelectItem>
+                {statusHeaderKeys.map((statusKey) => (
+                  <SelectItem
+                    key={statusKey}
+                    className={coverageFilterSelectItemClassName}
+                    value={statusKey}
+                  >
+                    {statusLabels[statusKey]}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
-          </div>
+          </FilterField>
+
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-8 rounded-[6px]"
+            disabled={activeFilterCount === 0}
+            onClick={resetFilters}
+          >
+            <FilterX className="size-3.5" />
+            Reset filters
+          </Button>
         </section>
 
-        {/* Coverage table by jurisdiction group */}
+        <details className="border-b border-border pb-4 text-sm">
+          <summary className="inline-flex cursor-pointer items-center gap-2 text-xs font-medium uppercase text-muted-foreground">
+            <Globe className="size-3.5" />
+            P0 supported official sources
+            <span className="font-normal normal-case">({data.supportedSources.length})</span>
+          </summary>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {data.supportedSources.map((source) => (
+              <span
+                key={source}
+                className="inline-flex items-center gap-1.5 rounded-[6px] border border-border bg-card px-2 py-1 text-xs text-muted-foreground"
+              >
+                <Globe className="size-3" />
+                {source}
+              </span>
+            ))}
+          </div>
+        </details>
+
         <section className="flex flex-col gap-5">
+          <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
+            <div className="inline-flex items-center gap-2">
+              <ListFilter className="size-3.5" />
+              Showing {filteredObligationCount} of {data.summary.totalObligations} obligations
+            </div>
+            {activeFilterCount > 0 && (
+              <span>{activeFilterCount} active filter{activeFilterCount === 1 ? "" : "s"}</span>
+            )}
+          </div>
 
           {filteredGroups.length === 0 && (
             <div className="rounded-xl border border-border bg-muted/20 p-6 text-center text-sm text-muted-foreground">
@@ -336,174 +465,95 @@ function CoverageComponent() {
               <div className="mb-3 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
                 <div>
                   <h2 className="text-base font-medium">
-                    {group.jurisdictionLevel === "federal"
-                      ? "Federal"
-                      : group.jurisdiction}{" "}
+                    {formatJurisdiction(group.jurisdiction)}{" "}
                     <span className="text-sm font-normal text-muted-foreground">
                       {group.agencyName}
                     </span>
                   </h2>
                   <p className="text-xs text-muted-foreground">
-                    {group.counts.verified}/{group.counts.total} verified
+                    {group.counts.verified}/{group.counts.total} verified in this view
                   </p>
                 </div>
-                <div className="flex flex-wrap gap-3">
-                  <span className="text-xs text-muted-foreground">
-                    Verified: {group.counts.verified}
-                  </span>
-                  {group.counts.needsReview > 0 && (
-                    <span className="text-xs text-muted-foreground">
-                      Needs review: {group.counts.needsReview}
-                    </span>
-                  )}
-                  {group.counts.sourceChanged > 0 && (
-                    <span className="text-xs text-muted-foreground">
-                      Source changed: {group.counts.sourceChanged}
-                    </span>
-                  )}
-                  {group.counts.unsupported > 0 && (
-                    <span className="text-xs text-muted-foreground">
-                      Unsupported: {group.counts.unsupported}
-                    </span>
-                  )}
-                  {group.counts.noRule > 0 && (
-                    <span className="text-xs text-muted-foreground">
-                      Coverage gap: {group.counts.noRule}
-                    </span>
-                  )}
-                </div>
+                <GroupCountList counts={group.counts} />
               </div>
 
-              <div className="rounded-xl border border-border">
-                <Table className="min-w-[960px] table-fixed">
+              <div className="overflow-hidden rounded-xl border border-border">
+                <Table className="min-w-[1120px] table-fixed">
                   <colgroup>
-                    <col className="w-[34%]" />
+                    <col className="w-[27%]" />
+                    <col className="w-[18%]" />
                     <col className="w-[13%]" />
-                    <col className="w-[15%]" />
-                    <col className="w-[14%]" />
-                    <col className="w-[10%]" />
-                    <col className="w-[14%]" />
+                    <col className="w-[21%]" />
+                    <col className="w-[9%]" />
+                    <col className="w-[12%]" />
                   </colgroup>
                   <TableHeader>
                     <TableRow className="bg-muted/40">
                       <TableHead className="text-[11px] font-semibold uppercase text-muted-foreground">Obligation</TableHead>
-                      <TableHead className="w-36 text-[11px] font-semibold uppercase text-muted-foreground">Tax category</TableHead>
-                      <TableHead className="w-40 text-[11px] font-semibold uppercase text-muted-foreground">Entity types</TableHead>
-                      <TableHead className="w-36 text-[11px] font-semibold uppercase text-muted-foreground">
+                      <TableHead className="text-[11px] font-semibold uppercase text-muted-foreground">Scope</TableHead>
+                      <TableHead className="text-[11px] font-semibold uppercase text-muted-foreground">
                         <StatusColumnHeader />
                       </TableHead>
-                      <TableHead className="w-28 text-[11px] font-semibold uppercase text-muted-foreground">Last verified</TableHead>
-                      <TableHead className="w-28 text-right text-[11px] font-semibold uppercase text-muted-foreground">Actions</TableHead>
+                      <TableHead className="text-[11px] font-semibold uppercase text-muted-foreground">Source monitor</TableHead>
+                      <TableHead className="text-[11px] font-semibold uppercase text-muted-foreground">Last verified</TableHead>
+                      <TableHead className="text-right text-[11px] font-semibold uppercase text-muted-foreground">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {group.obligations.map((obl) => {
-                      const sk = getStatusKey(obl.verificationStatus);
-                      const hasActions = Boolean(obl.ruleId) || sk !== "verified";
+                    {group.obligations.map((obligation) => {
+                      const statusKey = getStatusKey(obligation.verificationStatus);
 
                       return (
-                        <TableRow key={obl.obligationId} className="align-top">
+                        <TableRow key={obligation.obligationId} className="align-top">
                           <TableCell className="min-w-0 whitespace-normal">
                             <div className="max-w-full break-words font-medium leading-5 [overflow-wrap:anywhere]">
-                              {obl.obligationName}
+                              {obligation.obligationName}
                             </div>
-                            {obl.ruleSummary && (
+                            {obligation.ruleSummary && (
                               <div className="mt-1 max-w-full break-words text-xs leading-5 text-muted-foreground [overflow-wrap:anywhere]">
-                                {obl.ruleSummary}
+                                {obligation.ruleSummary}
                               </div>
                             )}
                           </TableCell>
-                          <TableCell className="text-xs text-muted-foreground">
-                            {obl.taxCategory}
-                          </TableCell>
                           <TableCell>
-                            <div className="flex flex-wrap gap-1">
-                              {obl.entityTypes.map((et) => (
-                                <span
-                                  key={et}
-                                  className="rounded-[6px] border border-border bg-card px-1.5 py-0.5 text-[11px] text-muted-foreground"
-                                >
-                                  {formatEntityType(et)}
-                                </span>
-                              ))}
+                            <div className="grid gap-1.5">
+                              <span className="text-xs text-muted-foreground">{obligation.taxCategory}</span>
+                              <div className="flex flex-wrap gap-1">
+                                {obligation.entityTypes.map((entityType) => (
+                                  <span
+                                    key={entityType}
+                                    className="rounded-[6px] border border-border bg-card px-1.5 py-0.5 text-[11px] text-muted-foreground"
+                                  >
+                                    {formatEntityType(entityType)}
+                                  </span>
+                                ))}
+                              </div>
                             </div>
                           </TableCell>
                           <TableCell>
-                            <VerificationBadge statusKey={sk} />
+                            <VerificationBadge statusKey={statusKey} />
+                          </TableCell>
+                          <TableCell>
+                            <SourceMonitorCell obligation={obligation} />
                           </TableCell>
                           <TableCell className="font-mono text-xs text-muted-foreground">
-                            {obl.lastVerifiedAt ? formatDate(obl.lastVerifiedAt) : "-"}
+                            {obligation.lastVerifiedAt ? formatDate(obligation.lastVerifiedAt) : "Not verified"}
                           </TableCell>
                           <TableCell className="align-top">
-                            {hasActions ? (
-                              <div
-                                role="group"
-                                aria-label={`Coverage actions for ${obl.obligationName}`}
-                                className="ml-auto grid w-28 grid-cols-1 gap-1"
-                              >
-                                {obl.ruleId && (
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="xs"
-                                    className={coverageActionButtonClassName}
-                                    onClick={() => setSelectedRuleId(obl.ruleId)}
-                                  >
-                                    Evidence
-                                  </Button>
-                                )}
-                                {sk !== "verified" && (
-                                  <>
-                                    <Button
-                                      type="button"
-                                      variant="outline"
-                                      size="xs"
-                                      className={coverageActionButtonClassName}
-                                      disabled={requestCoverage.isPending}
-                                      onClick={() =>
-                                        requestCoverage.mutate({
-                                          obligationId: obl.obligationId,
-                                        })
-                                      }
-                                    >
-                                      Request
-                                    </Button>
-                                    <Button
-                                      type="button"
-                                      variant="outline"
-                                      size="xs"
-                                      className={coverageActionButtonClassName}
-                                      disabled={addEnteredDeadline.isPending}
-                                      onClick={() =>
-                                        addEnteredDeadline.mutate({
-                                          obligationId: obl.obligationId,
-                                        })
-                                      }
-                                    >
-                                      Entered deadline
-                                    </Button>
-                                    <Button
-                                      type="button"
-                                      variant="outline"
-                                      size="xs"
-                                      className={coverageActionButtonClassName}
-                                      disabled={dismissGap.isPending}
-                                      onClick={() =>
-                                        dismissGap.mutate({
-                                          obligationId: obl.obligationId,
-                                        })
-                                      }
-                                    >
-                                      Dismiss
-                                    </Button>
-                                  </>
-                                )}
-                              </div>
-                            ) : (
-                              <span className="block text-right text-xs text-muted-foreground">
-                                No action
-                              </span>
-                            )}
+                            <CoverageActions
+                              addEnteredDeadlinePending={addEnteredDeadline.isPending}
+                              dismissGapPending={dismissGap.isPending}
+                              obligation={obligation}
+                              requestCoveragePending={requestCoverage.isPending}
+                              statusKey={statusKey}
+                              onAddEnteredDeadline={startEnteredDeadline}
+                              onDismissGap={dismissCoverageGap}
+                              onOpenCoverage={(obligationId) =>
+                                setSelectedDetail({ mode: "coverage", obligationId })
+                              }
+                              onOpenEvidence={(ruleId) => setSelectedDetail({ mode: "evidence", ruleId })}
+                              onRequestCoverage={requestVerification}
+                            />
                           </TableCell>
                         </TableRow>
                       );
@@ -516,15 +566,31 @@ function CoverageComponent() {
         </section>
       </div>
 
-      {/* Rule evidence drawer */}
-      <Sheet open={Boolean(selectedRuleId)} onOpenChange={(open) => { if (!open) setSelectedRuleId(null); }}>
+      <Sheet
+        open={Boolean(selectedDetail)}
+        onOpenChange={(open) => {
+          if (!open) setSelectedDetail(null);
+        }}
+      >
         <SheetContent
           side="right"
           className="!w-[min(100vw,720px)] !max-w-[720px] p-0 sm:!w-[min(42vw,720px)] sm:!max-w-[720px]"
         >
-          <SheetTitle className="sr-only">Rule evidence</SheetTitle>
-          {selectedRuleId && (
-            <RuleDetailContent ruleId={selectedRuleId} />
+          <SheetTitle className="sr-only">Coverage detail</SheetTitle>
+          {selectedDetail?.mode === "evidence" && (
+            <RuleDetailContent ruleId={selectedDetail.ruleId} />
+          )}
+          {selectedDetail?.mode === "coverage" && selectedObligation && (
+            <CoverageDetailContent
+              addEnteredDeadlinePending={addEnteredDeadline.isPending}
+              dismissGapPending={dismissGap.isPending}
+              obligation={selectedObligation}
+              requestCoveragePending={requestCoverage.isPending}
+              onAddEnteredDeadline={startEnteredDeadline}
+              onDismissGap={dismissCoverageGap}
+              onOpenEvidence={(ruleId) => setSelectedDetail({ mode: "evidence", ruleId })}
+              onRequestCoverage={requestVerification}
+            />
           )}
         </SheetContent>
       </Sheet>
@@ -532,26 +598,75 @@ function CoverageComponent() {
   );
 }
 
-// -- Components --
-
-function SummaryCount({
+function FilterField({
+  children,
   label,
+}: {
+  children: ReactNode;
+  label: string;
+}) {
+  return (
+    <label className="grid gap-1 text-xs font-medium text-muted-foreground">
+      {label}
+      {children}
+    </label>
+  );
+}
+
+function StatusSummaryButton({
+  active,
   count,
+  onClick,
   statusKey,
 }: {
-  label: string;
+  active: boolean;
   count: number;
+  onClick: () => void;
   statusKey: VerificationStatusKey;
 }) {
   const Icon = statusIcons[statusKey];
 
   return (
-    <div className="flex items-center justify-between gap-3 px-2 py-1.5">
+    <button
+      type="button"
+      aria-pressed={active}
+      className={`flex items-center justify-between gap-3 rounded-[8px] border px-3 py-2 text-left transition-colors ${
+        active
+          ? "border-primary/50 bg-ddhq-accent-soft/50 text-foreground"
+          : "border-border bg-background hover:border-ddhq-border-strong hover:bg-muted/30"
+      }`}
+      onClick={onClick}
+    >
       <StatusBadge status={statusToBadge[statusKey]}>
         <Icon className="size-3" />
-        {label}
+        {statusLabels[statusKey]}
       </StatusBadge>
-      <span className="text-sm font-medium">{count}</span>
+      <span className="font-mono text-sm font-semibold">{count}</span>
+    </button>
+  );
+}
+
+function GroupCountList({
+  counts,
+}: {
+  counts: ReturnType<typeof summarizeObligations>;
+}) {
+  const allCounts: Array<[VerificationStatusKey, number]> = [
+    ["source_changed", counts.sourceChanged],
+    ["needs_review", counts.needsReview],
+    ["no_rule", counts.noRule],
+    ["unsupported", counts.unsupported],
+    ["verified", counts.verified],
+  ];
+  const visibleCounts = allCounts.filter(([, count]) => count > 0);
+
+  return (
+    <div className="flex flex-wrap gap-3">
+      {visibleCounts.map(([statusKey, count]) => (
+        <span key={statusKey} className="text-xs text-muted-foreground">
+          {statusLabels[statusKey]}: {count}
+        </span>
+      ))}
     </div>
   );
 }
@@ -565,6 +680,35 @@ function VerificationBadge({ statusKey }: { statusKey: VerificationStatusKey }) 
       {statusLabels[statusKey]}
     </StatusBadge>
   );
+}
+
+function SourceMonitorCell({ obligation }: { obligation: CoverageObligationItem }) {
+  return (
+    <div className="grid min-w-0 gap-1.5 text-xs">
+      <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+        <StatusBadge status={sourceMonitorBadgeStatus[obligation.sourceMonitorStatus]}>
+          <SourceMonitorIcon status={obligation.sourceMonitorStatus} />
+          {obligation.sourceMonitorLabel}
+        </StatusBadge>
+      </div>
+      <div className="min-w-0 truncate text-muted-foreground">
+        {obligation.sourceName ?? obligation.agencyName}
+      </div>
+      <div className="grid gap-0.5 font-mono text-[11px] leading-4 text-muted-foreground">
+        <span>Checked {obligation.sourceLastCheckedAt ? formatDate(obligation.sourceLastCheckedAt) : "not monitored"}</span>
+        <span>
+          Changed {obligation.sourceLastChangedAt ? formatDate(obligation.sourceLastChangedAt) : "none recorded"}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function SourceMonitorIcon({ status }: { status: SourceMonitorStatus }) {
+  if (status === "source_changed") return <AlertTriangle className="size-3 shrink-0" aria-hidden="true" />;
+  if (status === "unsupported") return <HelpCircle className="size-3 shrink-0" aria-hidden="true" />;
+  if (status === "not_monitored") return <CircleDashed className="size-3 shrink-0" aria-hidden="true" />;
+  return <ShieldCheck className="size-3 shrink-0" aria-hidden="true" />;
 }
 
 function StatusColumnHeader() {
@@ -594,6 +738,303 @@ function StatusHeaderIcon({ statusKey }: { statusKey: VerificationStatusKey }) {
     >
       <Icon className="size-3" aria-hidden="true" />
     </span>
+  );
+}
+
+function CoverageActions({
+  addEnteredDeadlinePending,
+  dismissGapPending,
+  obligation,
+  onAddEnteredDeadline,
+  onDismissGap,
+  onOpenCoverage,
+  onOpenEvidence,
+  onRequestCoverage,
+  requestCoveragePending,
+  statusKey,
+}: {
+  addEnteredDeadlinePending: boolean;
+  dismissGapPending: boolean;
+  obligation: CoverageObligationItem;
+  onAddEnteredDeadline: (obligationId: string) => void;
+  onDismissGap: (obligationId: string) => void;
+  onOpenCoverage: (obligationId: string) => void;
+  onOpenEvidence: (ruleId: string) => void;
+  onRequestCoverage: (obligationId: string) => void;
+  requestCoveragePending: boolean;
+  statusKey: VerificationStatusKey;
+}) {
+  const ruleId = obligation.ruleId;
+
+  if (statusKey === "verified" && ruleId) {
+    return (
+      <div className="ml-auto grid w-32 grid-cols-1 gap-1">
+        <ActionButton onClick={() => onOpenEvidence(ruleId)}>Evidence</ActionButton>
+      </div>
+    );
+  }
+
+  if (statusKey === "needs_review" || statusKey === "source_changed") {
+    return (
+      <div className="ml-auto grid w-36 grid-cols-1 gap-1">
+        {ruleId ? (
+          <ActionButton onClick={() => onOpenEvidence(ruleId)}>
+            Review evidence
+          </ActionButton>
+        ) : (
+          <ActionButton onClick={() => onOpenCoverage(obligation.obligationId)}>
+            Review state
+          </ActionButton>
+        )}
+        <ActionButton
+          disabled={requestCoveragePending}
+          onClick={() => onRequestCoverage(obligation.obligationId)}
+        >
+          Request review
+        </ActionButton>
+      </div>
+    );
+  }
+
+  if (statusKey === "unsupported") {
+    return (
+      <div className="ml-auto grid w-36 grid-cols-1 gap-1">
+        <ActionButton onClick={() => onOpenCoverage(obligation.obligationId)}>
+          Explain unsupported
+        </ActionButton>
+        <ActionButton
+          disabled={requestCoveragePending}
+          onClick={() => onRequestCoverage(obligation.obligationId)}
+        >
+          Request verification
+        </ActionButton>
+        <ActionButton
+          disabled={addEnteredDeadlinePending}
+          onClick={() => onAddEnteredDeadline(obligation.obligationId)}
+        >
+          Entered deadline
+        </ActionButton>
+      </div>
+    );
+  }
+
+  return (
+    <div className="ml-auto grid w-36 grid-cols-1 gap-1">
+      <ActionButton onClick={() => onOpenCoverage(obligation.obligationId)}>Explain gap</ActionButton>
+      <ActionButton
+        disabled={requestCoveragePending}
+        onClick={() => onRequestCoverage(obligation.obligationId)}
+      >
+        Request verification
+      </ActionButton>
+      <ActionButton
+        disabled={addEnteredDeadlinePending}
+        onClick={() => onAddEnteredDeadline(obligation.obligationId)}
+      >
+        Entered deadline
+      </ActionButton>
+      <ActionButton
+        disabled={dismissGapPending}
+        onClick={() => onDismissGap(obligation.obligationId)}
+      >
+        Dismiss for now
+      </ActionButton>
+    </div>
+  );
+}
+
+function ActionButton({
+  children,
+  disabled,
+  onClick,
+}: {
+  children: ReactNode;
+  disabled?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      size="xs"
+      className={coverageActionButtonClassName}
+      disabled={disabled}
+      onClick={onClick}
+    >
+      {children}
+    </Button>
+  );
+}
+
+function CoverageDetailContent({
+  addEnteredDeadlinePending,
+  dismissGapPending,
+  obligation,
+  onAddEnteredDeadline,
+  onDismissGap,
+  onOpenEvidence,
+  onRequestCoverage,
+  requestCoveragePending,
+}: {
+  addEnteredDeadlinePending: boolean;
+  dismissGapPending: boolean;
+  obligation: CoverageObligationItem;
+  onAddEnteredDeadline: (obligationId: string) => void;
+  onDismissGap: (obligationId: string) => void;
+  onOpenEvidence: (ruleId: string) => void;
+  onRequestCoverage: (obligationId: string) => void;
+  requestCoveragePending: boolean;
+}) {
+  const statusKey = getStatusKey(obligation.verificationStatus);
+  const ruleId = obligation.ruleId;
+
+  return (
+    <>
+      <div className="flex items-start justify-between gap-4 border-b border-border px-4 py-3">
+        <div>
+          <div className="text-xs font-semibold text-muted-foreground">Coverage detail</div>
+          <h2 className="text-base font-semibold leading-5">{statusLabels[statusKey]}</h2>
+        </div>
+        <VerificationBadge statusKey={statusKey} />
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-auto p-4">
+        <section className="border-b border-border pb-4">
+          <div className="text-sm font-semibold leading-5 text-foreground">
+            {obligation.obligationName}
+          </div>
+          <div className="mt-1 text-xs leading-4 text-muted-foreground">
+            {formatJurisdiction(obligation.jurisdiction)} / {obligation.taxCategory} /{" "}
+            {obligation.agencyName}
+          </div>
+        </section>
+
+        <section className="border-b border-border py-4">
+          <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
+            <Info className="size-4 text-ddhq-gap" />
+            What this means
+          </div>
+          <p className="text-sm leading-6 text-muted-foreground">
+            {getCoverageStateExplanation(statusKey)}
+          </p>
+        </section>
+
+        <section className="border-b border-border py-4">
+          <div className={evidenceLabelClassName}>Scope</div>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {obligation.entityTypes.map((entityType) => (
+              <span
+                key={entityType}
+                className="rounded-[6px] border border-border bg-card px-1.5 py-0.5 text-[11px] text-muted-foreground"
+              >
+                {formatEntityType(entityType)}
+              </span>
+            ))}
+          </div>
+        </section>
+
+        <section className="border-b border-border py-4">
+          <div className={evidenceLabelClassName}>Source monitor</div>
+          <div className="mt-2 grid gap-2 text-xs">
+            <div className="flex items-center justify-between rounded-lg border border-border bg-muted px-2 py-1.5">
+              <span className="text-muted-foreground">Monitor</span>
+              <StatusBadge status={sourceMonitorBadgeStatus[obligation.sourceMonitorStatus]}>
+                <SourceMonitorIcon status={obligation.sourceMonitorStatus} />
+                {obligation.sourceMonitorLabel}
+              </StatusBadge>
+            </div>
+            <RuleEvidenceField label="Source agency" value={obligation.sourceName ?? obligation.agencyName} />
+            {obligation.sourceUrl ? (
+              <a
+                className="inline-flex items-center gap-1 font-mono text-xs font-medium text-primary [overflow-wrap:anywhere]"
+                href={obligation.sourceUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {obligation.sourceUrl}
+                <ExternalLink className="size-3 shrink-0" />
+              </a>
+            ) : null}
+            <RuleEvidenceField
+              label="Last checked"
+              value={obligation.sourceLastCheckedAt ? formatDateTime(obligation.sourceLastCheckedAt) : "Not monitored"}
+              mono
+            />
+            <RuleEvidenceField
+              label="Last changed"
+              value={obligation.sourceLastChangedAt ? formatDateTime(obligation.sourceLastChangedAt) : "No change recorded"}
+              mono
+            />
+            <RuleEvidenceField
+              label="Last verified"
+              value={obligation.lastVerifiedAt ? formatDateTime(obligation.lastVerifiedAt) : "Not verified by DueDateHQ"}
+              mono
+            />
+          </div>
+        </section>
+
+        <section className="py-4">
+          <div className={evidenceLabelClassName}>Safe next actions</div>
+          <div className="mt-2 grid gap-2">
+            {ruleId && (
+              <DrawerActionButton onClick={() => onOpenEvidence(ruleId)}>
+                <Eye className="size-3.5" />
+                Review evidence
+              </DrawerActionButton>
+            )}
+            <DrawerActionButton
+              disabled={requestCoveragePending}
+              onClick={() => onRequestCoverage(obligation.obligationId)}
+            >
+              <ShieldAlert className="size-3.5" />
+              {statusKey === "needs_review" || statusKey === "source_changed"
+                ? "Request review"
+                : "Request verification"}
+            </DrawerActionButton>
+            {(statusKey === "unsupported" || statusKey === "no_rule") && (
+              <DrawerActionButton
+                disabled={addEnteredDeadlinePending}
+                onClick={() => onAddEnteredDeadline(obligation.obligationId)}
+              >
+                <FilePlus2 className="size-3.5" />
+                Add entered deadline
+              </DrawerActionButton>
+            )}
+            {statusKey === "no_rule" && (
+              <DrawerActionButton
+                disabled={dismissGapPending}
+                onClick={() => onDismissGap(obligation.obligationId)}
+              >
+                <CircleDashed className="size-3.5" />
+                Dismiss coverage gap for now
+              </DrawerActionButton>
+            )}
+          </div>
+        </section>
+      </div>
+    </>
+  );
+}
+
+function DrawerActionButton({
+  children,
+  disabled,
+  onClick,
+}: {
+  children: ReactNode;
+  disabled?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      className="h-9 justify-start rounded-[6px]"
+      disabled={disabled}
+      onClick={onClick}
+    >
+      {children}
+    </Button>
   );
 }
 
@@ -628,35 +1069,29 @@ function RuleDetailContent({
 
       {ruleDetail.data && (
         <div className="min-h-0 flex-1 overflow-auto p-4">
-          {/* Obligation info */}
           <section className="border-b border-border pb-4">
             <div className="text-sm font-semibold leading-5 text-foreground">
               {ruleDetail.data.obligationName}
             </div>
             <div className="mt-1 text-xs leading-4 text-muted-foreground">
-              {ruleDetail.data.jurisdiction === "federal"
-                ? "Federal"
-                : ruleDetail.data.jurisdiction}{" "}
-              / {ruleDetail.data.taxCategory}
+              {formatJurisdiction(ruleDetail.data.jurisdiction)} / {ruleDetail.data.taxCategory}
             </div>
           </section>
 
-          {/* Entity types */}
           <section className="border-b border-border py-4">
             <div className={evidenceLabelClassName}>Entity types</div>
             <div className="mt-2 flex flex-wrap gap-1.5">
-              {ruleDetail.data.entityTypes.map((et) => (
+              {ruleDetail.data.entityTypes.map((entityType) => (
                 <span
-                  key={et}
+                  key={entityType}
                   className="rounded-[6px] border border-border bg-card px-1.5 py-0.5 text-[11px] text-muted-foreground"
                 >
-                  {formatEntityType(et)}
+                  {formatEntityType(entityType)}
                 </span>
               ))}
             </div>
           </section>
 
-          {/* Source evidence */}
           <section className="border-b border-border py-4">
             <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
               {ruleDetail.data.verificationStatus === "verified" ? (
@@ -723,7 +1158,6 @@ function RuleDetailContent({
             </div>
           </section>
 
-          {/* Verification notes */}
           {ruleDetail.data.verificationNotes && (
             <section className="border-b border-border py-4">
               <div className={evidenceLabelClassName}>Verification notes</div>
@@ -733,7 +1167,6 @@ function RuleDetailContent({
             </section>
           )}
 
-          {/* Example due dates */}
           <section className="py-4">
             <div className={evidenceLabelClassName}>Calculated due dates</div>
             <div className="mt-2 overflow-hidden rounded-[8px] border border-border bg-background">
@@ -747,21 +1180,21 @@ function RuleDetailContent({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {ruleDetail.data.exampleDueDates.map((ed) => (
+                  {ruleDetail.data.exampleDueDates.map((exampleDate) => (
                     <TableRow
-                      key={`${ed.taxYear}-${ed.quarter ?? "annual"}`}
+                      key={`${exampleDate.taxYear}-${exampleDate.quarter ?? "annual"}`}
                     >
-                      <TableCell className="font-mono text-[12px]">{ed.taxYear}</TableCell>
+                      <TableCell className="font-mono text-[12px]">{exampleDate.taxYear}</TableCell>
                       <TableCell className="font-mono text-[12px]">
-                        {ed.quarter ? `Q${ed.quarter}` : "-"}
+                        {exampleDate.quarter ? `Q${exampleDate.quarter}` : "-"}
                       </TableCell>
                       <TableCell>
-                        <span className={dateHighlightClassName}>{formatDate(ed.dueDate)}</span>
+                        <span className={dateHighlightClassName}>{formatDate(exampleDate.dueDate)}</span>
                       </TableCell>
                       <TableCell className="font-mono text-[12px]">
-                        {ed.extensionDate ? (
+                        {exampleDate.extensionDate ? (
                           <span className={extensionDateHighlightClassName}>
-                            {formatDate(ed.extensionDate)}
+                            {formatDate(exampleDate.extensionDate)}
                           </span>
                         ) : (
                           "-"
@@ -788,10 +1221,80 @@ function RuleEvidenceField({ label, mono, value }: { label: string; mono?: boole
   );
 }
 
-// -- Utilities --
+function getStatusKey(status: string | null): VerificationStatusKey {
+  if (status === "verified") return "verified";
+  if (status === "needs_review") return "needs_review";
+  if (status === "source_changed") return "source_changed";
+  if (status === "unsupported") return "unsupported";
+  return "no_rule";
+}
 
-function formatEntityType(et: string): string {
-  return et
+function getSummaryCount(
+  summary: {
+    totalNeedsReview: number;
+    totalNoRule: number;
+    totalSourceChanged: number;
+    totalUnsupported: number;
+    totalVerified: number;
+  },
+  statusKey: VerificationStatusKey,
+): number {
+  if (statusKey === "verified") return summary.totalVerified;
+  if (statusKey === "needs_review") return summary.totalNeedsReview;
+  if (statusKey === "source_changed") return summary.totalSourceChanged;
+  if (statusKey === "unsupported") return summary.totalUnsupported;
+  return summary.totalNoRule;
+}
+
+function summarizeObligations(obligations: CoverageObligationItem[]) {
+  return obligations.reduce(
+    (counts, obligation) => {
+      const statusKey = getStatusKey(obligation.verificationStatus);
+      if (statusKey === "verified") counts.verified++;
+      if (statusKey === "needs_review") counts.needsReview++;
+      if (statusKey === "source_changed") counts.sourceChanged++;
+      if (statusKey === "unsupported") counts.unsupported++;
+      if (statusKey === "no_rule") counts.noRule++;
+      counts.total++;
+      return counts;
+    },
+    {
+      total: 0,
+      verified: 0,
+      needsReview: 0,
+      sourceChanged: 0,
+      unsupported: 0,
+      noRule: 0,
+    },
+  );
+}
+
+function getCoverageStateExplanation(statusKey: VerificationStatusKey): string {
+  if (statusKey === "needs_review") {
+    return "A rule candidate exists, but it has not completed reviewer approval. It cannot generate official DueDateHQ deadline tasks yet.";
+  }
+  if (statusKey === "source_changed") {
+    return "The official source changed after prior verification. Review is required before this rule can be treated as current again.";
+  }
+  if (statusKey === "unsupported") {
+    return "DueDateHQ knows about this obligation, but beta does not schedule it. You can request verification or add an entered deadline that stays unverified.";
+  }
+  if (statusKey === "no_rule") {
+    return "DueDateHQ does not have a verified scheduling rule for this obligation. It is visible so the gap is explicit.";
+  }
+  return "This rule is verified against official source evidence and can generate official DueDateHQ deadline tasks.";
+}
+
+function formatEntityType(entityType: string): string {
+  return entityType
     .replace(/_/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
+    .replace(/\b\w/g, (character) => character.toUpperCase());
+}
+
+function formatJurisdiction(jurisdiction: string): string {
+  return jurisdiction === "federal" ? "Federal" : jurisdiction;
+}
+
+function compareStrings(a: string, b: string): number {
+  return a.localeCompare(b);
 }
