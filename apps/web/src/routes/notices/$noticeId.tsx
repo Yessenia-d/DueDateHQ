@@ -32,7 +32,7 @@ function NoticeDetailRoute() {
             <h1 className="mt-1 text-2xl font-semibold tracking-normal">Notice detail</h1>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Link to="/" className={buttonVariants({ variant: "outline", size: "sm" })}>
+            <Link to="/dashboard" className={buttonVariants({ variant: "outline", size: "sm" })}>
               <ArrowLeft className="size-3.5" />
               Dashboard
             </Link>

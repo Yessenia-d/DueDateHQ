@@ -986,7 +986,9 @@ function triageDueThisWeekLoadTestTasks() {
 
   return Array.from({ length: generatedCount }, (_, index) => {
     const template = templates[index % templates.length]!;
-    const dueDate = dates[index % dates.length]!;
+    const dueDateIndex = index % dates.length;
+    const dueDate = dates[dueDateIndex]!;
+    const firmTargetDate = dates[Math.max(0, dueDateIndex - 2)]!;
     const sequence = String(index + 1).padStart(3, "0");
 
     return task(
@@ -1000,7 +1002,7 @@ function triageDueThisWeekLoadTestTasks() {
       template.taxCategory,
       dueDate,
       dueDate,
-      dates[(index + 5) % dates.length]!,
+      firmTargetDate,
       statuses[index % statuses.length]!,
       priorities[index % priorities.length]!,
     );

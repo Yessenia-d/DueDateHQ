@@ -149,6 +149,14 @@ test("demo datasets cover triage, coverage, and notice workflows", () => {
     );
   }
   assert.equal(triage.deadlineTasks.filter(isDueThisWeek).length, 200);
+  for (const task of triage.deadlineTasks) {
+    if (task.firmTargetDate) {
+      assert.ok(
+        task.firmTargetDate <= task.currentDueDate,
+        `${task.id} firm target date should not be later than current due date`,
+      );
+    }
+  }
   assert.ok(triage.deadlineTasks.some((task) => task.currentDueDate < "2026-05-05"));
   assert.ok(
     triage.deadlineTasks.some(

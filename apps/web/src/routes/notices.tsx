@@ -80,7 +80,7 @@ function NoticesRoute() {
               sources are actively monitored.
             </p>
           </div>
-          <Link to="/" className={buttonVariants({ variant: "outline", size: "sm" })}>
+          <Link to="/dashboard" className={buttonVariants({ variant: "outline", size: "sm" })}>
             <ArrowLeft className="size-3.5" />
             Dashboard
           </Link>
