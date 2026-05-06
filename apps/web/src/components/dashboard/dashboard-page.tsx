@@ -56,7 +56,7 @@ type DashboardExceptionFocus =
   | "needs_review"
   | "entered_deadline"
   | "waiting_on_client";
-type WorkloadTone = "empty" | "low" | "medium" | "high" | "risk" | "overdue";
+type WorkloadTone = "empty" | "low" | "medium" | "high" | "risk" | "overdue" | "done";
 
 const horizonLabels: Record<DashboardHorizon, string> = {
   all: "All horizons",
@@ -183,7 +183,7 @@ const horizonCalendarToneStyles = {
     selectedRing: string;
     selectedSwatch: string;
     workloadSwatch: string;
-    tones: Record<Exclude<WorkloadTone, "empty" | "overdue">, string>;
+    tones: Record<Exclude<WorkloadTone, "empty" | "overdue" | "done">, string>;
   }
 >;
 
@@ -855,11 +855,14 @@ function createWorkloadCalendarMonths(
         const date = addUtcDays(gridStart, index);
         const dateKey = toDateKey(date);
         const dateTasks = tasksByDate.get(dateKey) ?? [];
+        const doneCount = dateTasks.filter((task) => task.status === "done").length;
 
         return {
           count: dateTasks.length,
           date: dateKey,
           dayOfMonth: date.getUTCDate(),
+          doneCount,
+          incompleteCount: dateTasks.length - doneCount,
           isCurrentMonth: date.getUTCMonth() === currentMonth,
           isSelected: selectedDate === dateKey,
           isToday: today === dateKey,
@@ -935,6 +938,10 @@ function groupTasksByDueDate(tasks: DashboardTaskRow[]): Map<string, DashboardTa
 
 function getDayWorkloadTone(tasks: DashboardTaskRow[]): WorkloadTone {
   if (tasks.length === 0) return "empty";
+
+  if (tasks.every((task) => task.status === "done")) {
+    return "done";
+  }
 
   if (tasks.some((task) => task.status !== "done" && task.urgency === "overdue")) {
     return "overdue";
@@ -1015,6 +1022,8 @@ function getCalendarDayClassName(
   const toneClass =
     day.tone === "empty"
       ? "bg-background text-muted-foreground/50 hover:bg-muted"
+      : day.tone === "done"
+        ? "bg-ddhq-verified-soft/70 text-ddhq-verified hover:bg-ddhq-verified-soft"
       : day.tone === "overdue"
         ? "bg-ddhq-risk-soft text-ddhq-risk hover:bg-ddhq-risk-soft/85"
         : calendarTone.tones[day.tone];
@@ -1024,7 +1033,7 @@ function getCalendarDayClassName(
     day.isSelected || day.isToday ? calendarTone.selectedBorder : "border-border/70";
 
   return [
-    "min-h-9 rounded-[6px] border p-1 text-left text-[11px] transition-colors focus-visible:outline-none focus-visible:ring-2",
+    "min-h-[44px] rounded-[6px] border p-1 text-left text-[11px] transition-colors focus-visible:outline-none focus-visible:ring-2",
     calendarTone.focusRing,
     toneClass,
     currentMonthClass,
@@ -1037,6 +1046,8 @@ type WorkloadCalendarDay = {
   count: number;
   date: string;
   dayOfMonth: number;
+  doneCount: number;
+  incompleteCount: number;
   isCurrentMonth: boolean;
   isSelected: boolean;
   isToday: boolean;
@@ -1165,7 +1176,7 @@ function WorkloadCalendar({
               type="button"
               className={getCalendarDayClassName(day, activeHorizon)}
               aria-pressed={day.isSelected}
-              aria-label={`${day.date}: ${day.count} deadline task${day.count === 1 ? "" : "s"}`}
+              aria-label={`${day.date}: ${day.incompleteCount} open and ${day.doneCount} done deadline task${day.count === 1 ? "" : "s"}`}
               onClick={() => onSelectDate(day.date)}
             >
               <span className="flex items-center justify-between gap-1">
@@ -1174,8 +1185,28 @@ function WorkloadCalendar({
                   <AlertTriangle className="size-3" />
                 ) : null}
               </span>
-              <span className="block truncate text-[10px] font-semibold leading-4">
-                {day.count > 0 ? `${day.count} task${day.count === 1 ? "" : "s"}` : " "}
+              <span className="mt-0.5 flex min-w-0 items-center gap-1 text-[10px] font-semibold leading-4">
+                {day.count > 0 ? (
+                  <>
+                    {day.incompleteCount > 0 ? (
+                      <span className="shrink-0">
+                        {day.incompleteCount} open
+                      </span>
+                    ) : null}
+                    {day.incompleteCount > 0 && day.doneCount > 0 ? (
+                      <span aria-hidden="true" className="shrink-0 text-muted-foreground/70">
+                        ·
+                      </span>
+                    ) : null}
+                    {day.doneCount > 0 ? (
+                      <span className="shrink-0 text-ddhq-verified">
+                        {day.doneCount} done
+                      </span>
+                    ) : null}
+                  </>
+                ) : (
+                  <span aria-hidden="true"> </span>
+                )}
               </span>
             </button>
           ))}
@@ -1186,6 +1217,7 @@ function WorkloadCalendar({
         {showOverdueLegend ? (
           <CalendarLegendSwatch className="bg-ddhq-risk-soft" label="Overdue" />
         ) : null}
+        <CalendarLegendSwatch className="bg-ddhq-verified-soft" label="Done" />
         <CalendarLegendSwatch className={calendarTone.selectedSwatch} label="Selected" />
       </div>
     </section>

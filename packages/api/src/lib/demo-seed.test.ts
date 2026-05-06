@@ -54,6 +54,11 @@ test("demo datasets cover triage, coverage, and notice workflows", () => {
   assert.ok(triage.deadlineTasks.length >= 18);
   assert.equal(triage.deadlineTasks.filter(isDueThisWeek).length, 200);
   assert.ok(triage.deadlineTasks.some((task) => task.currentDueDate < "2026-05-05"));
+  assert.ok(
+    triage.deadlineTasks.some(
+      (task) => task.currentDueDate === "2026-05-06" && task.status === "done",
+    ),
+  );
   assert.ok(triage.deadlineTasks.some((task) => task.currentDueDate > "2026-05-11"));
   assert.ok(
     new Set(triage.deadlineTasks.map((task) => task.status)).has("waiting_on_client"),
