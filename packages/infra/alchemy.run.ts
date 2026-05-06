@@ -10,18 +10,26 @@ config({ path: "../../apps/server/.env" });
 
 const app = await alchemy("due-date-hq");
 const betterAuthSecret = alchemy.secret(process.env.BETTER_AUTH_SECRET, "BETTER_AUTH_SECRET");
+const webWorkerName = "due-date-hq-yessy";
+const serverWorkerName = "due-date-hq-api-yessy";
+const defaultCorsOrigin = [
+  "http://localhost:3001",
+  "http://localhost:3002",
+  `https://${webWorkerName}.langgenius-opc.workers.dev`,
+].join(",");
 
 const db = await D1Database("database", {
   migrationsDir: "../../packages/db/src/migrations",
 });
 
 export const server = await Worker("server", {
+  name: serverWorkerName,
   cwd: "../../apps/server",
   entrypoint: "src/index.ts",
   compatibility: "node",
   bindings: {
     DB: db,
-    CORS_ORIGIN: process.env.CORS_ORIGIN ?? "*",
+    CORS_ORIGIN: process.env.CORS_ORIGIN ?? defaultCorsOrigin,
     BETTER_AUTH_SECRET: betterAuthSecret,
     DEMO_SEED_TOKEN: process.env.DEMO_SEED_TOKEN ?? "",
   },
@@ -31,7 +39,7 @@ export const server = await Worker("server", {
 });
 
 export const web = await Vite("web", {
-  name: "due-date-hq-yessy",
+  name: webWorkerName,
   cwd: "../../apps/web",
   assets: {
     directory: "dist",
