@@ -1,0 +1,7 @@
+{"file": ".trellis/spec/web/frontend/index.md", "reason": "Verify frontend route, sidebar account menu, responsive behavior, and design-system compliance."}
+{"file": ".trellis/spec/ui/frontend/index.md", "reason": "Verify shared UI primitive usage and accessible menu behavior."}
+{"file": ".trellis/spec/api/backend/index.md", "reason": "Verify authenticated firm-scoped API behavior and tests."}
+{"file": ".trellis/spec/db/backend/index.md", "reason": "Verify metric queries respect firm ownership and status semantics."}
+{"file": ".trellis/spec/guides/index.md", "reason": "Verify cross-layer consistency for data flow from DB to API to UI."}
+{"file": "PRODUCT.md", "reason": "Verify product language stays precise, workspace-oriented, and audit-friendly."}
+{"file": "DESIGN.md", "reason": "Verify frontend UI follows the project design system and forbidden-pattern rules."}

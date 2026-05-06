@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/web/frontend/index.md", "reason": "Implement import review route changes, dense table behavior, drawer/panel review patterns, and frontend verification expectations."}
+{"file": ".trellis/spec/ui/frontend/index.md", "reason": "Use shared UI primitives consistently and keep controls accessible, compact, and status-forward."}
+{"file": ".trellis/spec/api/backend/index.md", "reason": "Respect import API validation, row ownership, response-shape, and typed router contract if preview data needs extension."}
+{"file": ".trellis/spec/db/backend/index.md", "reason": "Preserve raw CSV storage boundary and row-level source metadata audit constraints if persistence changes are needed."}
+{"file": "specs/csv-imports.md", "reason": "CSV import product contract, source adapter boundaries, raw CSV storage boundary, and acceptance criteria."}

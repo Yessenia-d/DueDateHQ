@@ -1,0 +1,7 @@
+{"file": ".trellis/spec/web/frontend/index.md", "reason": "Frontend route, sidebar account menu, authenticated account pages, and achievement page UI must follow web frontend guidelines."}
+{"file": ".trellis/spec/ui/frontend/index.md", "reason": "Feature uses shared UI primitives such as DropdownMenu, Button, and layout components."}
+{"file": ".trellis/spec/api/backend/index.md", "reason": "Achievement metrics and account data require a firm-scoped authenticated API endpoint."}
+{"file": ".trellis/spec/db/backend/index.md", "reason": "Metric calculations read firm, client relationship, filing profile, and deadline task tables with firm scoping."}
+{"file": ".trellis/spec/guides/index.md", "reason": "Feature crosses web, API, and DB layers and needs cross-layer thinking."}
+{"file": "PRODUCT.md", "reason": "Product context defines DueDateHQ domain language and trust rules for account/workspace copy."}
+{"file": "DESIGN.md", "reason": "Frontend UI must follow the Verified Operations Console design system."}

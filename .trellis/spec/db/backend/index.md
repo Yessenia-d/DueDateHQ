@@ -55,7 +55,8 @@ packages/db/drizzle.config.ts
 ### 2. Signatures
 
 - `client_relationships`: `id`, `firm_id`, `display_name`,
-  `relationship_type`, `notes`, `source_system`, `created_via`, timestamps.
+  `relationship_type`, `notes`, `source_system`, nullable
+  `source_client_id`, `created_via`, timestamps.
 - `filing_profiles`: `id`, `firm_id`, `client_relationship_id`,
   `display_name`, identity fields, `entity_type`, `states`, `county`,
   `fiscal_year_type`, `coverage_state`, source fields, timestamps.
@@ -75,6 +76,10 @@ packages/db/drizzle.config.ts
 ### 3. Contracts
 
 - Every workspace-owned table has a `firm_id`.
+- `client_relationships.source_client_id` stores an external source-system
+  client id for CSV matching. It is not the DueDateHQ internal id. Keep a unique
+  firm-scoped key on `(firm_id, source_system, source_client_id)` so non-null
+  source ids re-import into the same relationship.
 - Child rows that point to another workspace-owned row must include a
   firm-scoped composite FK. Example: `deadline_tasks(firm_id,
   client_relationship_id, filing_profile_id)` references
@@ -121,10 +126,14 @@ packages/db/drizzle.config.ts
   `tax_rule_id`, and can appear on the dashboard as not verified.
 - Bad: a deadline task stores a `filing_profile_id` from another firm while
   carrying the current firm's `firm_id`.
+- Bad: a CSV import treats an external `source_client_id` as the primary
+  `client_relationships.id`.
 
 ### 6. Tests Required
 
 - Assert every owned table exposes required contract columns.
+- Assert `client_relationships` exposes nullable `source_client_id` and the
+  firm/source-system/source-client unique index.
 - Assert enum arrays include individual and business entity types, task statuses,
   source types (`verified_rule | entered_deadline`), date-event types including
   `entered_deadline_adjustment`, and coverage states.

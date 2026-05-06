@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/web/frontend/index.md", "reason": "Frontend route, sidebar, dashboard/clients/tax-work empty state, and import page UX changes."}
+{"file": ".trellis/spec/ui/frontend/index.md", "reason": "Shared UI primitives and product interface conventions for import/onboarding controls."}
+{"file": ".trellis/spec/api/backend/index.md", "reason": "Import router, preview/commit response, and backend validation changes."}
+{"file": ".trellis/spec/db/backend/index.md", "reason": "Client relationship schema change and source-client-id uniqueness behavior."}
+{"file": ".trellis/spec/guides/index.md", "reason": "Cross-layer and reuse guidance for data model, API, and frontend changes."}

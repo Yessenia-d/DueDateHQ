@@ -45,6 +45,9 @@ into tRPC context. `routers/index.ts` registers the app router and exports
 - API responses that expose deadline tasks must carry trust state clearly:
   verified, needs review, source changed, unsupported, coverage gap, or
   entered deadline.
+- CSV import APIs must treat each row as a filing profile. They may create or
+  match Client Relationships, but imported external ids are source ids only and
+  must never become DueDateHQ internal relationship ids.
 - Evidence responses for deadline tasks should expose field-level task update
   history for status, due-date fields, and task-table notes in addition to
   date-specific event history.
@@ -415,6 +418,106 @@ export const businessRouter = router({
     return listRowsForFirm(session.firm.id);
   }),
 });
+```
+
+## Scenario: Account Workspace Achievements
+
+### 1. Scope / Trigger
+
+- Trigger: an authenticated account page needs firm-scoped usage metrics across
+  auth session data, `firms`, `client_relationships`, `deadline_tasks`, tRPC,
+  and the React account UI.
+- Use this pattern for account/workspace read models. Do not treat solo CPA
+  accounts as a separate personal mode; `Firm` is the internal workspace and
+  ownership boundary.
+
+### 2. Signatures
+
+- API procedure:
+  `account.achievements(): AccountAchievementsResponse`.
+- Helper:
+  `createAchievementMetrics({ firm, tasks, today?, totalClientRelationships }): AccountAchievementsResponse`.
+- Day helper:
+  `getInclusiveUsageDay(startedAt: Date, today: Date): number`.
+- Session data:
+  `auth.session(): SerializedFirmSession | null` includes serialized user and
+  firm creation timestamps when account pages need them.
+
+### 3. Contracts
+
+- `account.achievements` must call `requireFirmSession(ctx)`.
+- Usage starts at `session.firm.createdAt`, not `auth_users.createdAt`.
+- `totalClientRelationships` counts only `client_relationships` with
+  `firm_id = session.firm.id`.
+- `totalDeadlineTasks` counts only `deadline_tasks` with
+  `firm_id = session.firm.id`.
+- `completedDeadlineTasks` counts tasks with `status = 'done'`.
+- `remainingDeadlineTasks` is `totalDeadlineTasks - completedDeadlineTasks`;
+  all non-`done` statuses are remaining.
+- `averageCompletedTasksPerDay` is completed tasks divided by inclusive usage
+  days, rounded to one decimal.
+- Completed-work capability fields are based only on completed
+  `deadline_tasks.status = 'done'` rows joined to their firm-owned Filing
+  Profiles.
+- `handledStateCount`, `handledTaxCategoryCount`, and
+  `handledEntityTypeCount` count distinct labels represented in the completed
+  work breakdowns.
+- `completedWork.states` includes each completed task's Filing Profile
+  `states`; federal task jurisdictions also add a `Federal` bucket, and
+  non-federal task jurisdictions add their normalized jurisdiction label.
+- `completedWork.taxCategories` groups completed tasks by
+  `deadline_tasks.tax_category`.
+- `completedWork.entityTypes` groups completed tasks by Filing Profile
+  `entity_type`.
+- Breakdown rows expose `{ label, count, percent }`, sorted by descending count
+  and then label, so web charts always have a visible text equivalent.
+- Response workspace fields include `id`, `name`, `createdAt`, and
+  `usageStartDate`.
+
+### 4. Validation & Error Matrix
+
+- Missing firm session -> `UNAUTHORIZED`.
+- First-day usage -> return day `1`, never `0`.
+- Zero tasks -> total, completed, remaining, and average are all `0`; the UI
+  must not imply success or productivity.
+- Future or clock-skewed firm creation timestamp -> clamp inclusive usage days
+  to at least `1`.
+
+### 5. Good/Base/Bad Cases
+
+- Good: a workspace created on May 1 and viewed on May 6 reports day `6`.
+- Base: a new workspace with no clients or tasks returns zero counts and day
+  `1`.
+- Bad: count all firms' tasks or use `auth_users.createdAt` as the achievement
+  start date.
+- Bad: treat `waiting_on_client` or `in_progress` as completed.
+
+### 6. Tests Required
+
+- Unit test for inclusive day calculation using `firm.createdAt`.
+- Unit test for first-day usage returning `1`.
+- Unit test for zero-task metrics.
+- Router or helper test that `done` tasks are completed and all non-`done`
+  tasks are remaining.
+- Router or helper test that completed-work states/jurisdictions, tax
+  categories, and entity types are derived only from completed firm-scoped
+  tasks.
+- Typecheck API and web consumers after adding response fields.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```typescript
+const completedDeadlineTasks = tasks.filter((task) => task.status !== "not_started").length;
+const usageStartedAt = session.user.createdAt;
+```
+
+#### Correct
+
+```typescript
+const completedDeadlineTasks = tasks.filter((task) => task.status === "done").length;
+const usageStartedAt = session.firm.createdAt;
 ```
 
 ## Scenario: Feature Progress Read Model
@@ -945,4 +1048,87 @@ export const officialSourcesRouter = router({
       return recordSourceCheckResult(ctx.db, input);
     }),
 });
+```
+
+## Scenario: Import Clients and Tax Profiles from CSV
+
+### 1. Scope / Trigger
+
+- Trigger: code parses, previews, or commits CSV imports that create or match
+  Client Relationships, Filing Profiles, and verified-rule Deadline Tasks.
+
+### 2. Signatures
+
+- `imports.preview({ sourceSystem, csvText }): ImportPreviewResponse`.
+- `imports.commit({ batchId, rowCorrections, duplicateResolutions, relationshipSuggestionDecisions }): ImportCommitResponse`.
+- Canonical profile fields include `clientName`, `entityType`, `states`,
+  `sourceClientId`, `sourceRowId`, and `filingProfileName`.
+- Preview summary fields include `newClientRelationships`,
+  `matchedClientRelationships`, `readyProfiles`, `reviewProfiles`, and
+  `generatedVerifiedTasks`.
+
+### 3. Contracts
+
+- A CSV batch can contain many clients and many filing profiles. Treat each row
+  as one filing profile.
+- `sourceClientId` is an external id scoped by `sourceSystem`; it is used for
+  matching and re-import, never as `client_relationships.id`.
+- Commit must reuse an existing Client Relationship when
+  `(firmId, sourceSystem, sourceClientId)` matches.
+- Commit must reuse the same newly-created Client Relationship for later rows in
+  the same batch with the same source client key.
+- `filingProfileName` controls the Filing Profile display name when present;
+  otherwise use `clientName`.
+- Verified Deadline Tasks can only be generated from Verified Tax Rules. CSV
+  data cannot directly assert a deadline is verified.
+
+### 4. Validation & Error Matrix
+
+- Empty `csvText` -> Zod validation error.
+- Unsupported `sourceSystem` -> Zod validation error.
+- Missing `clientName` or `entityType` -> row stays `needs_review` and commit
+  skips verified task generation for that row.
+- Unresolved duplicate candidate or relationship suggestion -> `BAD_REQUEST` on
+  commit.
+- QuickBooks bank transaction shape -> `BAD_REQUEST`; require customer/contact
+  export instead.
+
+### 5. Good/Base/Bad Cases
+
+- Good: a TaxDome CSV with two rows sharing `source_client_id` creates one
+  Client Relationship, two Filing Profiles, and verified-rule tasks where rules
+  match.
+- Base: a row with missing state commits the profile but does not invent
+  state-level verified tasks.
+- Bad: re-importing the same `source_client_id` creates a second Client
+  Relationship or overwrites DueDateHQ internal ids from CSV.
+
+### 6. Tests Required
+
+- Adapter tests for standard-template aliases, `sourceClientId`,
+  `filingProfileName`, multi-state parsing, and unsupported CSV rejection.
+- Review tests for source-client-id matching against existing clients.
+- Router tests for same-batch source-client-id reuse, re-import matching,
+  duplicate update persisting a source id, needs-review rows, and commit
+  summary counts.
+- DB schema/migration tests for `source_client_id` and its unique index.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```typescript
+// Trust an imported external id as the DueDateHQ primary key.
+const clientRelationshipId = profile.sourceClientId;
+```
+
+#### Correct
+
+```typescript
+// Match by source key or create an internal id owned by DueDateHQ.
+const sourceKey = normalizeSourceClientKey(batch.sourceSystem, profile.sourceClientId);
+const clientRelationshipId =
+  sourceKey && existingRelationshipBySourceKey.has(sourceKey)
+    ? existingRelationshipBySourceKey.get(sourceKey)?.id
+    : crypto.randomUUID();
 ```

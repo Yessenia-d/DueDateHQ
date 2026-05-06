@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/web/frontend/index.md", "reason": "Verify import route UX, trust-state visibility, route/layout checks, and browser verification expectations."}
+{"file": ".trellis/spec/ui/frontend/index.md", "reason": "Verify shared UI primitive usage, accessibility, compact controls, and status-forward visual design."}
+{"file": ".trellis/spec/api/backend/index.md", "reason": "Verify any import API response changes remain typed, validated, firm-scoped, and tested."}
+{"file": ".trellis/spec/db/backend/index.md", "reason": "Verify raw CSV is not permanently stored and persisted source metadata remains auditable."}
+{"file": "specs/csv-imports.md", "reason": "Verify compliance with the CSV import feature contract and acceptance criteria."}

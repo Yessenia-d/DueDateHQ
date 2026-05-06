@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/web/frontend/index.md", "reason": "Verify frontend route, navigation, empty state, and import UX compliance."}
+{"file": ".trellis/spec/ui/frontend/index.md", "reason": "Verify shared UI and design-system usage."}
+{"file": ".trellis/spec/api/backend/index.md", "reason": "Verify import API validation, preview/commit behavior, and tests."}
+{"file": ".trellis/spec/db/backend/index.md", "reason": "Verify schema and data integrity for source-client-id matching."}
+{"file": ".trellis/spec/guides/index.md", "reason": "Verify cross-layer consistency across DB, API, and web UI."}
