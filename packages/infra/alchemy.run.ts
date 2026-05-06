@@ -32,10 +32,32 @@ export const server = await Worker("server", {
 
 export const web = await Vite("web", {
   cwd: "../../apps/web",
-  assets: "dist",
+  assets: {
+    directory: "dist",
+    run_worker_first: true,
+  },
   bindings: {
     VITE_SERVER_URL: server.url!,
   },
+  script: `
+export default {
+  async fetch(request, env) {
+    const response = await env.ASSETS.fetch(request);
+
+    if (response.status !== 404) {
+      return response;
+    }
+
+    const url = new URL(request.url);
+
+    if (request.method === "GET" && !url.pathname.includes(".")) {
+      return env.ASSETS.fetch(new Request(new URL("/", request.url), request));
+    }
+
+    return response;
+  },
+};
+`,
 });
 
 console.log(`Web    -> ${web.url}`);
