@@ -14,13 +14,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@due-date-hq/ui/components/select";
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+} from "@due-date-hq/ui/components/sheet";
+import { Textarea } from "@due-date-hq/ui/components/textarea";
 import { useMutation } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import {
   AlertTriangle,
   ChevronDown,
   DatabaseZap,
+  Eye,
   FileCheck2,
+  FileText,
+  GitCompareArrows,
+  PencilLine,
   Rows3,
   ShieldCheck,
 } from "lucide-react";
@@ -43,6 +53,15 @@ type RelationshipSuggestion = ImportPreviewResponse["relationshipSuggestions"][n
 type DuplicateResolution = "create" | "update_existing" | "skip";
 type RelationshipDecision = "accepted" | "rejected";
 type ImportMode = "clients_and_profiles" | "selected_clients";
+type ColumnMapping = ImportPreviewResponse["columnMapping"];
+type EvidenceFieldKey =
+  | "clientName"
+  | "filingProfileName"
+  | "entityType"
+  | "states"
+  | "ein"
+  | "ssnLast4"
+  | "sourceClientId";
 
 type ProfileCorrection = {
   clientName?: string;
@@ -54,6 +73,13 @@ type ProfileCorrection = {
   entityType?: EntityType | null;
   county?: string | null;
   fiscalYearType?: "calendar_year" | "fiscal_year" | null;
+};
+
+type SourceFieldEntry = {
+  sourceColumn: string;
+  value: string;
+  canonicalField: string | null;
+  confidence: ColumnMapping[number]["confidence"] | null;
 };
 
 const sourceOptions = [
@@ -75,9 +101,26 @@ const entityOptions = [
   { value: "other", label: "Other" },
 ] as const satisfies readonly { value: EntityType; label: string }[];
 
-const importSelectTriggerClassName = "h-8 w-full rounded-[6px] bg-background";
+const quietControlClassName =
+  "rounded-[6px] border-transparent bg-background/75 shadow-none ring-1 ring-border/45 hover:bg-background focus-visible:border-primary/35 focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-primary/20";
+const importSelectTriggerClassName = `h-8 w-full ${quietControlClassName}`;
+const reviewInputClassName = `h-8 ${quietControlClassName}`;
+const sourceInputClassName = `h-8 ${quietControlClassName}`;
 const importSelectContentClassName = "rounded-lg py-1";
 const importSelectItemClassName = "mx-1 rounded-[4px]";
+const csvFileStatusId = "csv-file-status";
+const csvTextControlId = "csv-text";
+const csvTextRegionId = "csv-text-region";
+const csvTextSummaryId = "csv-text-summary";
+const evidenceFieldAliases = {
+  clientName: ["clientName"],
+  filingProfileName: ["filingProfileName"],
+  entityType: ["entityType"],
+  states: ["state"],
+  ein: ["ein"],
+  ssnLast4: ["ssnLast4"],
+  sourceClientId: ["sourceClientId"],
+} as const satisfies Record<EvidenceFieldKey, readonly string[]>;
 
 function ImportComponent() {
   const search = Route.useSearch();
@@ -88,6 +131,7 @@ function ImportComponent() {
   );
   const [sourceSystem, setSourceSystem] = React.useState<SourceSystem>("taxdome");
   const [csvText, setCsvText] = React.useState("");
+  const [isCsvTextExpanded, setIsCsvTextExpanded] = React.useState(false);
   const [fileName, setFileName] = React.useState<string | null>(null);
   const [preview, setPreview] = React.useState<ImportPreviewResponse | null>(null);
   const [commitResult, setCommitResult] = React.useState<ImportCommitResponse | null>(null);
@@ -114,6 +158,7 @@ function ImportComponent() {
         setCorrections({});
         setDuplicateResolutions({});
         setRelationshipDecisions({});
+        setIsCsvTextExpanded(false);
         toast.success("Import preview ready.");
       },
     }),
@@ -205,6 +250,7 @@ function ImportComponent() {
     if (!file) return;
 
     setFileName(file.name);
+    setIsCsvTextExpanded(false);
     setCsvText(await file.text());
   }
 
@@ -263,7 +309,16 @@ function ImportComponent() {
           onChange={setImportMode}
         />
 
-        <form className="grid gap-4 rounded-lg border bg-muted/20 p-4" onSubmit={handlePreview}>
+        <form
+          className="grid gap-4 rounded-lg bg-muted/35 p-4 shadow-[inset_0_1px_0_rgb(255_255_255/0.58)] ring-1 ring-border/35"
+          onSubmit={handlePreview}
+        >
+          <div className="flex flex-col gap-1">
+            <h2 className="text-sm font-semibold">Source file</h2>
+            <p className="max-w-3xl text-xs leading-5 text-muted-foreground">
+              Choose the originating system, upload the CSV, then preview the filing profiles before any workspace records change.
+            </p>
+          </div>
           <div className="grid gap-4 lg:grid-cols-[220px_1fr_auto] lg:items-end">
             <Field label="Source system" htmlFor="source-system">
               <Select
@@ -284,37 +339,38 @@ function ImportComponent() {
             </Field>
 
             <Field label="CSV file" htmlFor="csv-file">
-              <Input
-                id="csv-file"
-                type="file"
-                accept=".csv,text/csv"
-                className="rounded-[6px]"
+              <CsvFileControl
+                fileName={fileName}
                 onChange={(event) => void handleFileChange(event)}
               />
             </Field>
 
-            <Button type="submit" disabled={previewImport.isPending || !csvText.trim()}>
-              <FileCheck2 className="size-3.5" />
+            <Button
+              type="submit"
+              className="shadow-sm"
+              disabled={previewImport.isPending || !csvText.trim()}
+            >
+              <FileCheck2 className="size-3.5" aria-hidden="true" />
               Preview import
             </Button>
           </div>
 
-          <Field label={fileName ? `Loaded ${fileName}` : "CSV text"} htmlFor="csv-text">
-            <textarea
-              id="csv-text"
-              className="min-h-28 w-full resize-y rounded-[6px] border border-input bg-background px-2.5 py-2 font-mono text-xs leading-5 outline-none focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring/50"
-              value={csvText}
-              onChange={(event) => {
-                setCsvText(event.target.value);
-                setFileName(null);
-              }}
-            />
-          </Field>
+          <CsvSourceInput
+            csvText={csvText}
+            fileName={fileName}
+            isExpanded={isCsvTextExpanded}
+            previewReady={Boolean(preview)}
+            onChange={(value) => {
+              setCsvText(value);
+              setFileName(null);
+            }}
+            onToggleExpanded={() => setIsCsvTextExpanded((current) => !current)}
+          />
         </form>
 
         {preview ? (
           <>
-            <section className="grid gap-2 sm:grid-cols-2 lg:grid-cols-6">
+            <section className="grid gap-1 rounded-lg bg-muted/30 p-1 ring-1 ring-border/35 sm:grid-cols-2 lg:grid-cols-6">
               <Metric
                 label="New clients"
                 value={preview.summary.newClientRelationships}
@@ -340,8 +396,10 @@ function ImportComponent() {
             </section>
 
             <section className="grid content-start gap-5">
+              <ImportSourceMetadata fileName={fileName} preview={preview} />
               <MappingPreview preview={preview} />
               <ReviewRows
+                columnMapping={preview.columnMapping}
                 rows={allRows}
                 corrections={corrections}
                 duplicateCandidatesByItemId={duplicateCandidatesByItemId}
@@ -365,7 +423,7 @@ function ImportComponent() {
               />
             </section>
 
-            <section className="flex flex-col gap-3 rounded-lg border bg-muted/20 p-3 md:flex-row md:items-center md:justify-between">
+            <section className="flex flex-col gap-3 rounded-lg bg-muted/30 p-3 ring-1 ring-border/35 md:flex-row md:items-center md:justify-between">
               <div className="flex flex-wrap gap-2">
                 {pendingDuplicateCount > 0 ? (
                   <StatusBadge tone="review">{pendingDuplicateCount} duplicate pending</StatusBadge>
@@ -389,7 +447,7 @@ function ImportComponent() {
                   disabled={Boolean(commitImportDisabledReason)}
                   onClick={handleCommit}
                 >
-                  <DatabaseZap className="size-3.5" />
+                  <DatabaseZap className="size-3.5" aria-hidden="true" />
                   Commit import
                 </Button>
                 {commitImportDisabledReason ? (
@@ -442,7 +500,10 @@ function ImportModeSelector({
   }[];
 
   return (
-    <section className="grid gap-2 rounded-lg border bg-muted/20 p-2 md:grid-cols-2">
+    <section
+      className="grid gap-1 rounded-lg bg-muted/55 p-1 md:grid-cols-2"
+      aria-label="Import mode"
+    >
       {options.map((option) => {
         const isSelected = mode === option.value;
 
@@ -450,10 +511,11 @@ function ImportModeSelector({
           <button
             key={option.value}
             type="button"
-            className={`rounded-[6px] border px-3 py-2 text-left transition-colors ${
+            aria-pressed={isSelected}
+            className={`rounded-[6px] px-3 py-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/25 ${
               isSelected
-                ? "border-primary/35 bg-background text-foreground shadow-[0_1px_1px_rgb(38_31_20/0.04)]"
-                : "border-transparent text-muted-foreground hover:border-border hover:bg-background/70"
+                ? "bg-background text-foreground shadow-[0_1px_1px_rgb(38_31_20/0.05)] ring-1 ring-primary/25"
+                : "text-muted-foreground hover:bg-background/60 hover:text-foreground"
             }`}
             onClick={() => onChange(option.value)}
           >
@@ -466,11 +528,163 @@ function ImportModeSelector({
   );
 }
 
+function CsvFileControl({
+  fileName,
+  onChange,
+}: {
+  fileName: string | null;
+  onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+}) {
+  return (
+    <div className="relative">
+      <input
+        id="csv-file"
+        type="file"
+        accept=".csv,text/csv"
+        aria-describedby={csvFileStatusId}
+        className="peer sr-only"
+        onChange={onChange}
+      />
+      <label
+        htmlFor="csv-file"
+        className={`${sourceInputClassName} flex cursor-pointer items-center justify-between gap-2 px-2.5 py-1 text-xs transition-colors peer-focus-visible:border-primary/35 peer-focus-visible:bg-background peer-focus-visible:ring-2 peer-focus-visible:ring-primary/20`}
+      >
+        <span
+          id={csvFileStatusId}
+          className={`truncate ${fileName ? "font-medium text-foreground" : "text-muted-foreground"}`}
+          title={fileName ?? "Choose CSV file"}
+        >
+          {fileName ?? "Choose CSV file"}
+        </span>
+        <span className="shrink-0 font-medium text-primary">Browse</span>
+      </label>
+    </div>
+  );
+}
+
+function CsvSourceInput({
+  csvText,
+  fileName,
+  isExpanded,
+  onChange,
+  onToggleExpanded,
+  previewReady,
+}: {
+  csvText: string;
+  fileName: string | null;
+  isExpanded: boolean;
+  onChange: (value: string) => void;
+  onToggleExpanded: () => void;
+  previewReady: boolean;
+}) {
+  const lineCount = csvText.trim() ? csvText.split(/\r?\n/).length : 0;
+
+  return (
+    <div className="pt-1">
+      <div className="flex flex-col gap-2 px-1 py-1 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <Label htmlFor={isExpanded ? csvTextControlId : undefined}>CSV text</Label>
+          <div
+            id={csvTextSummaryId}
+            aria-live="polite"
+            className="mt-0.5 flex flex-wrap gap-1.5 text-xs text-muted-foreground"
+          >
+            <span>{fileName ? `Loaded ${fileName}` : "Manual CSV text entry"}</span>
+            <span>
+              {lineCount > 0
+                ? `${lineCount} CSV line${lineCount === 1 ? "" : "s"}`
+                : "No CSV text loaded"}
+            </span>
+            {previewReady ? (
+              <span>Input hidden after preview; row evidence below is the review surface.</span>
+            ) : null}
+          </div>
+        </div>
+        <Button
+          type="button"
+          size="xs"
+          variant="ghost"
+          className="self-start"
+          aria-controls={csvTextRegionId}
+          aria-describedby={csvTextSummaryId}
+          aria-expanded={isExpanded}
+          onClick={onToggleExpanded}
+        >
+          <FileText className="size-3" aria-hidden="true" />
+          {isExpanded ? "Hide CSV text" : "Paste or edit CSV text"}
+        </Button>
+      </div>
+      {isExpanded ? (
+        <div id={csvTextRegionId} className="pt-2">
+          <Textarea
+            id={csvTextControlId}
+            aria-describedby={csvTextSummaryId}
+            className={`w-full resize-y rounded-[6px] border-transparent bg-background px-2.5 py-2 font-mono text-xs leading-5 shadow-none outline-none ring-1 ring-border/45 focus-visible:border-primary/35 focus-visible:ring-2 focus-visible:ring-primary/20 ${
+              previewReady ? "min-h-16" : "min-h-28"
+            }`}
+            value={csvText}
+            onChange={(event) => onChange(event.target.value)}
+          />
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function ImportSourceMetadata({
+  fileName,
+  preview,
+}: {
+  fileName: string | null;
+  preview: ImportPreviewResponse;
+}) {
+  const metadata = [
+    { label: "Source file", value: fileName ?? "Manual CSV text" },
+    { label: "Detected profile", value: preview.detectedSourceProfile },
+    { label: "Adapter", value: preview.adapterVersion },
+    { label: "Rows", value: String(preview.headerDetection.totalRows) },
+    {
+      label: "Headers",
+      value: preview.headerDetection.headerDetected ? "Detected" : "Needs review",
+    },
+    {
+      label: "Columns",
+      value: `${preview.recognizedFields.length} recognized, ${preview.unmappedColumns.length} unmapped`,
+    },
+  ] satisfies Array<{ label: string; value: string }>;
+
+  return (
+    <section className="grid gap-3 rounded-lg bg-muted/25 p-3 ring-1 ring-border/30">
+      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h2 className="text-base font-semibold">Import source</h2>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+            Review row-level evidence from the parsed CSV. The raw CSV text is not the approval record.
+          </p>
+        </div>
+        <StatusBadge tone={preview.mappingConfidence >= 70 ? "verified" : "review"}>
+          {preview.mappingConfidence}% mapping confidence
+        </StatusBadge>
+      </div>
+      <div className="grid gap-x-4 gap-y-3 border-t border-border/35 pt-3 sm:grid-cols-2 lg:grid-cols-6">
+        {metadata.map((item) => (
+          <div key={item.label} className="min-w-0">
+            <div className="text-[11px] font-semibold text-muted-foreground">{item.label}</div>
+            <div className="mt-1 truncate text-xs font-medium" title={item.value}>
+              {item.value}
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function MappingPreview({ preview }: { preview: ImportPreviewResponse }) {
   const [isExpanded, setIsExpanded] = React.useState(false);
 
   return (
-    <section className="grid content-start gap-3 rounded-lg border bg-muted/20 p-3">
+    <section className="grid content-start gap-3 rounded-lg bg-muted/25 p-3 ring-1 ring-border/30">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="min-w-0">
           <h2 className="text-base font-semibold">Mapping preview</h2>
@@ -491,17 +705,20 @@ function MappingPreview({ preview }: { preview: ImportPreviewResponse }) {
             aria-expanded={isExpanded}
             onClick={() => setIsExpanded((current) => !current)}
           >
-            <ChevronDown className={`size-3.5 ${isExpanded ? "rotate-180" : ""}`} />
+            <ChevronDown
+              className={`size-3.5 ${isExpanded ? "rotate-180" : ""}`}
+              aria-hidden="true"
+            />
             {isExpanded ? "Hide mapping" : "View mapping"}
           </Button>
         </div>
       </div>
 
       {preview.validationMessages.length > 0 ? (
-        <div className="grid gap-1 rounded-[6px] border border-amber-600/25 bg-amber-500/10 p-3 text-xs text-amber-800 dark:text-amber-200">
+        <div className="grid gap-1 rounded-[6px] bg-ddhq-review-soft/80 p-3 text-xs text-ddhq-review ring-1 ring-ddhq-review/25">
           {preview.validationMessages.map((message) => (
             <div key={message} className="flex items-center gap-2">
-              <AlertTriangle className="size-3.5" />
+              <AlertTriangle className="size-3.5" aria-hidden="true" />
               <span>{message}</span>
             </div>
           ))}
@@ -509,7 +726,7 @@ function MappingPreview({ preview }: { preview: ImportPreviewResponse }) {
       ) : null}
 
       {isExpanded ? (
-        <div className="overflow-hidden rounded-lg border bg-background">
+        <div className="overflow-hidden rounded-lg bg-background ring-1 ring-border/45">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[680px] border-collapse text-left text-xs">
               <thead className="border-b bg-muted/40 text-muted-foreground">
@@ -543,6 +760,7 @@ function MappingPreview({ preview }: { preview: ImportPreviewResponse }) {
 }
 
 function ReviewRows({
+  columnMapping,
   corrections,
   duplicateCandidatesByItemId,
   duplicateResolutions,
@@ -554,6 +772,7 @@ function ReviewRows({
   relationshipSuggestionsByItemId,
   rows,
 }: {
+  columnMapping: ColumnMapping;
   corrections: Record<string, ProfileCorrection>;
   duplicateCandidatesByItemId: ReadonlyMap<string, DuplicateCandidate>;
   duplicateResolutions: Record<string, DuplicateResolution | "pending">;
@@ -566,13 +785,25 @@ function ReviewRows({
   rows: ImportReviewRowResponse[];
 }) {
   const [selectedRowIds, setSelectedRowIds] = React.useState<Set<string>>(new Set());
+  const [comparisonRowId, setComparisonRowId] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     const rowIds = new Set(rows.map((row) => row.id));
     setSelectedRowIds((current) => new Set([...current].filter((id) => rowIds.has(id))));
+    setComparisonRowId((current) => (current && rowIds.has(current) ? current : null));
   }, [rows]);
 
   const selectedRows = rows.filter((row) => selectedRowIds.has(row.id));
+  const comparisonRow = rows.find((row) => row.id === comparisonRowId) ?? null;
+  const comparisonDuplicateCandidate = comparisonRow
+    ? (duplicateCandidatesByItemId.get(comparisonRow.id) ?? null)
+    : null;
+  const comparisonDuplicateResolution = comparisonDuplicateCandidate
+    ? (duplicateResolutions[comparisonDuplicateCandidate.id] ?? "pending")
+    : "pending";
+  const comparisonRelationshipSuggestions = comparisonRow
+    ? (relationshipSuggestionsByItemId.get(comparisonRow.id) ?? [])
+    : [];
   const selectedRelationshipSuggestions = selectedRows.flatMap(
     (row) => relationshipSuggestionsByItemId.get(row.id) ?? [],
   );
@@ -612,11 +843,11 @@ function ReviewRows({
   return (
     <section className="grid content-start gap-3">
       <div className="flex items-center gap-2">
-        <Rows3 className="size-4 text-muted-foreground" />
-        <h2 className="text-base font-semibold">Filing profile review</h2>
+            <Rows3 className="size-4 text-muted-foreground" aria-hidden="true" />
+            <h2 className="text-base font-semibold">Filing profile review</h2>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-muted/20 px-3 py-2">
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-muted/30 px-3 py-2 ring-1 ring-border/30">
         <div className="text-xs text-muted-foreground">
           {selectedRowIds.size} selected
           {selectedRelationshipSuggestions.length > 0
@@ -675,7 +906,7 @@ function ReviewRows({
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-lg border">
+      <div className="overflow-hidden rounded-lg bg-background ring-1 ring-border/45">
         <div className="max-h-[520px] min-h-[220px] overflow-auto lg:max-h-[calc(100vh-20rem)]">
           <table className="w-full min-w-[1420px] border-collapse text-left text-xs">
             <thead className="sticky top-0 z-10 border-b bg-muted text-muted-foreground">
@@ -749,7 +980,7 @@ function ReviewRows({
               return (
                 <tr
                   key={row.id}
-                  className={`border-b align-top last:border-b-0 ${isSelected ? "bg-primary/5" : ""}`}
+                  className={`border-b align-top last:border-b-0 ${isSelected ? "bg-ddhq-accent-soft/40" : ""}`}
                 >
                   <td className="px-3 py-3">
                     <Checkbox
@@ -760,22 +991,49 @@ function ReviewRows({
                   </td>
                   <td className="px-3 py-3 font-mono text-muted-foreground">
                     <div>{row.sourceRowId}</div>
+                    <div className="mt-1 text-[11px] text-muted-foreground/75">
+                      Source row {row.rowIndex}
+                    </div>
                     {row.canonicalProfile.sourceClientId ? (
                       <div className="mt-1 text-[11px] text-muted-foreground/75">
                         {row.canonicalProfile.sourceClientId}
                       </div>
                     ) : null}
+                    <InlineSourceEvidence
+                      columnMapping={columnMapping}
+                      correction={undefined}
+                      field="sourceClientId"
+                      row={row}
+                    />
+                    <Button
+                      type="button"
+                      size="xs"
+                      variant="outline"
+                      className="mt-2 font-sans"
+                      onClick={() => setComparisonRowId(row.id)}
+                    >
+                      <Eye className="size-3" aria-hidden="true" />
+                      Source
+                    </Button>
                   </td>
                   <td className="px-3 py-2">
                     <Input
-                      className="rounded-[6px]"
+                      aria-label={`Client name for source row ${row.sourceRowId}`}
+                      className={reviewInputClassName}
                       value={correction.clientName ?? row.canonicalProfile.clientName ?? ""}
                       onChange={(event) => onChange(row.id, { clientName: event.target.value })}
+                    />
+                    <InlineSourceEvidence
+                      columnMapping={columnMapping}
+                      correction={correction.clientName}
+                      field="clientName"
+                      row={row}
                     />
                   </td>
                   <td className="px-3 py-2">
                     <Input
-                      className="rounded-[6px]"
+                      aria-label={`Filing profile for source row ${row.sourceRowId}`}
+                      className={reviewInputClassName}
                       value={
                         correction.filingProfileName ??
                         row.canonicalProfile.filingProfileName ??
@@ -784,6 +1042,12 @@ function ReviewRows({
                       onChange={(event) =>
                         onChange(row.id, { filingProfileName: event.target.value })
                       }
+                    />
+                    <InlineSourceEvidence
+                      columnMapping={columnMapping}
+                      correction={correction.filingProfileName}
+                      field="filingProfileName"
+                      row={row}
                     />
                   </td>
                   <td className="px-3 py-2">
@@ -798,7 +1062,8 @@ function ReviewRows({
                       }
                     >
                       <SelectTrigger
-                        className="h-8 w-full rounded-[6px] bg-background"
+                        aria-label={`Entity type for source row ${row.sourceRowId}`}
+                        className={importSelectTriggerClassName}
                       >
                         <SelectValue placeholder="Needs review" />
                       </SelectTrigger>
@@ -813,10 +1078,17 @@ function ReviewRows({
                         ))}
                       </SelectContent>
                     </Select>
+                    <InlineSourceEvidence
+                      columnMapping={columnMapping}
+                      correction={correction.entityType}
+                      field="entityType"
+                      row={row}
+                    />
                   </td>
                   <td className="px-3 py-2">
                     <Input
-                      className="rounded-[6px]"
+                      aria-label={`States for source row ${row.sourceRowId}`}
+                      className={reviewInputClassName}
                       value={
                         correction.state ??
                         (row.canonicalProfile.states.join(";") ||
@@ -825,19 +1097,39 @@ function ReviewRows({
                       }
                       onChange={(event) => onChange(row.id, { state: event.target.value })}
                     />
-                  </td>
-                  <td className="px-3 py-2">
-                    <Input
-                      className="rounded-[6px]"
-                      value={correction.ein ?? row.canonicalProfile.ein ?? ""}
-                      onChange={(event) => onChange(row.id, { ein: event.target.value })}
+                    <InlineSourceEvidence
+                      columnMapping={columnMapping}
+                      correction={correction.state}
+                      field="states"
+                      row={row}
                     />
                   </td>
                   <td className="px-3 py-2">
                     <Input
-                      className="rounded-[6px]"
+                      aria-label={`EIN for source row ${row.sourceRowId}`}
+                      className={reviewInputClassName}
+                      value={correction.ein ?? row.canonicalProfile.ein ?? ""}
+                      onChange={(event) => onChange(row.id, { ein: event.target.value })}
+                    />
+                    <InlineSourceEvidence
+                      columnMapping={columnMapping}
+                      correction={correction.ein}
+                      field="ein"
+                      row={row}
+                    />
+                  </td>
+                  <td className="px-3 py-2">
+                    <Input
+                      aria-label={`SSN last four for source row ${row.sourceRowId}`}
+                      className={reviewInputClassName}
                       value={correction.ssnLast4 ?? row.canonicalProfile.ssnLast4 ?? ""}
                       onChange={(event) => onChange(row.id, { ssnLast4: event.target.value })}
+                    />
+                    <InlineSourceEvidence
+                      columnMapping={columnMapping}
+                      correction={correction.ssnLast4}
+                      field="ssnLast4"
+                      row={row}
                     />
                   </td>
                   <td className="px-3 py-2">
@@ -870,6 +1162,15 @@ function ReviewRows({
         </table>
         </div>
       </div>
+      <SourceComparisonSheet
+        columnMapping={columnMapping}
+        duplicateCandidate={comparisonDuplicateCandidate}
+        duplicateResolution={comparisonDuplicateResolution}
+        relationshipDecisions={relationshipDecisions}
+        relationshipSuggestions={comparisonRelationshipSuggestions}
+        row={comparisonRow}
+        onClose={() => setComparisonRowId(null)}
+      />
     </section>
   );
 }
@@ -893,6 +1194,374 @@ function MappedColumnHeader({
   );
 }
 
+function InlineSourceEvidence({
+  columnMapping,
+  correction,
+  field,
+  row,
+}: {
+  columnMapping: ColumnMapping;
+  correction: string | null | undefined;
+  field: EvidenceFieldKey;
+  row: ImportReviewRowResponse;
+}) {
+  const sourceEvidence = findSourceEvidence(row, columnMapping, field);
+  const canonicalValue = getCanonicalFieldValue(row, field);
+  const edited =
+    correction !== undefined && normalizeCompareValue(correction) !== normalizeCompareValue(canonicalValue);
+  const showInlineBadges = edited || sourceEvidence.length === 0;
+
+  return (
+    <div className="mt-1 grid min-h-10 gap-1 text-[11px] leading-4 text-muted-foreground">
+      {showInlineBadges ? (
+        <div className="flex flex-wrap items-center gap-1">
+          {edited ? <StatusBadge tone="review">Edited</StatusBadge> : null}
+          {sourceEvidence.length === 0 ? <StatusBadge tone="review">Unmapped</StatusBadge> : null}
+        </div>
+      ) : null}
+      <div className="break-words">
+        {sourceEvidence.length > 0
+          ? sourceEvidence
+              .map(
+                (evidence) =>
+                  `${evidence.sourceColumn}: ${formatNullableValue(evidence.value)}`,
+              )
+              .join(" | ")
+          : "No source column mapped"}
+      </div>
+      {edited ? (
+        <div className="flex items-center gap-1 text-ddhq-review">
+          <PencilLine className="size-3" aria-hidden="true" />
+          <span>Original save value: {formatNullableValue(canonicalValue)}</span>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function SourceComparisonSheet({
+  columnMapping,
+  duplicateCandidate,
+  duplicateResolution,
+  relationshipDecisions,
+  relationshipSuggestions,
+  row,
+  onClose,
+}: {
+  columnMapping: ColumnMapping;
+  duplicateCandidate: DuplicateCandidate | null;
+  duplicateResolution: DuplicateResolution | "pending";
+  relationshipDecisions: Record<string, RelationshipDecision | "pending">;
+  relationshipSuggestions: RelationshipSuggestion[];
+  row: ImportReviewRowResponse | null;
+  onClose: () => void;
+}) {
+  return (
+    <Sheet
+      open={Boolean(row)}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
+      <SheetContent
+        side="right"
+        className="!w-[min(100vw,760px)] !max-w-[760px] p-0 sm:!w-[min(48vw,760px)] sm:!max-w-[760px]"
+      >
+        <SheetTitle className="sr-only">Source row comparison</SheetTitle>
+        {row ? (
+          <SourceComparisonContent
+            columnMapping={columnMapping}
+            duplicateCandidate={duplicateCandidate}
+            duplicateResolution={duplicateResolution}
+            relationshipDecisions={relationshipDecisions}
+            relationshipSuggestions={relationshipSuggestions}
+            row={row}
+          />
+        ) : null}
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+function SourceComparisonContent({
+  columnMapping,
+  duplicateCandidate,
+  duplicateResolution,
+  relationshipDecisions,
+  relationshipSuggestions,
+  row,
+}: {
+  columnMapping: ColumnMapping;
+  duplicateCandidate: DuplicateCandidate | null;
+  duplicateResolution: DuplicateResolution | "pending";
+  relationshipDecisions: Record<string, RelationshipDecision | "pending">;
+  relationshipSuggestions: RelationshipSuggestion[];
+  row: ImportReviewRowResponse;
+}) {
+  const mappedSourceFields = getSourceFieldEntries(row, columnMapping, "mapped");
+  const unmappedSourceFields = getSourceFieldEntries(row, columnMapping, "unmapped");
+  const canonicalRows = createCanonicalRows(row);
+
+  return (
+    <>
+      <div className="border-b border-border px-4 py-3">
+        <div className="flex items-start justify-between gap-3 pr-10">
+          <div>
+            <div className="text-xs font-semibold text-muted-foreground">
+              Source row comparison
+            </div>
+            <h2 className="mt-1 text-base font-semibold">
+              {row.canonicalProfile.clientName || row.sourceRowId}
+            </h2>
+            <div className="mt-1 flex flex-wrap gap-1.5 font-mono text-[11px] text-muted-foreground">
+              <span>sourceRowId {row.sourceRowId}</span>
+              <span>row {row.rowIndex}</span>
+              <span>{row.status.replaceAll("_", " ")}</span>
+            </div>
+          </div>
+          <StatusBadge tone={row.problemTypes.length > 0 ? "review" : "verified"}>
+            {row.problemTypes.length > 0 ? "Review evidence" : "Ready evidence"}
+          </StatusBadge>
+        </div>
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-auto">
+        <section className="border-b border-border p-4">
+          <div className="mb-2 flex items-center gap-2">
+            <GitCompareArrows className="size-4 text-muted-foreground" aria-hidden="true" />
+            <h3 className="text-sm font-semibold">DueDateHQ profile to save</h3>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {canonicalRows.map((item) => (
+              <EvidenceValue key={item.label} label={item.label} value={item.value} mono={item.mono} />
+            ))}
+          </div>
+        </section>
+
+        <section className="grid gap-4 border-b border-border p-4 lg:grid-cols-2">
+          <SourceFieldList
+            fields={mappedSourceFields}
+            title="Mapped source fields"
+            tone="mapped"
+          />
+          <SourceFieldList
+            fields={unmappedSourceFields}
+            title="Unmapped source fields"
+            tone="unmapped"
+          />
+        </section>
+
+        <section className="grid gap-4 border-b border-border p-4">
+          <div>
+            <h3 className="text-sm font-semibold">Review messages</h3>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {row.problemTypes.length > 0 ? (
+                row.problemTypes.map((problem) => (
+                  <StatusBadge key={problem} tone="review">
+                    {formatProblem(problem)}
+                  </StatusBadge>
+                ))
+              ) : (
+                <StatusBadge tone="verified">No row problems</StatusBadge>
+              )}
+            </div>
+          </div>
+          {row.messages.length > 0 ? (
+            <div className="grid gap-1.5 text-xs leading-5 text-muted-foreground">
+              {row.messages.map((message) => (
+                <div key={message} className="rounded-[6px] bg-muted/35 px-2.5 py-2">
+                  {message}
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </section>
+
+        <DuplicateComparison candidate={duplicateCandidate} resolution={duplicateResolution} />
+        <RelationshipComparison
+          decisions={relationshipDecisions}
+          suggestions={relationshipSuggestions}
+        />
+      </div>
+    </>
+  );
+}
+
+function SourceFieldList({
+  fields,
+  title,
+  tone,
+}: {
+  fields: SourceFieldEntry[];
+  title: string;
+  tone: "mapped" | "unmapped";
+}) {
+  return (
+    <div className="min-w-0">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <h3 className="text-sm font-semibold">{title}</h3>
+        <StatusBadge tone={tone === "mapped" ? "verified" : "review"}>
+          {fields.length}
+        </StatusBadge>
+      </div>
+      <div className="max-h-72 overflow-auto rounded-[6px] bg-background/75 ring-1 ring-border/35">
+        {fields.length > 0 ? (
+          <div className="divide-y">
+            {fields.map((field) => (
+              <div key={field.sourceColumn} className="grid gap-1 px-2.5 py-2">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="font-medium">{field.sourceColumn}</span>
+                  {field.canonicalField ? (
+                    <StatusBadge tone={field.confidence === "high" ? "verified" : "review"}>
+                      {formatCanonicalField(field.canonicalField)}
+                    </StatusBadge>
+                  ) : (
+                    <StatusBadge tone="review">Unmapped</StatusBadge>
+                  )}
+                </div>
+                <div className="break-words font-mono text-[11px] text-muted-foreground">
+                  {formatNullableValue(field.value)}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="px-2.5 py-2 text-xs text-muted-foreground">None</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function DuplicateComparison({
+  candidate,
+  resolution,
+}: {
+  candidate: DuplicateCandidate | null;
+  resolution: DuplicateResolution | "pending";
+}) {
+  if (!candidate) return null;
+
+  const differingFields = Object.entries(candidate.differingFields);
+
+  return (
+    <section className="grid gap-3 border-b border-border p-4">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h3 className="text-sm font-semibold">Duplicate candidate</h3>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Incoming source row compared with the existing DueDateHQ client relationship.
+          </p>
+        </div>
+        <StatusBadge tone={resolution === "pending" ? "review" : "verified"}>
+          {resolutionLabel(resolution)}
+        </StatusBadge>
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {candidate.matchedFields.map((field) => (
+          <StatusBadge key={field} tone="neutral">
+            Match: {formatCanonicalField(field)}
+          </StatusBadge>
+        ))}
+      </div>
+      {differingFields.length > 0 ? (
+        <div className="overflow-hidden rounded-[6px] bg-background ring-1 ring-border/40">
+          <table className="w-full min-w-[520px] border-collapse text-left text-xs">
+            <thead className="border-b bg-muted/40 text-muted-foreground">
+              <tr>
+                <th className="px-2.5 py-2 font-medium">Field</th>
+                <th className="px-2.5 py-2 font-medium">Incoming row</th>
+                <th className="px-2.5 py-2 font-medium">Existing client</th>
+              </tr>
+            </thead>
+            <tbody>
+              {differingFields.map(([field, values]) => (
+                <tr key={field} className="border-b last:border-b-0">
+                  <td className="px-2.5 py-2 font-medium">{formatCanonicalField(field)}</td>
+                  <td className="px-2.5 py-2 font-mono text-muted-foreground">
+                    {formatNullableValue(values.incoming)}
+                  </td>
+                  <td className="px-2.5 py-2 font-mono text-muted-foreground">
+                    {formatNullableValue(values.existing)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="rounded-[6px] bg-muted/35 px-2.5 py-2 text-xs text-muted-foreground">
+          No differing fields were reported for this candidate.
+        </div>
+      )}
+    </section>
+  );
+}
+
+function RelationshipComparison({
+  decisions,
+  suggestions,
+}: {
+  decisions: Record<string, RelationshipDecision | "pending">;
+  suggestions: RelationshipSuggestion[];
+}) {
+  if (suggestions.length === 0) return null;
+
+  return (
+    <section className="grid gap-3 border-b border-border p-4">
+      <div>
+        <h3 className="text-sm font-semibold">Relationship suggestions</h3>
+        <p className="mt-1 text-xs text-muted-foreground">
+          These remain explicit CPA decisions. DueDateHQ will not merge relationships automatically.
+        </p>
+      </div>
+      <div className="grid gap-2">
+        {suggestions.map((suggestion) => {
+          const decision = decisions[suggestion.id] ?? "pending";
+
+          return (
+            <div key={suggestion.id} className="rounded-[6px] bg-muted/35 px-2.5 py-2">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <StatusBadge tone={decision === "pending" ? "review" : "verified"}>
+                  {decisionLabel(decision)}
+                </StatusBadge>
+                <span className="font-medium">
+                  {suggestion.suggestedAction.replaceAll("_", " ")}
+                </span>
+              </div>
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">{suggestion.reason}</p>
+              {suggestion.suggestedClientRelationshipId ? (
+                <div className="mt-1 font-mono text-[11px] text-muted-foreground">
+                  existing relationship {suggestion.suggestedClientRelationshipId}
+                </div>
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function EvidenceValue({
+  label,
+  mono,
+  value,
+}: {
+  label: string;
+  mono?: boolean;
+  value: string;
+}) {
+  return (
+    <div className="min-w-0 rounded-[6px] bg-muted/35 px-2.5 py-2">
+      <div className="text-[11px] font-semibold text-muted-foreground">{label}</div>
+      <div className={`mt-1 break-words text-xs ${mono ? "font-mono" : "font-medium"}`}>
+        {formatNullableValue(value)}
+      </div>
+    </div>
+  );
+}
+
 function ReviewSummaryCell({
   candidate,
   decisions,
@@ -905,6 +1574,7 @@ function ReviewSummaryCell({
   suggestions: RelationshipSuggestion[];
 }) {
   const hasReviewItems = problems.length > 0 || candidate || suggestions.length > 0;
+  const differingFields = candidate ? Object.entries(candidate.differingFields) : [];
 
   return (
     <div className="grid gap-2">
@@ -935,6 +1605,24 @@ function ReviewSummaryCell({
                     </StatusBadge>
                   ))}
                 </div>
+                {differingFields.length > 0 ? (
+                  <div className="mt-1 grid gap-1 text-[11px] leading-4 text-muted-foreground">
+                    {differingFields.slice(0, 2).map(([field, values]) => (
+                      <div
+                        key={field}
+                        className="truncate"
+                        title={`${values.incoming ?? "Empty"} -> ${values.existing ?? "Empty"}`}
+                      >
+                        {formatCanonicalField(field)}: incoming{" "}
+                        {formatNullableValue(values.incoming)} / existing{" "}
+                        {formatNullableValue(values.existing)}
+                      </div>
+                    ))}
+                    {differingFields.length > 2 ? (
+                      <div>{differingFields.length - 2} more differences in source drawer</div>
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
             </div>
           ) : null}
@@ -1011,7 +1699,10 @@ function ReviewActionsCell({
               )
             }
           >
-            <SelectTrigger className={importSelectTriggerClassName}>
+            <SelectTrigger
+              aria-label="Duplicate candidate resolution"
+              className={importSelectTriggerClassName}
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent className={importSelectContentClassName}>
@@ -1067,7 +1758,7 @@ function CommitSummary({ result }: { result: ImportCommitResponse }) {
   return (
     <section className="grid gap-4 border-t pt-5">
       <div className="flex items-center gap-2">
-        <ShieldCheck className="size-4 text-emerald-600" />
+        <ShieldCheck className="size-4 text-ddhq-verified" aria-hidden="true" />
         <h2 className="text-base font-semibold">Commit summary</h2>
       </div>
       <p className="max-w-4xl text-sm leading-6 text-muted-foreground">{result.summary}</p>
@@ -1079,7 +1770,7 @@ function CommitSummary({ result }: { result: ImportCommitResponse }) {
         <Metric label="Profile review" value={result.profileReviewItemCount} tone="review" />
       </div>
       {result.profileResults.length > 0 ? (
-        <div className="overflow-hidden rounded-lg border bg-muted/20">
+        <div className="overflow-hidden rounded-lg bg-muted/25 ring-1 ring-border/35">
           <div className="flex items-center justify-between gap-3 border-b px-3 py-2">
             <h3 className="text-sm font-semibold">Imported clients and tax profiles</h3>
             <Link
@@ -1151,7 +1842,7 @@ type Tone = "neutral" | "verified" | "review";
 
 function Metric({ label, tone, value }: { label: string; tone: Tone; value: number }) {
   return (
-    <div className="rounded-lg border bg-muted/20 px-3 py-2">
+    <div className="rounded-[6px] px-3 py-2">
       <div className="text-xs text-muted-foreground">{label}</div>
       <div className="mt-1 flex items-center gap-2">
         <span className="text-xl font-semibold">{value}</span>
@@ -1164,13 +1855,13 @@ function Metric({ label, tone, value }: { label: string; tone: Tone; value: numb
 function StatusBadge({ children, tone }: { children: React.ReactNode; tone: Tone }) {
   const className =
     tone === "verified"
-      ? "border-emerald-600/30 bg-emerald-500/10 text-emerald-700 dark:border-emerald-400/30 dark:text-emerald-300"
+      ? "bg-ddhq-verified-soft text-ddhq-verified"
       : tone === "review"
-        ? "border-amber-600/30 bg-amber-500/10 text-amber-700 dark:border-amber-400/30 dark:text-amber-300"
-        : "border-slate-500/30 bg-slate-400/10 text-slate-600 dark:border-slate-400/30 dark:text-slate-300";
+        ? "bg-ddhq-review-soft text-ddhq-review"
+        : "bg-ddhq-gap-soft/75 text-ddhq-gap";
 
   return (
-    <span className={`inline-flex items-center rounded-[6px] border px-1.5 py-0.5 text-[11px] font-semibold ${className}`}>
+    <span className={`inline-flex items-center rounded-[6px] px-1.5 py-0.5 text-[11px] font-semibold ${className}`}>
       {children}
     </span>
   );
@@ -1179,12 +1870,12 @@ function StatusBadge({ children, tone }: { children: React.ReactNode; tone: Tone
 function StatusDot({ tone }: { tone: Tone }) {
   const className =
     tone === "verified"
-      ? "bg-emerald-500"
+      ? "bg-ddhq-verified"
       : tone === "review"
-        ? "bg-amber-500"
-        : "bg-slate-400";
+        ? "bg-ddhq-review"
+        : "bg-ddhq-gap";
 
-  return <span className={`size-1.5 rounded-full ${className}`} />;
+  return <span className={`size-1.5 rounded-full ${className}`} aria-hidden="true" />;
 }
 
 function formatProblem(problem: string) {
@@ -1195,4 +1886,109 @@ function decisionLabel(decision: RelationshipDecision | "pending") {
   if (decision === "accepted") return "Accept";
   if (decision === "rejected") return "Reject";
   return "Pending";
+}
+
+function resolutionLabel(resolution: DuplicateResolution | "pending") {
+  if (resolution === "create") return "Create new";
+  if (resolution === "update_existing") return "Update existing";
+  if (resolution === "skip") return "Skip row";
+  return "Pending";
+}
+
+function findSourceEvidence(
+  row: ImportReviewRowResponse,
+  columnMapping: ColumnMapping,
+  field: EvidenceFieldKey,
+): SourceFieldEntry[] {
+  const aliases: readonly string[] = evidenceFieldAliases[field];
+
+  return getSourceFieldEntries(row, columnMapping, "mapped").filter(
+    (entry) => entry.canonicalField !== null && aliases.includes(entry.canonicalField),
+  );
+}
+
+function getSourceFieldEntries(
+  row: ImportReviewRowResponse,
+  columnMapping: ColumnMapping,
+  mode: "mapped" | "unmapped",
+): SourceFieldEntry[] {
+  const mappingBySourceColumn = new Map(columnMapping.map((column) => [column.sourceColumn, column]));
+
+  return Object.entries(row.sourceFields)
+    .map(([sourceColumn, value]) => {
+      const mapping = mappingBySourceColumn.get(sourceColumn);
+
+      return {
+        sourceColumn,
+        value,
+        canonicalField: mapping?.canonicalField ?? null,
+        confidence: mapping?.confidence ?? null,
+      };
+    })
+    .filter((entry) =>
+      mode === "mapped" ? entry.canonicalField !== null : entry.canonicalField === null,
+    );
+}
+
+function createCanonicalRows(row: ImportReviewRowResponse): Array<{
+  label: string;
+  value: string;
+  mono?: boolean;
+}> {
+  return [
+    { label: "Client name", value: getCanonicalFieldValue(row, "clientName") },
+    { label: "Filing profile", value: getCanonicalFieldValue(row, "filingProfileName") },
+    { label: "Entity type", value: formatEntityType(row.canonicalProfile.entityType) },
+    { label: "States", value: getCanonicalFieldValue(row, "states") },
+    { label: "EIN", value: getCanonicalFieldValue(row, "ein"), mono: true },
+    { label: "SSN last four", value: getCanonicalFieldValue(row, "ssnLast4"), mono: true },
+    { label: "Source client id", value: getCanonicalFieldValue(row, "sourceClientId"), mono: true },
+    { label: "Source row id", value: row.sourceRowId, mono: true },
+  ];
+}
+
+function getCanonicalFieldValue(row: ImportReviewRowResponse, field: EvidenceFieldKey) {
+  const profile = row.canonicalProfile;
+
+  if (field === "clientName") return profile.clientName ?? "";
+  if (field === "filingProfileName") return profile.filingProfileName ?? "";
+  if (field === "entityType") return profile.entityType ?? "";
+  if (field === "states") return profile.states.join("; ") || profile.state || "";
+  if (field === "ein") return profile.ein ?? "";
+  if (field === "ssnLast4") return profile.ssnLast4 ?? "";
+  return profile.sourceClientId ?? "";
+}
+
+function formatEntityType(entityType: EntityType | null) {
+  return entityOptions.find((option) => option.value === entityType)?.label ?? entityType ?? "";
+}
+
+function formatCanonicalField(field: string) {
+  const fieldLabels: Record<string, string> = {
+    clientName: "Client name",
+    ein: "EIN",
+    ssnLast4: "SSN last four",
+    state: "State",
+    states: "States",
+    entityType: "Entity type",
+    county: "County",
+    fiscalYearType: "Fiscal year",
+    sourceClientId: "Source client id",
+    sourceRowId: "Source row id",
+    filingProfileName: "Filing profile",
+    relationshipName: "Relationship",
+    email: "Email",
+    phone: "Phone",
+  };
+
+  return fieldLabels[field] ?? field.replaceAll("_", " ");
+}
+
+function formatNullableValue(value: string | null | undefined) {
+  const normalized = value?.trim();
+  return normalized ? normalized : "Empty";
+}
+
+function normalizeCompareValue(value: string | null | undefined) {
+  return value?.trim() ?? "";
 }
