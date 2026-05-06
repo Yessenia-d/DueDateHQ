@@ -1,6 +1,14 @@
 import { Button } from "@due-date-hq/ui/components/button";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { BellRing, CalendarDays, ClipboardList, LogOut, Shield, Users } from "lucide-react";
+import {
+  BellRing,
+  CalendarDays,
+  ClipboardList,
+  FileUp,
+  LogOut,
+  Shield,
+  Users,
+} from "lucide-react";
 
 interface AppSidebarProps {
   firmName?: string;
@@ -14,6 +22,7 @@ const sidebarSections = [
     label: "Work",
     links: [
       { to: "/", label: "Dashboard", icon: CalendarDays },
+      { to: "/import", label: "Import", icon: FileUp },
       { to: "/tax-work", label: "Tax Work", icon: ClipboardList },
     ],
   },

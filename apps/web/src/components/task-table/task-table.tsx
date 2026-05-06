@@ -44,6 +44,7 @@ import * as React from "react";
 import { toast } from "sonner";
 
 import { StatusBadge } from "@/components/status-badge";
+import { formatDueTodayCountdown } from "@/utils/deadline-countdown";
 import { formatDate } from "@/utils/date-format";
 import { queryClient, trpc } from "@/utils/trpc";
 
@@ -939,7 +940,7 @@ function CountdownBadge({ task }: { task: DashboardTaskRow }) {
   if (task.urgency === "due_today" || task.daysRemaining === 0) {
     return (
       <StatusBadge status="review" className={urgencyStyle?.badgeClass}>
-        Due today
+        {formatDueTodayCountdown({ dateKey: task.currentDueDate })}
       </StatusBadge>
     );
   }

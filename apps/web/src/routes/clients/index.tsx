@@ -104,7 +104,9 @@ function ClientsIndexComponent() {
               Maintain customer records. Tax information, imports, and deadline tasks live in Tax Work.
             </p>
           </div>
-          <NewClientButton onClick={() => setIsNewClientOpen(true)} />
+          <div className="flex flex-wrap items-center gap-2">
+            <NewClientButton onClick={() => setIsNewClientOpen(true)} variant="outline" />
+          </div>
         </section>
 
         {clientRows.length === 0 ? (
@@ -206,21 +208,28 @@ function EmptyClientsState({ onAddClient }: { onAddClient: () => void }) {
         No client relationships
       </div>
       <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-        Add a client relationship before importing tax information or reviewing deadline tasks in Tax Work.
+        Create a client relationship manually when you only need one record.
       </p>
-      <div className="mt-4">
-        <NewClientButton onClick={onAddClient} />
+      <div className="mt-4 flex flex-wrap gap-2">
+        <NewClientButton onClick={onAddClient} variant="outline" />
       </div>
     </section>
   );
 }
 
-function NewClientButton({ onClick }: { onClick: () => void }) {
+function NewClientButton({
+  onClick,
+  variant = "default",
+}: {
+  onClick: () => void;
+  variant?: "default" | "outline";
+}) {
   return (
     <Button
       type="button"
+      variant={variant}
       onClick={onClick}
-      className="inline-flex h-8 items-center justify-center gap-1.5 rounded-[6px] bg-primary px-2.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="inline-flex h-8 items-center justify-center gap-1.5 rounded-[6px] px-2.5 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       <UserPlus className="size-3.5" />
       New client relationship

@@ -1,5 +1,5 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { Building2, ClipboardList } from "lucide-react";
+import { Building2, ClipboardList, FileUp } from "lucide-react";
 
 import { StatusBadge } from "@/components/status-badge";
 import { formatDate } from "@/utils/date-format";
@@ -74,14 +74,24 @@ function ClientDetailComponent() {
               </p>
             ) : null}
           </div>
-          <Link
-            to="/tax-work"
-            search={{ clientIds: clientId }}
-            className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-input bg-card px-2.5 text-xs font-medium hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <ClipboardList className="size-3.5" />
-            View in Tax Work
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              to="/import"
+              search={{ clientIds: clientId }}
+              className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg bg-primary px-2.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <FileUp className="size-3.5" />
+              Import tax info for this client
+            </Link>
+            <Link
+              to="/tax-work"
+              search={{ clientIds: clientId }}
+              className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-input bg-card px-2.5 text-xs font-medium hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <ClipboardList className="size-3.5" />
+              View in Tax Work
+            </Link>
+          </div>
         </section>
 
         <section className="grid gap-4 md:grid-cols-2">
@@ -102,12 +112,12 @@ function ClientDetailComponent() {
               Tax Work page after selecting this client or multiple clients.
             </p>
             <Link
-              to="/tax-work"
+              to="/import"
               search={{ clientIds: clientId }}
               className="mt-4 inline-flex h-8 items-center justify-center gap-1.5 rounded-lg bg-primary px-2.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              <ClipboardList className="size-3.5" />
-              Open Tax Work
+              <FileUp className="size-3.5" />
+              Import tax info for this client
             </Link>
           </div>
         </section>

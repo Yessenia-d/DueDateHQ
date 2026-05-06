@@ -23,7 +23,6 @@ import {
   FileCheck2,
   Rows3,
   ShieldCheck,
-  Upload,
 } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
@@ -43,12 +42,15 @@ type DuplicateCandidate = ImportPreviewResponse["duplicateCandidates"][number];
 type RelationshipSuggestion = ImportPreviewResponse["relationshipSuggestions"][number];
 type DuplicateResolution = "create" | "update_existing" | "skip";
 type RelationshipDecision = "accepted" | "rejected";
+type ImportMode = "clients_and_profiles" | "selected_clients";
 
 type ProfileCorrection = {
   clientName?: string;
+  filingProfileName?: string | null;
   ein?: string | null;
   ssnLast4?: string | null;
   state?: string | null;
+  states?: string[];
   entityType?: EntityType | null;
   county?: string | null;
   fiscalYearType?: "calendar_year" | "fiscal_year" | null;
@@ -79,6 +81,11 @@ const importSelectItemClassName = "mx-1 rounded-[4px]";
 
 function ImportComponent() {
   const search = Route.useSearch();
+  const selectedClientCount =
+    search.clientIds?.split(",").filter((clientId) => clientId.trim()).length ?? 0;
+  const [importMode, setImportMode] = React.useState<ImportMode>(
+    selectedClientCount > 0 ? "selected_clients" : "clients_and_profiles",
+  );
   const [sourceSystem, setSourceSystem] = React.useState<SourceSystem>("taxdome");
   const [csvText, setCsvText] = React.useState("");
   const [fileName, setFileName] = React.useState<string | null>(null);
@@ -91,6 +98,12 @@ function ImportComponent() {
   const [relationshipDecisions, setRelationshipDecisions] = React.useState<
     Record<string, RelationshipDecision | "pending">
   >({});
+
+  React.useEffect(() => {
+    if (selectedClientCount > 0) {
+      setImportMode("selected_clients");
+    }
+  }, [selectedClientCount]);
 
   const previewImport = useMutation(
     trpc.imports.preview.mutationOptions({
@@ -169,9 +182,6 @@ function ImportComponent() {
         : pendingRelationshipCount > 0
           ? `Resolve ${pendingRelationshipCount} relationship suggestion${pendingRelationshipCount === 1 ? "" : "s"} before committing.`
           : null;
-  const selectedClientCount =
-    search.clientIds?.split(",").filter((clientId) => clientId.trim()).length ?? 0;
-
   function updateCorrection(
     reviewItemId: string,
     patch: ProfileCorrection,
@@ -227,16 +237,13 @@ function ImportComponent() {
       <div className="mx-auto flex max-w-7xl flex-col gap-5 px-4 py-6">
         <section className="grid gap-4 md:grid-cols-[1fr_auto] md:items-end">
           <div className="max-w-3xl">
-            <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase text-muted-foreground">
-              <Upload className="size-3.5" />
-              Tax Work
-            </div>
             <h1 className="text-2xl font-semibold tracking-normal">
-              Import tax info
+              Import clients and tax profiles
             </h1>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Preview source-specific tax information, resolve profile review items, then commit
-              only the filing profiles and deadline inputs that are ready.
+              {importMode === "clients_and_profiles"
+                ? "Upload one CSV where each row describes one filing profile. DueDateHQ creates or matches client relationships, creates filing profiles, and generates tasks only from Verified tax rules."
+                : "Upload tax profile rows for the selected client context. Existing relationships stay in control while the import reviews filing profile fields and Verified rule task generation."}
             </p>
             {selectedClientCount > 0 ? (
               <StatusBadge tone="neutral">
@@ -249,6 +256,12 @@ function ImportComponent() {
             <span>{preview ? `${preview.mappingConfidence}% mapping confidence` : "Adapter idle"}</span>
           </div>
         </section>
+
+        <ImportModeSelector
+          mode={importMode}
+          selectedClientCount={selectedClientCount}
+          onChange={setImportMode}
+        />
 
         <form className="grid gap-4 rounded-lg border bg-muted/20 p-4" onSubmit={handlePreview}>
           <div className="grid gap-4 lg:grid-cols-[220px_1fr_auto] lg:items-end">
@@ -301,11 +314,24 @@ function ImportComponent() {
 
         {preview ? (
           <>
-            <section className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
-              <Metric label="Rows" value={preview.summary.totalRows} tone="neutral" />
-              <Metric label="Ready profiles" value={preview.summary.readyProfiles} tone="verified" />
+            <section className="grid gap-2 sm:grid-cols-2 lg:grid-cols-6">
+              <Metric
+                label="New clients"
+                value={preview.summary.newClientRelationships}
+                tone="neutral"
+              />
+              <Metric
+                label="Matched clients"
+                value={preview.summary.matchedClientRelationships}
+                tone="verified"
+              />
+              <Metric label="Filing profiles" value={preview.summary.filingProfiles} tone="neutral" />
+              <Metric
+                label="Verified tasks"
+                value={preview.summary.generatedVerifiedTasks}
+                tone="verified"
+              />
               <Metric label="Needs review" value={preview.summary.reviewProfiles} tone="review" />
-              <Metric label="Duplicates" value={preview.summary.duplicateCandidates} tone="review" />
               <Metric
                 label="Relationships"
                 value={preview.summary.relationshipSuggestions}
@@ -383,6 +409,60 @@ function ImportComponent() {
         {commitResult ? <CommitSummary result={commitResult} /> : null}
       </div>
     </main>
+  );
+}
+
+function ImportModeSelector({
+  mode,
+  onChange,
+  selectedClientCount,
+}: {
+  mode: ImportMode;
+  onChange: (mode: ImportMode) => void;
+  selectedClientCount: number;
+}) {
+  const options = [
+    {
+      value: "clients_and_profiles",
+      label: "Clients and tax profiles",
+      description: "Each row can create or match a client and create one filing profile.",
+    },
+    {
+      value: "selected_clients",
+      label: "Tax info for selected clients",
+      description:
+        selectedClientCount > 0
+          ? `${selectedClientCount} selected client${selectedClientCount === 1 ? "" : "s"} will stay in context.`
+          : "Select clients from Tax Work when the CSV should apply to existing relationships.",
+    },
+  ] as const satisfies readonly {
+    value: ImportMode;
+    label: string;
+    description: string;
+  }[];
+
+  return (
+    <section className="grid gap-2 rounded-lg border bg-muted/20 p-2 md:grid-cols-2">
+      {options.map((option) => {
+        const isSelected = mode === option.value;
+
+        return (
+          <button
+            key={option.value}
+            type="button"
+            className={`rounded-[6px] border px-3 py-2 text-left transition-colors ${
+              isSelected
+                ? "border-primary/35 bg-background text-foreground shadow-[0_1px_1px_rgb(38_31_20/0.04)]"
+                : "border-transparent text-muted-foreground hover:border-border hover:bg-background/70"
+            }`}
+            onClick={() => onChange(option.value)}
+          >
+            <span className="block text-sm font-semibold">{option.label}</span>
+            <span className="mt-1 block text-xs leading-5">{option.description}</span>
+          </button>
+        );
+      })}
+    </section>
   );
 }
 
@@ -597,7 +677,7 @@ function ReviewRows({
 
       <div className="overflow-hidden rounded-lg border">
         <div className="max-h-[520px] min-h-[220px] overflow-auto lg:max-h-[calc(100vh-20rem)]">
-          <table className="w-full min-w-[1280px] border-collapse text-left text-xs">
+          <table className="w-full min-w-[1420px] border-collapse text-left text-xs">
             <thead className="sticky top-0 z-10 border-b bg-muted text-muted-foreground">
               <tr>
                 <th className="w-10 px-3 py-2 font-medium">
@@ -623,6 +703,13 @@ function ReviewRows({
                 </th>
                 <th className="px-3 py-2 font-medium">
                   <MappedColumnHeader
+                    canonicalField="filingProfileName"
+                    highConfidenceMappedFields={highConfidenceMappedFields}
+                    label="Filing profile"
+                  />
+                </th>
+                <th className="px-3 py-2 font-medium">
+                  <MappedColumnHeader
                     canonicalField="entityType"
                     highConfidenceMappedFields={highConfidenceMappedFields}
                     label="Entity"
@@ -632,7 +719,7 @@ function ReviewRows({
                   <MappedColumnHeader
                     canonicalField="state"
                     highConfidenceMappedFields={highConfidenceMappedFields}
-                    label="State"
+                    label="States"
                   />
                 </th>
                 <th className="px-3 py-2 font-medium">
@@ -672,13 +759,31 @@ function ReviewRows({
                     />
                   </td>
                   <td className="px-3 py-3 font-mono text-muted-foreground">
-                    {row.sourceRowId}
+                    <div>{row.sourceRowId}</div>
+                    {row.canonicalProfile.sourceClientId ? (
+                      <div className="mt-1 text-[11px] text-muted-foreground/75">
+                        {row.canonicalProfile.sourceClientId}
+                      </div>
+                    ) : null}
                   </td>
                   <td className="px-3 py-2">
                     <Input
                       className="rounded-[6px]"
                       value={correction.clientName ?? row.canonicalProfile.clientName ?? ""}
                       onChange={(event) => onChange(row.id, { clientName: event.target.value })}
+                    />
+                  </td>
+                  <td className="px-3 py-2">
+                    <Input
+                      className="rounded-[6px]"
+                      value={
+                        correction.filingProfileName ??
+                        row.canonicalProfile.filingProfileName ??
+                        ""
+                      }
+                      onChange={(event) =>
+                        onChange(row.id, { filingProfileName: event.target.value })
+                      }
                     />
                   </td>
                   <td className="px-3 py-2">
@@ -712,7 +817,12 @@ function ReviewRows({
                   <td className="px-3 py-2">
                     <Input
                       className="rounded-[6px]"
-                      value={correction.state ?? row.canonicalProfile.state ?? ""}
+                      value={
+                        correction.state ??
+                        (row.canonicalProfile.states.join(";") ||
+                          row.canonicalProfile.state ||
+                          "")
+                      }
                       onChange={(event) => onChange(row.id, { state: event.target.value })}
                     />
                   </td>
@@ -962,16 +1072,16 @@ function CommitSummary({ result }: { result: ImportCommitResponse }) {
       </div>
       <p className="max-w-4xl text-sm leading-6 text-muted-foreground">{result.summary}</p>
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
-        <Metric label="Ready profiles" value={result.readyProfileCount} tone="verified" />
-        <Metric label="Clients" value={result.createdClientRelationshipCount} tone="neutral" />
+        <Metric label="Created clients" value={result.createdClientRelationshipCount} tone="neutral" />
+        <Metric label="Matched clients" value={result.matchedClientRelationshipCount} tone="verified" />
+        <Metric label="Profiles" value={result.createdFilingProfileCount} tone="neutral" />
         <Metric label="Verified tasks" value={result.createdVerifiedTaskCount} tone="verified" />
         <Metric label="Profile review" value={result.profileReviewItemCount} tone="review" />
-        <Metric label="Coverage gaps" value={result.coverageGapCount} tone="neutral" />
       </div>
       {result.profileResults.length > 0 ? (
         <div className="overflow-hidden rounded-lg border bg-muted/20">
           <div className="flex items-center justify-between gap-3 border-b px-3 py-2">
-            <h3 className="text-sm font-semibold">Imported tax info</h3>
+            <h3 className="text-sm font-semibold">Imported clients and tax profiles</h3>
             <Link
               to="/tax-work"
               search={{ clientIds: undefined }}

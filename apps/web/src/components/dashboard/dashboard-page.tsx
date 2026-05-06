@@ -23,16 +23,19 @@ import {
   ChevronLeft,
   ChevronRight,
   Download,
+  FileUp,
   Filter,
   RotateCcw,
   X,
 } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import * as React from "react";
 import { toast } from "sonner";
 
 import { EvidenceDrawer } from "@/components/evidence/evidence-drawer";
 import { BulkTaskActions } from "@/components/task-table/bulk-task-actions";
 import { TaskTable } from "@/components/task-table/task-table";
+import { formatDueTodayCountdown } from "@/utils/deadline-countdown";
 import { formatDate, formatDateTime, formatMonthDay } from "@/utils/date-format";
 import { trpc } from "@/utils/trpc";
 
@@ -419,11 +422,7 @@ export function DashboardPage() {
         <section className="pb-1">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div className="min-w-0">
-              <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
-                <CalendarDays className="size-3.5" />
-                Dashboard
-              </div>
-              <h1 className="mt-1 text-2xl font-semibold leading-tight tracking-normal">
+              <h1 className="text-2xl font-semibold leading-tight tracking-normal">
                 Deadline dashboard
               </h1>
             </div>
@@ -577,25 +576,55 @@ export function DashboardPage() {
 
         {/* Task sections */}
         <section className="flex min-h-0 flex-1 basis-1/2 flex-col gap-1">
-          <TaskTable
-            section={activeSection}
-            selectedTaskIds={selectedTaskIds}
-            onToggleTask={toggleTask}
-            onToggleSection={toggleSection}
-            onOpenEvidence={setEvidenceTaskId}
-          />
-          <DashboardPagination
-            count={activeSection.count}
-            page={activeSection.pagination.page}
-            pageSize={activeSection.pagination.pageSize}
-            totalPages={activeSection.pagination.totalPages}
-            onPageChange={setActiveSectionPage}
-          />
+          {data.summary.total === 0 && !hasNonDefaultFilters ? (
+            <DashboardEmptyState />
+          ) : (
+            <>
+              <TaskTable
+                section={activeSection}
+                selectedTaskIds={selectedTaskIds}
+                onToggleTask={toggleTask}
+                onToggleSection={toggleSection}
+                onOpenEvidence={setEvidenceTaskId}
+              />
+              <DashboardPagination
+                count={activeSection.count}
+                page={activeSection.pagination.page}
+                pageSize={activeSection.pagination.pageSize}
+                totalPages={activeSection.pagination.totalPages}
+                onPageChange={setActiveSectionPage}
+              />
+            </>
+          )}
         </section>
       </div>
 
       <EvidenceDrawer taskId={evidenceTaskId} onClose={() => setEvidenceTaskId(null)} />
     </main>
+  );
+}
+
+function DashboardEmptyState() {
+  return (
+    <section className="grid min-h-60 place-items-center rounded-lg border border-border/80 bg-card px-4 py-8 text-center">
+      <div className="max-w-xl">
+        <div className="mx-auto grid size-9 place-items-center rounded-lg border border-border bg-muted/40 text-primary">
+          <FileUp className="size-4" />
+        </div>
+        <h2 className="mt-3 text-base font-semibold">Import clients and tax profiles</h2>
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">
+          Start a new workspace by importing one CSV. Each row can create or match a client relationship, create a filing profile, and generate tasks from Verified tax rules.
+        </p>
+        <Link
+          to="/import"
+          search={{ clientIds: undefined }}
+          className="mt-4 inline-flex h-8 items-center justify-center gap-1.5 rounded-lg bg-primary px-2.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <FileUp className="size-3.5" />
+          Import clients and tax profiles
+        </Link>
+      </div>
+    </section>
   );
 }
 
@@ -1612,7 +1641,10 @@ function getTimelineDaysLabel(
   const days = getDayDifference(date, today);
   const suffix = count > 1 ? `, ${count} tasks` : "";
 
-  if (days === 0) return `Due today${suffix}`;
+  if (days === 0) {
+    const countSuffix = count > 1 ? ` · ${count} tasks` : "";
+    return `${formatDueTodayCountdown({ dateKey: date })}${countSuffix}`;
+  }
   if (days < 0) return `${Math.abs(days)} days overdue${suffix}`;
 
   return `${days} days left${suffix}`;

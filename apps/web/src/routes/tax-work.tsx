@@ -33,12 +33,11 @@ import {
   SelectValue,
 } from "@due-date-hq/ui/components/select";
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import {
   Building2,
   CalendarDays,
   ChevronDown,
-  ClipboardList,
   FileUp,
   Filter,
   RotateCcw,
@@ -337,11 +336,7 @@ function TaxWorkComponent() {
       <div className="mx-auto flex h-full min-h-0 max-w-[1440px] flex-col gap-4 px-5 py-5">
         <section className="pb-1">
           <div className="min-w-0">
-            <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
-              <ClipboardList className="size-3.5" />
-              Tax Work
-            </div>
-            <h1 className="mt-1 text-2xl font-semibold leading-tight tracking-normal">
+            <h1 className="text-2xl font-semibold leading-tight tracking-normal">
               Client tax workbench
             </h1>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
@@ -352,8 +347,31 @@ function TaxWorkComponent() {
         </section>
 
         {clients.data.clients.length === 0 ? (
-          <section className="rounded-xl border border-border bg-muted/20 p-6 text-sm text-muted-foreground">
-            No clients yet. Add clients before importing tax information.
+          <section className="rounded-xl border border-border bg-muted/20 p-6">
+            <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <FileUp className="size-4" />
+              Start with import
+            </div>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+              Import clients and tax profiles from CSV, or create a client relationship manually when you only need one record.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link
+                to="/import"
+                search={{ clientIds: undefined }}
+                className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg bg-primary px-2.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <FileUp className="size-3.5" />
+                Import clients and tax profiles
+              </Link>
+              <Link
+                to="/clients"
+                className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-border bg-background px-2.5 text-xs font-medium text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <Users className="size-3.5" />
+                New client relationship
+              </Link>
+            </div>
           </section>
         ) : (
           <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
@@ -607,7 +625,7 @@ function TaxWorkComponent() {
                           className="inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-primary px-2.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         >
                           <FileUp className="size-3.5" />
-                          Import tax info
+                          Import tax info for this client
                         </a>
                       </div>
                     </div>
