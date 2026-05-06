@@ -34,69 +34,15 @@ const compactNumberFormatter = new Intl.NumberFormat("en-US", {
 
 export function ProfilePage() {
   const session = useQuery(trpc.auth.session.queryOptions());
-
-  if (session.isPending) {
-    return <AccountPageSkeleton title="Profile" />;
-  }
-
-  if (session.isError || !session.data) {
-    return <AccountPageError title="Profile unavailable" />;
-  }
-
-  return (
-    <AccountPageChrome
-      eyebrow="Account"
-      icon={UserCircle}
-      title="Profile"
-      description="Current signed-in user and workspace identity."
-    >
-      <section className="overflow-hidden rounded-lg border border-border bg-card">
-        <SectionHeader
-          icon={UserCircle}
-          label="Signed-in user"
-          meta={<Badge variant="outline">Current session</Badge>}
-        />
-        <FieldRows
-          rows={[
-            { label: "Name", value: session.data.user.name || "Name not set" },
-            { label: "Email", value: session.data.user.email },
-            { label: "User ID", value: session.data.user.id, mono: true },
-            { label: "Account created", value: formatDate(session.data.user.createdAt) },
-          ]}
-        />
-      </section>
-
-      <section className="overflow-hidden rounded-lg border border-border bg-card">
-        <SectionHeader
-          icon={BriefcaseBusiness}
-          label="Workspace identity"
-          meta={<Badge variant="outline">Firm-scoped</Badge>}
-        />
-        <FieldRows
-          rows={[
-            { label: "Workspace", value: session.data.firm.name },
-            { label: "Workspace ID", value: session.data.firm.id, mono: true },
-            {
-              label: "Role",
-              value: session.data.user.id === session.data.firm.ownerUserId ? "Owner" : "Member",
-            },
-            { label: "Workspace started", value: formatDate(session.data.firm.createdAt) },
-          ]}
-        />
-      </section>
-    </AccountPageChrome>
-  );
-}
-
-export function SettingsPage() {
-  const session = useQuery(trpc.auth.session.queryOptions());
   const queryClient = useQueryClient();
   const [avatarUrl, setAvatarUrl] = React.useState("");
+  const [isAvatarEditing, setIsAvatarEditing] = React.useState(false);
   const updateAvatar = useMutation(
     trpc.account.updateAvatar.mutationOptions({
       onError: (error) => toast.error(error.message),
       onSuccess: (result) => {
         setAvatarUrl(result.image ?? "");
+        setIsAvatarEditing(false);
         toast.success("Avatar updated.");
         void queryClient.invalidateQueries(trpc.auth.session.queryFilter());
       },
@@ -106,6 +52,54 @@ export function SettingsPage() {
   React.useEffect(() => {
     setAvatarUrl(session.data?.user.image ?? "");
   }, [session.data?.user.image]);
+
+  if (session.isPending) {
+    return <AccountPageSkeleton title="Profile" />;
+  }
+
+  if (session.isError || !session.data) {
+    return <AccountPageError title="Profile unavailable" />;
+  }
+
+  const accountSession = session.data;
+
+  return (
+    <AccountPageChrome
+      eyebrow="Account"
+      icon={UserCircle}
+      title="Profile"
+      description="Current signed-in user and workspace identity."
+    >
+      <ProfileIdentitySection
+        avatarUrl={avatarUrl}
+        isEditing={isAvatarEditing}
+        isSaving={updateAvatar.isPending}
+        rows={[
+          { label: "Name", value: accountSession.user.name || "Name not set" },
+          { label: "Email", value: accountSession.user.email },
+          { label: "User ID", value: accountSession.user.id, mono: true },
+          { label: "Account created", value: formatDate(accountSession.user.createdAt) },
+        ]}
+        userEmail={accountSession.user.email}
+        userName={accountSession.user.name}
+        onAvatarUrlChange={setAvatarUrl}
+        onCancelEdit={() => {
+          setAvatarUrl(accountSession.user.image ?? "");
+          setIsAvatarEditing(false);
+        }}
+        onClear={() => updateAvatar.mutate({ image: null })}
+        onEdit={() => setIsAvatarEditing(true)}
+        onSubmit={() => {
+          const image = avatarUrl.trim();
+          updateAvatar.mutate({ image: image || null });
+        }}
+      />
+    </AccountPageChrome>
+  );
+}
+
+export function SettingsPage() {
+  const session = useQuery(trpc.auth.session.queryOptions());
 
   if (session.isPending) {
     return <AccountPageSkeleton title="Settings" />;
@@ -120,40 +114,12 @@ export function SettingsPage() {
       eyebrow="Account"
       icon={Settings}
       title="Settings"
-      description="Account preferences and workspace records for this Beta workspace."
+      description="Workspace configuration and active access records."
     >
-      <AvatarSettingsSection
-        avatarUrl={avatarUrl}
-        isSaving={updateAvatar.isPending}
-        userEmail={session.data.user.email}
-        userName={session.data.user.name}
-        onAvatarUrlChange={setAvatarUrl}
-        onClear={() => updateAvatar.mutate({ image: null })}
-        onSubmit={() => {
-          const image = avatarUrl.trim();
-          updateAvatar.mutate({ image: image || null });
-        }}
-      />
-
-      <section className="overflow-hidden rounded-lg border border-border bg-card">
-        <SectionHeader
-          icon={UserCircle}
-          label="Account record"
-          meta={<Badge variant="outline">Read-only</Badge>}
-        />
-        <FieldRows
-          rows={[
-            { label: "Email", value: session.data.user.email },
-            { label: "User ID", value: session.data.user.id, mono: true },
-            { label: "Session expires", value: formatDateTime(session.data.session.expiresAt) },
-          ]}
-        />
-      </section>
-
       <section className="overflow-hidden rounded-lg border border-border bg-card">
         <SectionHeader
           icon={BriefcaseBusiness}
-          label="Workspace record"
+          label="Workspace settings"
           meta={<Badge variant="outline">Firm boundary</Badge>}
         />
         <FieldRows
@@ -165,24 +131,49 @@ export function SettingsPage() {
           ]}
         />
       </section>
+
+      <section className="overflow-hidden rounded-lg border border-border bg-card">
+        <SectionHeader
+          icon={Clock3}
+          label="Access session"
+          meta={<Badge variant="outline">Current browser</Badge>}
+        />
+        <FieldRows
+          rows={[
+            {
+              label: "Workspace role",
+              value: session.data.user.id === session.data.firm.ownerUserId ? "Owner" : "Member",
+            },
+            { label: "Session expires", value: formatDateTime(session.data.session.expiresAt) },
+          ]}
+        />
+      </section>
     </AccountPageChrome>
   );
 }
 
-function AvatarSettingsSection({
+function ProfileIdentitySection({
   avatarUrl,
+  isEditing,
   isSaving,
   onAvatarUrlChange,
+  onCancelEdit,
   onClear,
+  onEdit,
   onSubmit,
+  rows,
   userEmail,
   userName,
 }: {
   avatarUrl: string;
+  isEditing: boolean;
   isSaving: boolean;
   onAvatarUrlChange: (value: string) => void;
+  onCancelEdit: () => void;
   onClear: () => void;
+  onEdit: () => void;
   onSubmit: () => void;
+  rows: Array<{ label: string; mono?: boolean; value: string }>;
   userEmail: string;
   userName: string | null;
 }) {
@@ -194,43 +185,83 @@ function AvatarSettingsSection({
   return (
     <section className="overflow-hidden rounded-lg border border-border bg-card">
       <SectionHeader
-        icon={ImageIcon}
-        label="User avatar"
-        meta={<Badge variant="outline">Editable</Badge>}
+        icon={UserCircle}
+        label="Signed-in user"
+        meta={<Badge variant="outline">Current session</Badge>}
       />
-      <form className="grid gap-4 p-4 md:grid-cols-[72px_minmax(0,1fr)]" onSubmit={handleSubmit}>
-        <AccountAvatarPreview image={avatarUrl} userEmail={userEmail} userName={userName} />
-        <div className="grid min-w-0 gap-3">
-          <div className="grid gap-1.5">
-            <Label htmlFor="avatar-url">Image URL</Label>
-            <Input
-              id="avatar-url"
-              type="url"
-              inputMode="url"
-              autoComplete="photo"
-              placeholder="https://example.com/avatar.jpg"
-              value={avatarUrl}
-              onChange={(event) => onAvatarUrlChange(event.target.value)}
-              disabled={isSaving}
-            />
-          </div>
-          <div className="flex flex-wrap justify-end gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              disabled={isSaving || !avatarUrl.trim()}
-              onClick={onClear}
-            >
-              <Trash2 className="size-3.5" />
-              Remove
-            </Button>
-            <Button type="submit" disabled={isSaving}>
-              <Save className="size-3.5" />
-              {isSaving ? "Saving" : "Save avatar"}
-            </Button>
-          </div>
+      <div className="grid gap-4 p-4 md:grid-cols-[88px_minmax(0,1fr)]">
+        <div className="grid content-start justify-items-center gap-2">
+          <button
+            type="button"
+            className="rounded-full outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring/50"
+            aria-label="Change user avatar"
+            onClick={onEdit}
+          >
+            <AccountAvatarPreview image={avatarUrl} userEmail={userEmail} userName={userName} />
+          </button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="rounded-md"
+            disabled={isSaving}
+            onClick={onEdit}
+          >
+            <ImageIcon className="size-3.5" />
+            Change
+          </Button>
         </div>
-      </form>
+        <div className="min-w-0">
+          <FieldRows rows={rows} />
+
+          {isEditing ? (
+            <form
+              className="mt-4 grid gap-3 rounded-lg border border-border bg-muted/25 p-3"
+              onSubmit={handleSubmit}
+            >
+              <div className="grid gap-1.5">
+                <Label htmlFor="avatar-url">Avatar image URL</Label>
+                <Input
+                  id="avatar-url"
+                  type="url"
+                  inputMode="url"
+                  autoComplete="photo"
+                  placeholder="https://example.com/avatar.jpg"
+                  value={avatarUrl}
+                  onChange={(event) => onAvatarUrlChange(event.target.value)}
+                  disabled={isSaving}
+                  className="rounded-md"
+                />
+              </div>
+              <div className="flex flex-wrap justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="rounded-md"
+                  disabled={isSaving}
+                  onClick={onCancelEdit}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="rounded-md"
+                  disabled={isSaving || !avatarUrl.trim()}
+                  onClick={onClear}
+                >
+                  <Trash2 className="size-3.5" />
+                  Remove
+                </Button>
+                <Button type="submit" className="rounded-md" disabled={isSaving}>
+                  <Save className="size-3.5" />
+                  {isSaving ? "Saving" : "Save avatar"}
+                </Button>
+              </div>
+            </form>
+          ) : null}
+        </div>
+      </div>
     </section>
   );
 }
@@ -254,8 +285,8 @@ function AccountAvatarPreview({
   if (image.trim() && !hasImageError) {
     return (
       <img
-        alt="User avatar preview"
-        className="size-[72px] rounded-lg border border-border bg-background object-cover"
+        alt=""
+        className="size-[72px] rounded-full border border-border bg-background object-cover"
         src={image.trim()}
         onError={() => setHasImageError(true)}
       />
@@ -263,7 +294,7 @@ function AccountAvatarPreview({
   }
 
   return (
-    <div className="grid size-[72px] place-items-center rounded-lg border border-border bg-background text-xl font-semibold text-primary">
+    <div className="grid size-[72px] place-items-center rounded-full border border-border bg-background text-xl font-semibold text-primary">
       {fallback}
     </div>
   );
@@ -307,7 +338,6 @@ function AchievementsLedger({ data }: { data: AccountAchievementsResponse }) {
   return (
     <AccountPageChrome
       eyebrow="Workspace ledger"
-      headingLayout="inline"
       icon={BarChart3}
       title="Achievements"
       description={`${data.workspace.name} workspace record.`}
@@ -761,14 +791,14 @@ function AccountPageChrome({
   children,
   description,
   eyebrow,
-  headingLayout = "stacked",
+  headingLayout = "compact",
   icon: Icon,
   title,
 }: {
   children: React.ReactNode;
   description: string;
   eyebrow: string;
-  headingLayout?: "inline" | "stacked";
+  headingLayout?: "compact" | "inline" | "stacked";
   icon: React.ComponentType<{ className?: string }>;
   title: string;
 }) {
@@ -777,11 +807,15 @@ function AccountPageChrome({
       <div className="mx-auto flex max-w-7xl flex-col gap-5 px-5 py-6">
         <section className="grid gap-4 pb-4 md:grid-cols-[1fr_auto] md:items-end">
           <div className="max-w-3xl">
-            <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase text-muted-foreground">
-              <Icon className="size-3.5" />
-              {eyebrow}
-            </div>
-            {headingLayout === "inline" ? (
+            {headingLayout === "compact" ? (
+              <>
+                <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                  <Icon className="size-5 text-muted-foreground" />
+                  <h1 className="text-2xl font-semibold tracking-normal">{title}</h1>
+                </div>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">{description}</p>
+              </>
+            ) : headingLayout === "inline" ? (
               <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
                 <h1 className="text-2xl font-semibold tracking-normal">{title}</h1>
                 <span className="size-1 rounded-full bg-muted-foreground/70" aria-hidden="true" />
@@ -789,6 +823,10 @@ function AccountPageChrome({
               </div>
             ) : (
               <>
+                <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase text-muted-foreground">
+                  <Icon className="size-3.5" />
+                  {eyebrow}
+                </div>
                 <h1 className="text-2xl font-semibold tracking-normal">{title}</h1>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">{description}</p>
               </>
