@@ -82,35 +82,35 @@ const dashboardHorizons: DashboardTaskHorizon[] = [
 
 const horizonToneStyles = {
   overdue: {
-    activeCard: "border-ddhq-risk/20 bg-ddhq-risk-soft/32 text-foreground shadow-[0_1px_0_oklch(0.44_0.025_78/0.04)]",
+    activeCard: "bg-ddhq-risk-soft/32 text-foreground ring-1 ring-inset ring-ddhq-risk/20",
     count: "text-ddhq-risk",
     dot: "bg-ddhq-risk",
     idleCard:
-      "border-transparent bg-transparent text-foreground hover:bg-ddhq-risk-soft/18",
+      "bg-transparent text-foreground hover:bg-ddhq-risk-soft/18",
     title: "text-ddhq-risk",
   },
   due_this_week: {
-    activeCard: "border-ddhq-review/20 bg-ddhq-review-soft/34 text-foreground shadow-[0_1px_0_oklch(0.44_0.025_78/0.04)]",
+    activeCard: "bg-ddhq-review-soft/34 text-foreground ring-1 ring-inset ring-ddhq-review/20",
     count: "text-ddhq-review",
     dot: "bg-ddhq-review",
     idleCard:
-      "border-transparent bg-transparent text-foreground hover:bg-ddhq-review-soft/18",
+      "bg-transparent text-foreground hover:bg-ddhq-review-soft/18",
     title: "text-ddhq-review",
   },
   this_month: {
-    activeCard: "border-primary/18 bg-ddhq-accent-soft/30 text-foreground shadow-[0_1px_0_oklch(0.44_0.025_78/0.04)]",
+    activeCard: "bg-ddhq-accent-soft/30 text-foreground ring-1 ring-inset ring-primary/20",
     count: "text-primary",
     dot: "bg-primary",
     idleCard:
-      "border-transparent bg-transparent text-foreground hover:bg-ddhq-accent-soft/18",
+      "bg-transparent text-foreground hover:bg-ddhq-accent-soft/18",
     title: "text-primary",
   },
   long_range: {
-    activeCard: "border-ddhq-gap/18 bg-ddhq-gap-soft/32 text-foreground shadow-[0_1px_0_oklch(0.44_0.025_78/0.04)]",
+    activeCard: "bg-ddhq-gap-soft/32 text-foreground ring-1 ring-inset ring-ddhq-gap/20",
     count: "text-ddhq-gap",
     dot: "bg-ddhq-gap",
     idleCard:
-      "border-transparent bg-transparent text-foreground hover:bg-ddhq-gap-soft/18",
+      "bg-transparent text-foreground hover:bg-ddhq-gap-soft/18",
     title: "text-ddhq-gap",
   },
 } satisfies Record<
@@ -1151,12 +1151,38 @@ type WorkloadCalendarMonth = {
   label: string;
 };
 
+type WorkloadCalendarGridCell =
+  | { day: WorkloadCalendarDay; id: string; kind: "day" }
+  | { id: string; kind: "placeholder" };
+
 type ExceptionItem = {
   count: number;
   description: string;
   id: DashboardExceptionFocus;
   label: string;
 };
+
+const workloadCalendarGridCellCount = 42;
+
+function getStableWorkloadCalendarGridCells(
+  days: WorkloadCalendarDay[],
+  monthId: string,
+): WorkloadCalendarGridCell[] {
+  const dayCells: WorkloadCalendarGridCell[] = days
+    .slice(0, workloadCalendarGridCellCount)
+    .map((day) => ({ day, id: day.date, kind: "day" }));
+  const placeholderCount = workloadCalendarGridCellCount - dayCells.length;
+
+  if (placeholderCount <= 0) return dayCells;
+
+  return [
+    ...dayCells,
+    ...Array.from({ length: placeholderCount }, (_, index) => ({
+      id: `${monthId}-placeholder-${index}`,
+      kind: "placeholder" as const,
+    })),
+  ];
+}
 
 function WorkloadCalendar({
   activeHorizon,
@@ -1186,6 +1212,11 @@ function WorkloadCalendar({
   const calendarTone = horizonCalendarToneStyles[activeHorizon];
   const canGoPrevious = visibleMonthIndex > 0;
   const canGoNext = visibleMonthIndex < months.length - 1;
+  const visibleMonthKey = visibleMonth?.id ?? today.slice(0, 7);
+  const visibleCalendarCells = getStableWorkloadCalendarGridCells(
+    visibleMonth?.days ?? [],
+    visibleMonthKey,
+  );
 
   return (
     <div className="min-w-0">
@@ -1199,10 +1230,10 @@ function WorkloadCalendar({
             {visibleRange} density for {horizonLabels[activeHorizon].toLowerCase()} deadlines
           </span>
         </div>
-        <div className="flex flex-wrap items-center justify-end gap-1.5 text-xs text-muted-foreground">
+        <div className="flex min-h-7 flex-wrap items-center justify-end gap-1.5 text-xs text-muted-foreground">
           <span className="font-mono tabular-nums">{taskCount} tasks</span>
           {months.length > 1 ? (
-            <div className="inline-flex items-center rounded-md border border-ddhq-line bg-ddhq-paper p-0.5">
+            <div className="inline-flex h-6 items-center rounded-md bg-transparent">
               <Button
                 type="button"
                 variant="ghost"
@@ -1251,52 +1282,66 @@ function WorkloadCalendar({
       <div className="mt-2">
         <div className="grid grid-cols-7 gap-1.5 text-center text-[10px] font-semibold text-muted-foreground">
           {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-            <div key={`${visibleMonth?.id ?? "month"}-${day}`} className="h-4">
+            <div key={`${visibleMonthKey}-${day}`} className="h-4">
               {day}
             </div>
           ))}
         </div>
         <div className="grid grid-cols-7 gap-1.5">
-          {(visibleMonth?.days ?? []).map((day) => (
-            <button
-              key={day.date}
-              type="button"
-              className={getCalendarDayClassName(day, activeHorizon)}
-              aria-pressed={day.isSelected}
-              aria-label={`${day.date}: ${day.incompleteCount} open and ${day.doneCount} done deadline task${day.count === 1 ? "" : "s"}`}
-              onClick={() => onSelectDate(day.date)}
-            >
-              <span className="flex items-center justify-between gap-1">
-                <span className="font-mono tabular-nums">{day.dayOfMonth}</span>
-                {day.tone === "risk" || day.tone === "overdue" ? (
-                  <AlertTriangle className="size-3" />
-                ) : null}
-              </span>
-              <span className="mt-0.5 flex min-w-0 items-center gap-1 text-[10px] font-semibold leading-4">
-                {day.count > 0 ? (
-                  <>
-                    {day.incompleteCount > 0 ? (
-                      <span className="shrink-0">
-                        {day.incompleteCount} open
-                      </span>
-                    ) : null}
-                    {day.incompleteCount > 0 && day.doneCount > 0 ? (
-                      <span aria-hidden="true" className="shrink-0 text-muted-foreground/70">
-                        ·
-                      </span>
-                    ) : null}
-                    {day.doneCount > 0 ? (
-                      <span className="shrink-0 text-ddhq-verified">
-                        {day.doneCount} done
-                      </span>
-                    ) : null}
-                  </>
-                ) : (
-                  <span aria-hidden="true"> </span>
-                )}
-              </span>
-            </button>
-          ))}
+          {visibleCalendarCells.map((cell) => {
+            if (cell.kind === "placeholder") {
+              return (
+                <div
+                  key={cell.id}
+                  aria-hidden="true"
+                  className="min-h-[44px] rounded-[6px] border border-transparent p-1"
+                />
+              );
+            }
+
+            const day = cell.day;
+
+            return (
+              <button
+                key={cell.id}
+                type="button"
+                className={getCalendarDayClassName(day, activeHorizon)}
+                aria-pressed={day.isSelected}
+                aria-label={`${day.date}: ${day.incompleteCount} open and ${day.doneCount} done deadline task${day.count === 1 ? "" : "s"}`}
+                onClick={() => onSelectDate(day.date)}
+              >
+                <span className="flex items-center justify-between gap-1">
+                  <span className="font-mono tabular-nums">{day.dayOfMonth}</span>
+                  {day.tone === "risk" || day.tone === "overdue" ? (
+                    <AlertTriangle className="size-3" />
+                  ) : null}
+                </span>
+                <span className="mt-0.5 flex min-w-0 items-center gap-1 text-[10px] font-semibold leading-4">
+                  {day.count > 0 ? (
+                    <>
+                      {day.incompleteCount > 0 ? (
+                        <span className="shrink-0">
+                          {day.incompleteCount} open
+                        </span>
+                      ) : null}
+                      {day.incompleteCount > 0 && day.doneCount > 0 ? (
+                        <span aria-hidden="true" className="shrink-0 text-muted-foreground/70">
+                          ·
+                        </span>
+                      ) : null}
+                      {day.doneCount > 0 ? (
+                        <span className="shrink-0 text-ddhq-verified">
+                          {day.doneCount} done
+                        </span>
+                      ) : null}
+                    </>
+                  ) : (
+                    <span aria-hidden="true"> </span>
+                  )}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>
@@ -1624,20 +1669,20 @@ function HorizonCard({
     <button
       type="button"
       aria-pressed={isSelected}
-      className={`min-h-[72px] rounded-[7px] border px-3 py-2.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/35 ${cardClass}`}
+      className={`h-[76px] rounded-[7px] border border-transparent px-3 py-2.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/35 ${cardClass}`}
       onClick={onSelect}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className={`flex items-center gap-2 text-[13px] font-semibold ${tone.title}`}>
+          <div className={`flex h-5 items-center gap-2 text-[13px] font-semibold ${tone.title}`}>
             <span className={`size-1.5 rounded-full ${tone.dot}`} aria-hidden="true" />
             {horizonLabels[horizon]}
           </div>
-          <div className="mt-1.5 line-clamp-2 text-xs leading-4 text-muted-foreground">
+          <div className="mt-1.5 line-clamp-2 h-8 text-xs leading-4 text-muted-foreground">
             {summary}
           </div>
         </div>
-        <div className={`font-mono text-lg font-semibold leading-none tabular-nums ${tone.count}`}>
+        <div className={`w-[4ch] shrink-0 text-right font-mono text-lg font-semibold leading-none tabular-nums ${tone.count}`}>
           {count}
         </div>
       </div>
