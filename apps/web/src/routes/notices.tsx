@@ -1,4 +1,4 @@
-import { Button } from "@due-date-hq/ui/components/button";
+import { Button, buttonVariants } from "@due-date-hq/ui/components/button";
 import {
   Sheet,
   SheetContent,
@@ -38,7 +38,14 @@ function NoticesRoute() {
       noticeId: selectedNoticeId ?? "__none__",
     }),
     enabled: Boolean(selectedNoticeId),
+    retry: 1,
   });
+  const selectedNoticeProposalLoadFailed =
+    selectedNoticeProposals.isError || selectedNoticeProposals.failureCount > 0;
+  const selectedNoticeProposalLoadMessage =
+    selectedNoticeProposals.error?.message ??
+    selectedNoticeProposals.failureReason?.message ??
+    "The proposals request failed.";
   const officialSources = useQuery(trpc.officialSources.list.queryOptions());
   const invalidateSources = async () => {
     await queryClient.invalidateQueries({
@@ -73,10 +80,10 @@ function NoticesRoute() {
               sources are actively monitored.
             </p>
           </div>
-          <Button type="button" variant="outline" size="sm" render={<Link to="/" />}>
+          <Link to="/" className={buttonVariants({ variant: "outline", size: "sm" })}>
             <ArrowLeft className="size-3.5" />
             Dashboard
-          </Button>
+          </Link>
         </section>
 
         <section className="grid gap-2">
@@ -278,11 +285,22 @@ function NoticesRoute() {
               </div>
             </div>
             <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-3">
-              {!selectedNotice ? null : selectedNoticeProposals.isPending ? (
-                <div className="h-56 animate-pulse rounded-lg border border-border bg-card" />
-              ) : selectedNoticeProposals.isError ? (
+              {!selectedNotice ? null : selectedNoticeProposalLoadFailed ? (
                 <div className="rounded-lg border border-ddhq-risk/30 bg-ddhq-risk-soft p-3 text-sm text-ddhq-risk">
-                  Notice proposals could not be loaded.
+                  <div className="font-semibold">Notice proposal diffs could not be loaded.</div>
+                  <p className="mt-1 text-xs leading-5">
+                    The notice detail remains available. Proposal review changes could not load.
+                  </p>
+                  <p className="mt-2 break-words font-mono text-[11px]">
+                    {selectedNoticeProposalLoadMessage}
+                  </p>
+                </div>
+              ) : selectedNoticeProposals.isPending ? (
+                <div className="rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">
+                  <div className="font-semibold text-foreground">Loading proposal diffs</div>
+                  <p className="mt-1 text-xs leading-5">
+                    Checking pending official-notice changes before showing approval actions.
+                  </p>
                 </div>
               ) : (
                 <NoticeReviewPanel

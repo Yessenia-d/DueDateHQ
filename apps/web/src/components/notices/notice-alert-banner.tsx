@@ -22,7 +22,13 @@ export function NoticeAlertBanner() {
   const proposals = useQuery({
     ...trpc.noticeProposals.listForNotice.queryOptions({ noticeId: notice?.id ?? "__none__" }),
     enabled: isExpanded && Boolean(notice),
+    retry: 1,
   });
+  const proposalLoadFailed = proposals.isError || proposals.failureCount > 0;
+  const proposalLoadMessage =
+    proposals.error?.message ??
+    proposals.failureReason?.message ??
+    "The proposals request failed.";
 
   if (notices.isPending) return null;
 
@@ -136,12 +142,14 @@ export function NoticeAlertBanner() {
             </div>
 
             <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-3">
-              {proposals.isPending ? (
-                <div className="h-56 animate-pulse rounded-lg border border-border bg-card" />
-              ) : proposals.isError ? (
-                <div className="rounded-lg border border-ddhq-risk/30 bg-ddhq-risk-soft p-3 text-sm text-ddhq-risk">
-                  Notice proposals could not be loaded.
-                </div>
+              {proposalLoadFailed ? (
+                <NoticeProposalErrorState
+                  isRetrying={proposals.isFetching}
+                  message={proposalLoadMessage}
+                  onRetry={() => void proposals.refetch()}
+                />
+              ) : proposals.isPending ? (
+                <NoticeProposalLoadingState />
               ) : (
                 <NoticeReviewPanel
                   compact
@@ -154,5 +162,47 @@ export function NoticeAlertBanner() {
         </SheetContent>
       </Sheet>
     </>
+  );
+}
+
+function NoticeProposalLoadingState() {
+  return (
+    <div className="rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">
+      <div className="font-semibold text-foreground">Loading proposal diffs</div>
+      <p className="mt-1 text-xs leading-5">
+        Checking pending official-notice changes before showing approval actions.
+      </p>
+    </div>
+  );
+}
+
+function NoticeProposalErrorState({
+  isRetrying,
+  message,
+  onRetry,
+}: {
+  isRetrying: boolean;
+  message: string;
+  onRetry: () => void;
+}) {
+  return (
+    <div className="rounded-lg border border-ddhq-risk/30 bg-ddhq-risk-soft p-4 text-sm text-ddhq-risk">
+      <div className="font-semibold">Notice proposal diffs could not be loaded.</div>
+      <p className="mt-1 text-xs leading-5">
+        The notice header is still available. Proposal review changes could not load, and the
+        coverage matrix behind this drawer is unaffected.
+      </p>
+      <p className="mt-2 break-words font-mono text-[11px]">{message}</p>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        disabled={isRetrying}
+        className="mt-3 border-ddhq-risk/30 bg-card text-ddhq-risk hover:bg-card/80"
+        onClick={onRetry}
+      >
+        {isRetrying ? "Retrying proposals" : "Retry proposals"}
+      </Button>
+    </div>
   );
 }

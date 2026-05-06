@@ -273,18 +273,24 @@ export function NoticeReviewPanel({ compact = false, notice, proposals }: Notice
           </div>
 
           <div className="grid min-w-0 gap-3 p-3">
-            {proposals.map((proposal) => (
-              <ProposalDiffCard
-                key={proposal.id}
-                isMutating={isMutating}
-                proposal={proposal}
-                selected={selectedProposalIds.has(proposal.id)}
-                onApprove={() => approve.mutate({ proposalId: proposal.id })}
-                onDecideLater={() => decideLater.mutate({ proposalId: proposal.id })}
-                onReject={() => reject.mutate({ proposalId: proposal.id })}
-                onToggle={(checked) => toggleProposal(proposal.id, checked)}
-              />
-            ))}
+            {proposals.length === 0 ? (
+              <div className="rounded-md border border-border/70 bg-background p-3 text-sm text-muted-foreground">
+                No proposal diffs are available for this notice.
+              </div>
+            ) : (
+              proposals.map((proposal) => (
+                <ProposalDiffCard
+                  key={proposal.id}
+                  isMutating={isMutating}
+                  proposal={proposal}
+                  selected={selectedProposalIds.has(proposal.id)}
+                  onApprove={() => approve.mutate({ proposalId: proposal.id })}
+                  onDecideLater={() => decideLater.mutate({ proposalId: proposal.id })}
+                  onReject={() => reject.mutate({ proposalId: proposal.id })}
+                  onToggle={(checked) => toggleProposal(proposal.id, checked)}
+                />
+              ))
+            )}
           </div>
         </div>
       </section>
