@@ -6,7 +6,6 @@ import type {
   DashboardVerificationStatus,
 } from "@due-date-hq/api/routers/dashboard";
 import type {
-  CalendarDeadlineItem,
   ClientListItemResponse,
 } from "@due-date-hq/api/routers/clients";
 import { Button } from "@due-date-hq/ui/components/button";
@@ -38,6 +37,8 @@ import {
   Building2,
   CalendarDays,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   ClipboardList,
   FileUp,
   Filter,
@@ -51,7 +52,6 @@ import { EvidenceDrawer } from "@/components/evidence/evidence-drawer";
 import { StatusBadge } from "@/components/status-badge";
 import { BulkTaskActions } from "@/components/task-table/bulk-task-actions";
 import { TaskTable } from "@/components/task-table/task-table";
-import { formatDate } from "@/utils/date-format";
 import { trpc } from "@/utils/trpc";
 
 export const Route = createFileRoute("/tax-work")({
@@ -61,54 +61,41 @@ export const Route = createFileRoute("/tax-work")({
   component: TaxWorkComponent,
 });
 
-const sectionOrder: Array<DashboardSection["id"]> = [
-  "overdue",
-  "due_this_week",
-  "this_month",
-  "long_range",
-];
 const taxWorkPageSize = 25;
 
-const sectionLabels: Record<DashboardSection["id"], string> = {
-  overdue: "Overdue",
-  due_this_week: "Due this week",
-  this_month: "This month",
-  long_range: "Later",
+const calendarViewModes = [
+  { id: "year", label: "Year" },
+  { id: "month", label: "Month" },
+  { id: "week", label: "Week" },
+  { id: "day", label: "Day" },
+] as const;
+
+type CalendarViewMode = (typeof calendarViewModes)[number]["id"];
+
+type CalendarTimeScope = {
+  anchorDate: string;
+  endDate: string;
+  label: string;
+  mode: CalendarViewMode;
+  startDate: string;
 };
 
-const queueTabToneStyles = {
-  overdue: {
-    active: "border-ddhq-risk/45 bg-ddhq-risk-soft text-ddhq-risk",
-    count: "bg-background/70 text-ddhq-risk",
-    idle:
-      "border-transparent text-muted-foreground hover:border-ddhq-risk/20 hover:bg-ddhq-risk-soft/25 hover:text-ddhq-risk",
-  },
-  due_this_week: {
-    active: "border-ddhq-review/45 bg-ddhq-review-soft text-ddhq-review",
-    count: "bg-background/70 text-ddhq-review",
-    idle:
-      "border-transparent text-muted-foreground hover:border-ddhq-review/20 hover:bg-ddhq-review-soft/25 hover:text-ddhq-review",
-  },
-  this_month: {
-    active: "border-primary/35 bg-ddhq-accent-soft text-primary",
-    count: "bg-background/70 text-primary",
-    idle:
-      "border-transparent text-muted-foreground hover:border-primary/20 hover:bg-ddhq-accent-soft/25 hover:text-primary",
-  },
-  long_range: {
-    active: "border-ddhq-gap/35 bg-ddhq-gap-soft text-ddhq-gap",
-    count: "bg-background/70 text-ddhq-gap",
-    idle:
-      "border-transparent text-muted-foreground hover:border-ddhq-gap/20 hover:bg-ddhq-gap-soft/25 hover:text-ddhq-gap",
-  },
-} satisfies Record<
-  DashboardSection["id"],
-  {
-    active: string;
-    count: string;
-    idle: string;
-  }
->;
+const calendarMonthLabels = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+] as const;
+
+const calendarWeekdayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
 
 const sortLabels: Record<DashboardSort, string> = {
   smart_priority: "Smart priority",
@@ -157,11 +144,17 @@ function TaxWorkComponent() {
       sort: "smart_priority",
     }),
   );
+  const defaultCalendarAnchorDate = React.useMemo(() => toDateKey(new Date()), []);
+  const defaultCalendarTimeScope = React.useMemo(
+    () => createCalendarTimeScope("year", defaultCalendarAnchorDate),
+    [defaultCalendarAnchorDate],
+  );
   const [selectedClientId, setSelectedClientId] = React.useState<string | null>(null);
   const [hasInitializedClients, setHasInitializedClients] = React.useState(false);
-  const [activeHorizon, setActiveHorizon] =
-    React.useState<DashboardSection["id"]>("due_this_week");
   const [clientSearchQuery, setClientSearchQuery] = React.useState("");
+  const [calendarTimeScope, setCalendarTimeScope] = React.useState<CalendarTimeScope>(() =>
+    createCalendarTimeScope("year", defaultCalendarAnchorDate),
+  );
   const [workFilters, setWorkFilters] = React.useState<TaxWorkFilters>(emptyTaxWorkFilters);
   const [showWorkFilters, setShowWorkFilters] = React.useState(false);
   const [queuePage, setQueuePage] = React.useState(1);
@@ -191,44 +184,34 @@ function TaxWorkComponent() {
       (task) => task.clientRelationship.id === selectedClientId,
     );
   }, [dashboard.data, selectedClientId]);
-  const filteredTasks = React.useMemo(
+  const nonTimeFilteredTasks = React.useMemo(
     () => filterAndSortClientTasks(selectedClientTasks, workFilters),
     [selectedClientTasks, workFilters],
   );
-  const sections = React.useMemo(() => buildSections(filteredTasks), [filteredTasks]);
-  const fullActiveSection = React.useMemo(
-    () =>
-      sections.find((section) => section.id === activeHorizon) ?? {
-        id: activeHorizon,
-        label: sectionLabels[activeHorizon],
-        count: 0,
-        pagination: {
-          page: 1,
-          pageSize: 1,
-          totalPages: 1,
-        },
-        tasks: [],
-      },
-    [activeHorizon, sections],
+  const filteredTasks = React.useMemo(
+    () => filterTasksByTimeScope(nonTimeFilteredTasks, calendarTimeScope),
+    [calendarTimeScope, nonTimeFilteredTasks],
   );
   const totalQueuePages = Math.max(
     1,
-    Math.ceil(fullActiveSection.count / taxWorkPageSize),
+    Math.ceil(filteredTasks.length / taxWorkPageSize),
   );
   const activePage = Math.min(queuePage, totalQueuePages);
   const activeSection = React.useMemo<DashboardSection>(() => {
     const start = (activePage - 1) * taxWorkPageSize;
 
     return {
-      ...fullActiveSection,
+      id: "due_this_week",
+      label: "filtered tasks",
+      count: filteredTasks.length,
       pagination: {
         page: activePage,
         pageSize: taxWorkPageSize,
         totalPages: totalQueuePages,
       },
-      tasks: fullActiveSection.tasks.slice(start, start + taxWorkPageSize),
+      tasks: filteredTasks.slice(start, start + taxWorkPageSize),
     };
-  }, [activePage, fullActiveSection, totalQueuePages]);
+  }, [activePage, filteredTasks, totalQueuePages]);
   const clientQueueSummary = React.useMemo(
     () => summarizeClientQueue(selectedClientTasks),
     [selectedClientTasks],
@@ -241,7 +224,9 @@ function TaxWorkComponent() {
     () => summarizeProfiles(selectedClientTasks),
     [selectedClientTasks],
   );
-  const activeFilterCount = countActiveFilters(workFilters);
+  const activeFilterCount =
+    countActiveFilters(workFilters) +
+    (isSameCalendarTimeScope(calendarTimeScope, defaultCalendarTimeScope) ? 0 : 1);
   const selectedProfile = profileSummaries.find(
     (profile) => profile.id === workFilters.filingProfileId,
   );
@@ -254,7 +239,7 @@ function TaxWorkComponent() {
 
   React.useEffect(() => {
     setQueuePage(1);
-  }, [activeHorizon, selectedClientId, workFilters]);
+  }, [calendarTimeScope, selectedClientId, workFilters]);
 
   React.useEffect(() => {
     setQueuePage((current) => Math.min(current, totalQueuePages));
@@ -271,8 +256,13 @@ function TaxWorkComponent() {
     }));
   }
 
+  function updateCalendarTimeScope(nextScope: CalendarTimeScope) {
+    setCalendarTimeScope(nextScope);
+  }
+
   function resetWorkFilters() {
     setWorkFilters(emptyTaxWorkFilters);
+    setCalendarTimeScope(defaultCalendarTimeScope);
   }
 
   React.useEffect(() => {
@@ -416,23 +406,15 @@ function TaxWorkComponent() {
                           <Building2 className="size-3.5" />
                           Client summary
                         </div>
-                        <div className="mt-2 flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="mt-2 min-w-0">
                           <div className="min-w-0">
                             <h2 className="truncate text-lg font-semibold leading-tight">
                               {selectedClient.displayName}
                             </h2>
                           </div>
-                          <div className="shrink-0 sm:text-right">
-                            <div className="text-2xl font-semibold leading-none tabular-nums">
-                              {clientQueueSummary.open}
-                            </div>
-                            <div className="mt-1 text-xs font-medium text-muted-foreground">
-                              open tasks
-                            </div>
-                          </div>
                         </div>
 
-                        <div className="mt-4 grid grid-cols-3 divide-x divide-ddhq-line rounded-md border border-ddhq-line bg-ddhq-paper-muted/45">
+                        <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2">
                           <ClientSummaryMetric
                             label="Profiles"
                             value={selectedClient.filingProfileCount}
@@ -460,155 +442,167 @@ function TaxWorkComponent() {
                       </section>
                     </section>
 
-                    <AnnualDeadlineCalendarCard clientId={selectedClient.id} />
+                    <CalendarTimeFilterCard
+                      tasks={nonTimeFilteredTasks}
+                      timeScope={calendarTimeScope}
+                      onTimeScopeChange={updateCalendarTimeScope}
+                    />
                   </section>
 
                   <section className="min-w-0 shrink-0 px-1 py-1">
-                    <div className="mb-3 flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
-                      <div>
-                        <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
-                          <Filter className="size-3.5" />
-                          Work scope filters
-                        </div>
-                        <div className="mt-1 text-xs text-muted-foreground">
-                          {scopeSummaryText({
-                            activeFilterCount,
-                            activeHorizon,
-                            activeHorizonCount: fullActiveSection.count,
-                            profileName: selectedProfile?.displayName,
-                            summary: scopedQueueSummary,
-                          })}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        {activeFilterCount > 0 ? (
+                    <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+                      <div className="flex min-h-8 flex-wrap items-center gap-2">
+                        <div className="relative">
                           <Button
                             type="button"
-                            variant="ghost"
+                            variant="outline"
                             size="sm"
-                            className="h-7 rounded-lg"
-                            onClick={resetWorkFilters}
+                            className={
+                              showWorkFilters
+                                ? "h-8 rounded-lg border-primary/30 bg-ddhq-accent-soft/70 text-foreground shadow-none"
+                                : "h-8 rounded-lg"
+                            }
+                            aria-expanded={showWorkFilters}
+                            onClick={() => setShowWorkFilters((current) => !current)}
                           >
-                            <RotateCcw className="size-3.5" />
-                            Reset filters
+                            <Filter
+                              className={showWorkFilters ? "size-3.5 text-primary" : "size-3.5"}
+                            />
+                            Filters
+                            <ChevronDown
+                              className={`size-3.5 transition-transform ${
+                                showWorkFilters ? "rotate-180" : ""
+                              }`}
+                            />
                           </Button>
-                        ) : null}
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="h-7 rounded-lg"
-                          aria-expanded={showWorkFilters}
-                          onClick={() => setShowWorkFilters((current) => !current)}
-                        >
-                          Filters
-                          <ChevronDown
-                            className={`size-3.5 transition-transform ${
-                              showWorkFilters ? "rotate-180" : ""
-                            }`}
-                          />
-                        </Button>
-                      </div>
-                    </div>
 
-                    <div>
-                      <div
-                        className={`flex flex-wrap items-center gap-1 rounded-lg border border-ddhq-line bg-ddhq-paper p-1 ${
-                          showWorkFilters ? "mb-2" : ""
-                        }`}
-                      >
-                        {sections.map((section) => (
-                          <QueueTab
-                            key={section.id}
-                            count={section.count}
-                            horizon={section.id}
-                            isSelected={activeHorizon === section.id}
-                            onSelect={() => setActiveHorizon(section.id)}
-                          />
-                        ))}
-                      </div>
-
-                      {showWorkFilters ? (
-                        <div className="grid max-w-5xl gap-2 sm:grid-cols-2 xl:grid-cols-3">
-                          <FilterSelect
-                            label="Profile"
-                            value={workFilters.filingProfileId ?? ""}
-                            onChange={(value) => updateWorkFilter("filingProfileId", value)}
-                            options={profileSummaries.map((profile) => ({
-                              value: profile.id,
-                              label: profile.displayName,
-                            }))}
-                            placeholder="All profiles"
-                          />
-                          <FilterSelect
-                            label="Jurisdiction"
-                            value={workFilters.jurisdiction ?? ""}
-                            onChange={(value) => updateWorkFilter("jurisdiction", value)}
-                            options={getClientOptions(selectedClientTasks, "jurisdiction")}
-                            placeholder="All jurisdictions"
-                          />
-                          <FilterSelect
-                            label="Entity type"
-                            value={workFilters.entityType ?? ""}
-                            onChange={(value) =>
-                              updateWorkFilter(
-                                "entityType",
-                                value as TaxWorkFilters["entityType"] | "",
-                              )
-                            }
-                            options={getClientOptions(selectedClientTasks, "entityType")}
-                            placeholder="All entities"
-                          />
-                          <FilterSelect
-                            label="Tax type"
-                            value={workFilters.taxCategory ?? ""}
-                            onChange={(value) => updateWorkFilter("taxCategory", value)}
-                            options={getClientOptions(selectedClientTasks, "taxCategory")}
-                            placeholder="All tax types"
-                          />
-                          <FilterSelect
-                            label="Status"
-                            value={workFilters.taskStatus ?? ""}
-                            onChange={(value) =>
-                              updateWorkFilter(
-                                "taskStatus",
-                                value as TaxWorkFilters["taskStatus"] | "",
-                              )
-                            }
-                            options={dashboard.data.filterOptions.taskStatuses.map((value) => ({
-                              value,
-                              label: taskStatusLabels[value],
-                            }))}
-                            placeholder="All statuses"
-                          />
-                          <FilterSelect
-                            label="Verification"
-                            value={workFilters.verificationStatus ?? ""}
-                            onChange={(value) =>
-                              updateWorkFilter(
-                                "verificationStatus",
-                                value as TaxWorkFilters["verificationStatus"] | "",
-                              )
-                            }
-                            options={dashboard.data.filterOptions.verificationStatuses.map(
-                              (value) => ({
-                                value,
-                                label: verificationLabels[value],
-                              }),
-                            )}
-                            placeholder="All verification"
-                          />
-                          <FilterSelect
-                            label="Sort"
-                            value={workFilters.sort ?? "smart_priority"}
-                            onChange={(value) => updateWorkFilter("sort", value as DashboardSort)}
-                            options={Object.entries(sortLabels).map(([value, label]) => ({
-                              value,
-                              label,
-                            }))}
-                          />
+                          {showWorkFilters ? (
+                            <div className="absolute left-0 top-10 z-[80] w-[min(900px,calc(100vw-2.5rem))] rounded-xl border border-ddhq-line bg-popover p-3 text-popover-foreground shadow-[var(--ddhq-shadow-soft)] max-md:fixed max-md:inset-x-3 max-md:bottom-3 max-md:top-auto max-md:w-auto max-md:max-h-[82vh] max-md:overflow-auto">
+                              <div className="mb-3">
+                                <h2 className="text-sm font-semibold">Filters</h2>
+                                <p className="mt-0.5 text-xs text-muted-foreground">
+                                  Refine this work queue without changing the page layout.
+                                </p>
+                              </div>
+                              <div className="grid gap-2 md:grid-cols-3 xl:grid-cols-4">
+                                <FilterSelect
+                                  label="Profile"
+                                  value={workFilters.filingProfileId ?? ""}
+                                  onChange={(value) => updateWorkFilter("filingProfileId", value)}
+                                  options={profileSummaries.map((profile) => ({
+                                    value: profile.id,
+                                    label: profile.displayName,
+                                  }))}
+                                  placeholder="All profiles"
+                                />
+                                <FilterSelect
+                                  label="Jurisdiction"
+                                  value={workFilters.jurisdiction ?? ""}
+                                  onChange={(value) => updateWorkFilter("jurisdiction", value)}
+                                  options={getClientOptions(selectedClientTasks, "jurisdiction")}
+                                  placeholder="All jurisdictions"
+                                />
+                                <FilterSelect
+                                  label="Entity type"
+                                  value={workFilters.entityType ?? ""}
+                                  onChange={(value) =>
+                                    updateWorkFilter(
+                                      "entityType",
+                                      value as TaxWorkFilters["entityType"] | "",
+                                    )
+                                  }
+                                  options={getClientOptions(selectedClientTasks, "entityType")}
+                                  placeholder="All entities"
+                                />
+                                <FilterSelect
+                                  label="Tax type"
+                                  value={workFilters.taxCategory ?? ""}
+                                  onChange={(value) => updateWorkFilter("taxCategory", value)}
+                                  options={getClientOptions(selectedClientTasks, "taxCategory")}
+                                  placeholder="All tax types"
+                                />
+                                <FilterSelect
+                                  label="Status"
+                                  value={workFilters.taskStatus ?? ""}
+                                  onChange={(value) =>
+                                    updateWorkFilter(
+                                      "taskStatus",
+                                      value as TaxWorkFilters["taskStatus"] | "",
+                                    )
+                                  }
+                                  options={dashboard.data.filterOptions.taskStatuses.map(
+                                    (value) => ({
+                                      value,
+                                      label: taskStatusLabels[value],
+                                    }),
+                                  )}
+                                  placeholder="All statuses"
+                                />
+                                <FilterSelect
+                                  label="Verification"
+                                  value={workFilters.verificationStatus ?? ""}
+                                  onChange={(value) =>
+                                    updateWorkFilter(
+                                      "verificationStatus",
+                                      value as TaxWorkFilters["verificationStatus"] | "",
+                                    )
+                                  }
+                                  options={dashboard.data.filterOptions.verificationStatuses.map(
+                                    (value) => ({
+                                      value,
+                                      label: verificationLabels[value],
+                                    }),
+                                  )}
+                                  placeholder="All verification"
+                                />
+                                <FilterSelect
+                                  label="Sort"
+                                  value={workFilters.sort ?? "smart_priority"}
+                                  onChange={(value) =>
+                                    updateWorkFilter("sort", value as DashboardSort)
+                                  }
+                                  options={Object.entries(sortLabels).map(([value, label]) => ({
+                                    value,
+                                    label,
+                                  }))}
+                                />
+                              </div>
+                              <div className="mt-3 flex justify-end gap-2 pt-1">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={resetWorkFilters}
+                                >
+                                  <RotateCcw className="size-3.5" />
+                                  Reset filters
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setShowWorkFilters(false)}
+                                >
+                                  Done
+                                </Button>
+                              </div>
+                            </div>
+                          ) : null}
                         </div>
-                      ) : null}
+                        <span className="text-xs font-medium text-muted-foreground">
+                          {activeFilterCount > 0
+                            ? `${activeFilterCount} active`
+                            : "Default filters"}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {scopeSummaryText({
+                            activeFilterCount,
+                            profileName: selectedProfile?.displayName,
+                            summary: scopedQueueSummary,
+                            timeScope: calendarTimeScope,
+                          })}
+                        </span>
+                      </div>
                     </div>
                   </section>
 
@@ -643,7 +637,7 @@ function TaxWorkComponent() {
                       onOpenEvidence={setEvidenceTaskId}
                     />
                     <TaxWorkPagination
-                      count={fullActiveSection.count}
+                      count={filteredTasks.length}
                       page={activeSection.pagination.page}
                       pageSize={activeSection.pagination.pageSize}
                       totalPages={activeSection.pagination.totalPages}
@@ -677,61 +671,6 @@ function summarizeClientQueue(tasks: DashboardTaskRow[]) {
     total: tasks.length,
     verified: tasks.filter((task) => task.verificationStatus === "verified").length,
   };
-}
-
-function QueueTab({
-  count,
-  horizon,
-  isSelected,
-  onSelect,
-}: {
-  count: number;
-  horizon: DashboardSection["id"];
-  isSelected: boolean;
-  onSelect: () => void;
-}) {
-  const tone = queueTabToneStyles[horizon];
-
-  return (
-    <button
-      type="button"
-      aria-pressed={isSelected}
-      className={`inline-flex h-8 items-center gap-2 rounded-md border px-2.5 text-xs font-semibold transition-colors ${
-        isSelected
-          ? tone.active
-          : tone.idle
-      }`}
-      onClick={onSelect}
-    >
-      {sectionLabels[horizon]}
-      <span
-        className={`rounded-full px-1.5 py-0.5 text-[11px] ${
-          isSelected ? tone.count : "bg-muted text-muted-foreground"
-        }`}
-      >
-        {count}
-      </span>
-    </button>
-  );
-}
-
-function buildSections(tasks: DashboardTaskRow[]): DashboardSection[] {
-  return sectionOrder.map((sectionId) => {
-    const sectionTasks = tasks.filter((task) => task.horizon === sectionId);
-    const totalPages = Math.max(1, Math.ceil(sectionTasks.length / taxWorkPageSize));
-
-    return {
-      id: sectionId,
-      label: sectionLabels[sectionId],
-      count: sectionTasks.length,
-      pagination: {
-        page: 1,
-        pageSize: taxWorkPageSize,
-        totalPages,
-      },
-      tasks: sectionTasks,
-    };
-  });
 }
 
 function TaxWorkPagination({
@@ -829,28 +768,26 @@ function getVisiblePageItems(page: number, totalPages: number): Array<number | s
 
 function scopeSummaryText({
   activeFilterCount,
-  activeHorizon,
-  activeHorizonCount,
   profileName,
   summary,
+  timeScope,
 }: {
   activeFilterCount: number;
-  activeHorizon: DashboardSection["id"];
-  activeHorizonCount: number;
   profileName?: string;
   summary: ReturnType<typeof summarizeClientQueue>;
+  timeScope: CalendarTimeScope;
 }) {
   const scope = profileName ?? "Selected client";
   const filterCopy =
     activeFilterCount > 0 ? `${activeFilterCount} filters active` : "full queue";
 
-  return `${scope}: ${sectionLabels[activeHorizon]} shows ${activeHorizonCount}; ${summary.open} open total (${filterCopy}).`;
+  return `${scope}, ${timeScope.label}: ${summary.open} open, ${summary.total} total (${filterCopy}).`;
 }
 
 function ClientSummaryMetric({ label, value }: { label: string; value: number }) {
   return (
-    <div className="min-w-0 px-3 py-2">
-      <div className="text-[11px] font-medium leading-tight text-muted-foreground">
+    <div className="min-w-0 px-1 py-1">
+      <div className="text-[11px] font-semibold leading-tight text-muted-foreground">
         {label}
       </div>
       <div className="mt-1 text-sm font-semibold leading-tight tabular-nums">{value}</div>
@@ -998,42 +935,39 @@ function ClientFilterDropdown({
   );
 }
 
-function AnnualDeadlineCalendarCard({ clientId }: { clientId: string }) {
-  const currentYear = new Date().getFullYear();
-  const currentMonth = new Date().getMonth() + 1;
-  const [calendarYear, setCalendarYear] = React.useState(currentYear);
-  const [selectedMonth, setSelectedMonth] = React.useState(currentMonth);
-  const calendar = useQuery(
-    trpc.clients.getYearCalendar.queryOptions({ clientId, year: calendarYear }),
+function CalendarTimeFilterCard({
+  onTimeScopeChange,
+  tasks,
+  timeScope,
+}: {
+  onTimeScopeChange: (scope: CalendarTimeScope) => void;
+  tasks: DashboardTaskRow[];
+  timeScope: CalendarTimeScope;
+}) {
+  const scopeTasks = React.useMemo(
+    () => filterTasksByTimeScope(tasks, timeScope),
+    [tasks, timeScope],
   );
+  const scopeSummary = React.useMemo(() => summarizeClientQueue(scopeTasks), [scopeTasks]);
+  const availableYears = React.useMemo(
+    () => getAvailableCalendarYears(tasks, timeScope.anchorDate),
+    [tasks, timeScope.anchorDate],
+  );
+  const anchorParts = parseDateParts(timeScope.anchorDate);
 
-  function handleCalendarYearChange(year: number) {
-    setCalendarYear(year);
-    setSelectedMonth(year === currentYear ? currentMonth : 1);
+  function changeMode(mode: CalendarViewMode) {
+    onTimeScopeChange(createCalendarTimeScope(mode, timeScope.anchorDate));
   }
 
-  if (calendar.isPending) {
-    return (
-      <section className="min-w-0 ddhq-panel p-3">
-        <div className="h-28 animate-pulse rounded-lg bg-muted/40" />
-      </section>
+  function shiftScope(amount: number) {
+    onTimeScopeChange(shiftCalendarTimeScope(timeScope, amount));
+  }
+
+  function changeYear(year: number) {
+    onTimeScopeChange(
+      createCalendarTimeScope(timeScope.mode, setDateYear(timeScope.anchorDate, year)),
     );
   }
-
-  if (calendar.isError) {
-    return (
-      <section className="min-w-0 ddhq-panel p-3">
-        <div className="rounded-md border border-ddhq-risk/30 bg-ddhq-risk-soft px-3 py-2 text-xs text-ddhq-risk">
-          Annual deadline calendar could not be loaded.
-        </div>
-      </section>
-    );
-  }
-
-  const data = calendar.data;
-  const selectedMonthBucket =
-    data.months.find((month) => month.month === selectedMonth) ?? data.months[0];
-  const selectedMonthDeadlines = selectedMonthBucket?.deadlines ?? [];
 
   return (
     <section className="min-w-0 ddhq-panel p-3">
@@ -1041,114 +975,631 @@ function AnnualDeadlineCalendarCard({ clientId }: { clientId: string }) {
         <div className="min-w-0">
           <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
             <CalendarDays className="size-3.5" />
-            Annual calendar
+            Calendar filter
           </div>
-          <div className="mt-1 text-sm font-semibold text-foreground">
-            {data.deadlines.length} deadline{data.deadlines.length === 1 ? "" : "s"}
+          <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+            <span className="text-sm font-semibold text-foreground">{timeScope.label}</span>
+            <span className="font-mono text-[11px] text-muted-foreground tabular-nums">
+              {scopeSummary.open} open / {scopeSummary.total} total
+            </span>
           </div>
         </div>
-        <Select
-          value={String(calendarYear)}
-          onValueChange={(value) => handleCalendarYearChange(Number(value ?? currentYear))}
-        >
-          <SelectTrigger className="h-7 w-20 shrink-0 rounded-lg bg-background px-2">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent className="rounded-lg">
-            {data.availableYears.map((year) => (
-              <SelectItem key={year} value={String(year)}>
-                {year}
-              </SelectItem>
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
+          <div className="inline-flex rounded-lg border border-ddhq-line bg-ddhq-paper p-0.5">
+            {calendarViewModes.map((mode) => (
+              <button
+                key={mode.id}
+                type="button"
+                aria-pressed={timeScope.mode === mode.id}
+                className={`h-7 rounded-md px-2 text-xs font-semibold transition-colors ${
+                  timeScope.mode === mode.id
+                    ? "bg-ddhq-accent-soft text-primary shadow-[var(--ddhq-shadow-soft)]"
+                    : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                }`}
+                onClick={() => changeMode(mode.id)}
+              >
+                {mode.label}
+              </button>
             ))}
-          </SelectContent>
-        </Select>
+          </div>
+          <Select
+            value={String(anchorParts.year)}
+            onValueChange={(value) => changeYear(Number(value ?? anchorParts.year))}
+          >
+            <SelectTrigger className="h-8 w-20 shrink-0 rounded-lg bg-background px-2">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="rounded-lg">
+              {availableYears.map((year) => (
+                <SelectItem key={year} value={String(year)}>
+                  {year}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
-      <div className="mt-3 grid gap-3 lg:grid-cols-[minmax(152px,180px)_minmax(0,1fr)] lg:items-start">
-        <div className="grid grid-cols-6 gap-1.5 lg:grid-cols-3">
-          {data.months.map((month) => (
-            <button
-              key={month.month}
-              type="button"
-              aria-pressed={selectedMonth === month.month}
-              className={`h-10 rounded-[6px] border px-2 py-1 text-center ${
-                selectedMonth === month.month
-                  ? "border-primary/40 bg-ddhq-accent-soft text-primary ring-1 ring-primary/20"
-                  : month.count > 0
-                  ? "border-primary/20 bg-ddhq-accent-soft/45 text-primary"
-                  : "border-ddhq-line bg-ddhq-paper text-muted-foreground"
-              } hover:border-primary/30 hover:bg-ddhq-accent-soft/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring`}
-              onClick={() => setSelectedMonth(month.month)}
-            >
-              <div className="text-[10px] font-semibold uppercase leading-none">
-                {month.label.slice(0, 3)}
-              </div>
-              <div className="mt-1 font-mono text-sm font-semibold tabular-nums">
-                {month.count}
-              </div>
-            </button>
-          ))}
-        </div>
-
-        <div className="flex min-h-[116px] min-w-0 flex-col rounded-md border border-ddhq-line bg-ddhq-paper/70 p-2.5">
-          <div className="mb-1.5 flex items-center justify-between gap-2">
-            <div className="text-[11px] font-semibold text-muted-foreground">
-              {selectedMonthBucket?.label ?? "Month"} tax list
-            </div>
-            <div className="font-mono text-[11px] text-muted-foreground tabular-nums">
-              {selectedMonthDeadlines.length}
-            </div>
+      <div className="mt-3 flex items-center justify-between gap-2">
+        <button
+          type="button"
+          className="inline-flex size-7 items-center justify-center rounded-md border border-ddhq-line bg-ddhq-paper text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          aria-label={`Previous ${timeScope.mode}`}
+          onClick={() => shiftScope(-1)}
+        >
+          <ChevronLeft className="size-3.5" />
+        </button>
+        <div className="min-w-0 text-center">
+          <div className="truncate text-xs font-semibold text-foreground">
+            {getCalendarScopeCaption(timeScope)}
           </div>
-          {selectedMonthDeadlines.length === 0 ? (
-            <div className="min-h-0 rounded-md border border-dashed border-ddhq-line bg-ddhq-paper-muted/35 px-3 py-2 text-xs leading-5 text-muted-foreground">
-              No deadlines for this month.
-            </div>
-          ) : (
-            <div className="min-h-0 max-h-[156px] flex-1 overflow-auto pr-1">
-              <div className="grid gap-1.5">
-                {selectedMonthDeadlines.map((deadline) => (
-                  <AnnualCalendarDeadline key={deadline.id} deadline={deadline} />
-                ))}
-              </div>
-            </div>
-          )}
+          <div className="mt-0.5 font-mono text-[11px] text-muted-foreground">
+            {timeScope.startDate === timeScope.endDate
+              ? timeScope.startDate
+              : `${timeScope.startDate} to ${timeScope.endDate}`}
+          </div>
         </div>
+        <button
+          type="button"
+          className="inline-flex size-7 items-center justify-center rounded-md border border-ddhq-line bg-ddhq-paper text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          aria-label={`Next ${timeScope.mode}`}
+          onClick={() => shiftScope(1)}
+        >
+          <ChevronRight className="size-3.5" />
+        </button>
+      </div>
+
+      <div className="mt-3">
+        {timeScope.mode === "year" ? (
+          <CalendarYearView
+            selectedMonth={null}
+            tasks={tasks}
+            year={anchorParts.year}
+            onSelectMonth={(month) =>
+              onTimeScopeChange(
+                createCalendarTimeScope("month", createDateKey(anchorParts.year, month, 1)),
+              )
+            }
+          />
+        ) : null}
+
+        {timeScope.mode === "month" ? (
+          <CalendarMonthView
+            anchorDate={timeScope.anchorDate}
+            selectedDate={null}
+            tasks={tasks}
+            onSelectDate={(date) => onTimeScopeChange(createCalendarTimeScope("day", date))}
+          />
+        ) : null}
+
+        {timeScope.mode === "week" ? (
+          <CalendarWeekView
+            tasks={tasks}
+            timeScope={timeScope}
+            onSelectDate={(date) => onTimeScopeChange(createCalendarTimeScope("day", date))}
+          />
+        ) : null}
+
+        {timeScope.mode === "day" ? (
+          <CalendarDayView tasks={tasks} timeScope={timeScope} />
+        ) : null}
       </div>
     </section>
   );
 }
 
-function AnnualCalendarDeadline({ deadline }: { deadline: CalendarDeadlineItem }) {
+function CalendarYearView({
+  onSelectMonth,
+  selectedMonth,
+  tasks,
+  year,
+}: {
+  onSelectMonth: (month: number) => void;
+  selectedMonth: number | null;
+  tasks: DashboardTaskRow[];
+  year: number;
+}) {
+  const monthCounts = React.useMemo(() => createMonthCounts(tasks, year), [tasks, year]);
+
   return (
-    <div className="rounded-md border border-ddhq-line bg-ddhq-paper px-2 py-1.5">
-      <div className="flex min-w-0 items-start justify-between gap-2">
-        <div className="min-w-0">
-          <div className="flex items-center gap-1.5">
-            <span className="font-mono text-xs font-semibold tabular-nums text-foreground">
-              {formatDate(deadline.currentDueDate)}
+    <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-4 xl:grid-cols-6">
+      {calendarMonthLabels.map((monthLabel, index) => {
+        const month = index + 1;
+        const count = monthCounts.get(month) ?? 0;
+        const isSelected = selectedMonth === month;
+
+        return (
+          <button
+            key={monthLabel}
+            type="button"
+            aria-pressed={isSelected}
+            className={getCalendarBucketClassName({ count, isSelected })}
+            onClick={() => onSelectMonth(month)}
+          >
+            <span className="text-[10px] font-semibold uppercase leading-none">
+              {monthLabel.slice(0, 3)}
             </span>
-            {deadline.isOverdue ? <StatusBadge status="overdue">Overdue</StatusBadge> : null}
+            <span className="mt-1 font-mono text-sm font-semibold tabular-nums">
+              {count}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function CalendarMonthView({
+  anchorDate,
+  onSelectDate,
+  selectedDate,
+  tasks,
+}: {
+  anchorDate: string;
+  onSelectDate: (date: string) => void;
+  selectedDate: string | null;
+  tasks: DashboardTaskRow[];
+}) {
+  const days = React.useMemo(
+    () => createCalendarMonthDays(tasks, anchorDate, selectedDate),
+    [anchorDate, selectedDate, tasks],
+  );
+
+  return (
+    <div>
+      <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-semibold text-muted-foreground">
+        {calendarWeekdayLabels.map((day) => (
+          <div key={day} className="h-4">
+            {day}
           </div>
-          <div className="mt-1 truncate text-xs font-semibold text-foreground">
-            {deadline.title}
-          </div>
-          <div className="mt-0.5 truncate text-[11px] text-muted-foreground">
-            {deadline.profileDisplayName} / {deadline.jurisdiction} / {deadline.taxCategory}
-          </div>
-          {deadline.firmTargetDate ? (
-            <div className="mt-0.5 text-[11px] text-muted-foreground">
-              Firm target date: {formatDate(deadline.firmTargetDate)}
-            </div>
-          ) : null}
-        </div>
-        <div className="shrink-0">
-          <StatusBadge status={deadline.isOfficial ? "verified" : "entered_deadline"}>
-            {deadline.isOfficial ? "Official" : "Entered"}
-          </StatusBadge>
-        </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-7 gap-1">
+        {days.map((day) => (
+          <button
+            key={day.date}
+            type="button"
+            aria-pressed={day.isSelected}
+            className={getCalendarDayClassName(day)}
+            onClick={() => onSelectDate(day.date)}
+          >
+            <span className="flex items-center justify-between gap-1">
+              <span className="font-mono tabular-nums">{day.dayOfMonth}</span>
+              {day.openCount > 0 ? (
+                <span className="font-mono text-[10px] font-semibold tabular-nums">
+                  {day.openCount}
+                </span>
+              ) : null}
+            </span>
+            <span className="mt-0.5 block truncate text-[10px] font-medium leading-4">
+              {day.count > 0 ? `${day.count} task${day.count === 1 ? "" : "s"}` : ""}
+            </span>
+          </button>
+        ))}
       </div>
     </div>
   );
+}
+
+function CalendarWeekView({
+  onSelectDate,
+  tasks,
+  timeScope,
+}: {
+  onSelectDate: (date: string) => void;
+  tasks: DashboardTaskRow[];
+  timeScope: CalendarTimeScope;
+}) {
+  const days = React.useMemo(
+    () => createCalendarWeekDays(tasks, timeScope.startDate),
+    [tasks, timeScope.startDate],
+  );
+
+  return (
+    <div className="grid grid-cols-7 gap-1.5">
+      {days.map((day) => (
+        <button
+          key={day.date}
+          type="button"
+          className={getCalendarDayClassName(day)}
+          onClick={() => onSelectDate(day.date)}
+        >
+          <span className="text-[10px] font-semibold uppercase leading-none text-muted-foreground">
+            {calendarWeekdayLabels[day.weekday]}
+          </span>
+          <span className="mt-1 flex items-center justify-between gap-1">
+            <span className="font-mono tabular-nums">{day.dayOfMonth}</span>
+            {day.openCount > 0 ? (
+              <span className="font-mono text-[10px] font-semibold tabular-nums">
+                {day.openCount}
+              </span>
+            ) : null}
+          </span>
+          <span className="mt-0.5 block truncate text-[10px] font-medium leading-4">
+            {day.count > 0 ? `${day.count} task${day.count === 1 ? "" : "s"}` : ""}
+          </span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function CalendarDayView({
+  tasks,
+  timeScope,
+}: {
+  tasks: DashboardTaskRow[];
+  timeScope: CalendarTimeScope;
+}) {
+  const dayTasks = React.useMemo(
+    () => filterTasksByTimeScope(tasks, timeScope),
+    [tasks, timeScope],
+  );
+  const summary = React.useMemo(() => summarizeClientQueue(dayTasks), [dayTasks]);
+  const day = createCalendarDay(tasks, timeScope.anchorDate, true);
+
+  return (
+    <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-stretch">
+      <div className={getCalendarDayClassName(day)}>
+        <div className="flex items-center justify-between gap-2">
+          <div>
+            <div className="text-[10px] font-semibold uppercase text-muted-foreground">
+              {calendarWeekdayLabels[day.weekday]}
+            </div>
+            <div className="mt-1 font-mono text-lg font-semibold leading-none tabular-nums">
+              {day.dayOfMonth}
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="font-mono text-sm font-semibold tabular-nums">
+              {summary.open}
+            </div>
+            <div className="text-[10px] font-medium text-muted-foreground">open</div>
+          </div>
+        </div>
+      </div>
+      <div className="grid grid-cols-3 divide-x divide-ddhq-line rounded-md border border-ddhq-line bg-ddhq-paper-muted/45 sm:min-w-[220px]">
+        <ClientSummaryMetric label="Total" value={summary.total} />
+        <ClientSummaryMetric label="Open" value={summary.open} />
+        <ClientSummaryMetric label="Done" value={summary.done} />
+      </div>
+    </div>
+  );
+}
+
+type CalendarDay = {
+  count: number;
+  date: string;
+  dayOfMonth: number;
+  doneCount: number;
+  isCurrentMonth: boolean;
+  isSelected: boolean;
+  isToday: boolean;
+  openCount: number;
+  tone: "done" | "empty" | "open" | "risk";
+  weekday: number;
+};
+
+function createMonthCounts(tasks: DashboardTaskRow[], year: number): Map<number, number> {
+  const counts = new Map<number, number>();
+
+  for (const task of tasks) {
+    const parts = parseDateParts(task.currentDueDate);
+    if (parts.year !== year) continue;
+
+    counts.set(parts.month, (counts.get(parts.month) ?? 0) + 1);
+  }
+
+  return counts;
+}
+
+function createCalendarMonthDays(
+  tasks: DashboardTaskRow[],
+  anchorDate: string,
+  selectedDate: string | null,
+): CalendarDay[] {
+  const anchorParts = parseDateParts(anchorDate);
+  const monthStart = new Date(Date.UTC(anchorParts.year, anchorParts.month - 1, 1));
+  const gridStart = addUtcDays(monthStart, -monthStart.getUTCDay());
+  const currentMonth = monthStart.getUTCMonth();
+
+  return Array.from({ length: 42 }, (_, index) => {
+    const date = addUtcDays(gridStart, index);
+    const dateKey = toDateKey(date);
+
+    return createCalendarDay(tasks, dateKey, selectedDate === dateKey, currentMonth);
+  });
+}
+
+function createCalendarWeekDays(tasks: DashboardTaskRow[], weekStartDate: string): CalendarDay[] {
+  const weekStart = parseDateKey(weekStartDate);
+
+  return Array.from({ length: 7 }, (_, index) => {
+    const date = addUtcDays(weekStart, index);
+    const dateKey = toDateKey(date);
+
+    return createCalendarDay(tasks, dateKey, false, date.getUTCMonth());
+  });
+}
+
+function createCalendarDay(
+  tasks: DashboardTaskRow[],
+  date: string,
+  isSelected: boolean,
+  visibleMonth?: number,
+): CalendarDay {
+  const dateTasks = tasks.filter((task) => task.currentDueDate === date);
+  const doneCount = dateTasks.filter((task) => task.status === "done").length;
+  const openCount = dateTasks.length - doneCount;
+  const parsedDate = parseDateKey(date);
+  const today = toDateKey(new Date());
+  const hasRisk = dateTasks.some(
+    (task) =>
+      task.status !== "done" &&
+      (task.urgency === "overdue" ||
+        task.urgency === "due_today" ||
+        task.verificationStatus === "source_changed" ||
+        task.verificationStatus === "needs_review" ||
+        task.status === "waiting_on_client"),
+  );
+
+  return {
+    count: dateTasks.length,
+    date,
+    dayOfMonth: parsedDate.getUTCDate(),
+    doneCount,
+    isCurrentMonth: visibleMonth === undefined || parsedDate.getUTCMonth() === visibleMonth,
+    isSelected,
+    isToday: today === date,
+    openCount,
+    tone:
+      dateTasks.length === 0
+        ? "empty"
+        : openCount === 0
+          ? "done"
+          : hasRisk
+            ? "risk"
+            : "open",
+    weekday: parsedDate.getUTCDay(),
+  };
+}
+
+function getCalendarBucketClassName({
+  count,
+  isSelected,
+}: {
+  count: number;
+  isSelected: boolean;
+}): string {
+  const toneClass = isSelected
+    ? "border-primary/40 bg-ddhq-accent-soft text-primary ring-1 ring-primary/20"
+    : count > 0
+      ? "border-primary/20 bg-ddhq-accent-soft/45 text-primary hover:bg-ddhq-accent-soft/55"
+      : "border-ddhq-line bg-ddhq-paper text-muted-foreground hover:bg-muted/50";
+
+  return [
+    "flex h-11 flex-col items-center justify-center rounded-[6px] border px-2 py-1 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+    toneClass,
+  ].join(" ");
+}
+
+function getCalendarDayClassName(day: CalendarDay): string {
+  const toneClass =
+    day.tone === "empty"
+      ? "border-ddhq-line bg-ddhq-paper text-muted-foreground/60 hover:bg-muted/50"
+      : day.tone === "done"
+        ? "border-ddhq-verified/25 bg-ddhq-verified-soft/70 text-ddhq-verified hover:bg-ddhq-verified-soft"
+        : day.tone === "risk"
+          ? "border-ddhq-review/35 bg-ddhq-review-soft text-ddhq-review hover:bg-ddhq-review-soft/85"
+          : "border-primary/20 bg-ddhq-accent-soft/45 text-primary hover:bg-ddhq-accent-soft/65";
+  const selectedClass = day.isSelected
+    ? "ring-1 ring-primary/25"
+    : day.isToday
+      ? "ring-1 ring-ddhq-border-strong/60"
+      : "";
+  const currentMonthClass = day.isCurrentMonth ? "" : "opacity-45";
+
+  return [
+    "min-h-[44px] rounded-[6px] border p-1 text-left text-[11px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+    toneClass,
+    selectedClass,
+    currentMonthClass,
+  ].join(" ");
+}
+
+function filterTasksByTimeScope(
+  tasks: DashboardTaskRow[],
+  timeScope: CalendarTimeScope,
+): DashboardTaskRow[] {
+  return tasks.filter(
+    (task) =>
+      task.currentDueDate >= timeScope.startDate && task.currentDueDate <= timeScope.endDate,
+  );
+}
+
+function createCalendarTimeScope(
+  mode: CalendarViewMode,
+  anchorDate: string,
+): CalendarTimeScope {
+  const anchorParts = parseDateParts(anchorDate);
+
+  if (mode === "year") {
+    const startDate = createDateKey(anchorParts.year, 1, 1);
+    const endDate = createDateKey(anchorParts.year, 12, 31);
+
+    return {
+      anchorDate,
+      endDate,
+      label: String(anchorParts.year),
+      mode,
+      startDate,
+    };
+  }
+
+  if (mode === "month") {
+    const startDate = createDateKey(anchorParts.year, anchorParts.month, 1);
+    const endDate = getMonthEndDate(anchorParts.year, anchorParts.month);
+
+    return {
+      anchorDate: clampDateToRange(anchorDate, startDate, endDate),
+      endDate,
+      label: `${calendarMonthLabels[anchorParts.month - 1]} ${anchorParts.year}`,
+      mode,
+      startDate,
+    };
+  }
+
+  if (mode === "week") {
+    const anchor = parseDateKey(anchorDate);
+    const weekStart = addUtcDays(anchor, -anchor.getUTCDay());
+    const weekEnd = addUtcDays(weekStart, 6);
+
+    return {
+      anchorDate,
+      endDate: toDateKey(weekEnd),
+      label: `Week of ${formatCalendarShortDate(toDateKey(weekStart))}`,
+      mode,
+      startDate: toDateKey(weekStart),
+    };
+  }
+
+  return {
+    anchorDate,
+    endDate: anchorDate,
+    label: formatCalendarLongDate(anchorDate),
+    mode,
+    startDate: anchorDate,
+  };
+}
+
+function shiftCalendarTimeScope(
+  timeScope: CalendarTimeScope,
+  amount: number,
+): CalendarTimeScope {
+  const anchor = parseDateKey(timeScope.anchorDate);
+
+  if (timeScope.mode === "year") {
+    const shifted = new Date(
+      Date.UTC(anchor.getUTCFullYear() + amount, anchor.getUTCMonth(), anchor.getUTCDate()),
+    );
+
+    return createCalendarTimeScope("year", toDateKey(shifted));
+  }
+
+  if (timeScope.mode === "month") {
+    return createCalendarTimeScope("month", toDateKey(addUtcMonths(anchor, amount)));
+  }
+
+  if (timeScope.mode === "week") {
+    return createCalendarTimeScope("week", toDateKey(addUtcDays(anchor, amount * 7)));
+  }
+
+  return createCalendarTimeScope("day", toDateKey(addUtcDays(anchor, amount)));
+}
+
+function getAvailableCalendarYears(tasks: DashboardTaskRow[], anchorDate: string): number[] {
+  const currentYear = new Date().getFullYear();
+  const years = new Set<number>([
+    currentYear,
+    currentYear + 1,
+    parseDateParts(anchorDate).year,
+  ]);
+
+  for (const task of tasks) {
+    years.add(parseDateParts(task.currentDueDate).year);
+  }
+
+  return [...years].sort((left, right) => left - right);
+}
+
+function getCalendarScopeCaption(timeScope: CalendarTimeScope): string {
+  if (timeScope.mode === "year") return "Year view";
+  if (timeScope.mode === "month") return "Month view";
+  if (timeScope.mode === "week") return "Week view";
+
+  return "Day view";
+}
+
+function isSameCalendarTimeScope(
+  left: CalendarTimeScope,
+  right: CalendarTimeScope,
+): boolean {
+  return (
+    left.mode === right.mode &&
+    left.startDate === right.startDate &&
+    left.endDate === right.endDate
+  );
+}
+
+function parseDateParts(date: string): { day: number; month: number; year: number } {
+  return {
+    day: Number(date.slice(8, 10)),
+    month: Number(date.slice(5, 7)),
+    year: Number(date.slice(0, 4)),
+  };
+}
+
+function parseDateKey(date: string): Date {
+  return new Date(`${date}T00:00:00.000Z`);
+}
+
+function createDateKey(year: number, month: number, day: number): string {
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+function getMonthEndDate(year: number, month: number): string {
+  const end = new Date(Date.UTC(year, month, 0));
+
+  return toDateKey(end);
+}
+
+function clampDateToRange(date: string, startDate: string, endDate: string): string {
+  if (date < startDate) return startDate;
+  if (date > endDate) return endDate;
+
+  return date;
+}
+
+function setDateYear(date: string, year: number): string {
+  const current = parseDateKey(date);
+  const month = current.getUTCMonth();
+  const maxDay = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+  const day = Math.min(current.getUTCDate(), maxDay);
+
+  return toDateKey(new Date(Date.UTC(year, month, day)));
+}
+
+function addUtcDays(date: Date, days: number): Date {
+  return new Date(date.getTime() + days * 24 * 60 * 60 * 1000);
+}
+
+function addUtcMonths(date: Date, months: number): Date {
+  const year = date.getUTCFullYear();
+  const month = date.getUTCMonth() + months;
+  const targetMonthEnd = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+  const day = Math.min(date.getUTCDate(), targetMonthEnd);
+
+  return new Date(Date.UTC(year, month, day));
+}
+
+function toDateKey(date: Date): string {
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(date.getUTCDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function formatCalendarShortDate(date: string): string {
+  const parts = parseDateParts(date);
+
+  return `${calendarMonthLabels[parts.month - 1].slice(0, 3)} ${parts.day}`;
+}
+
+function formatCalendarLongDate(date: string): string {
+  const parts = parseDateParts(date);
+
+  return `${calendarMonthLabels[parts.month - 1]} ${parts.day}, ${parts.year}`;
 }
 
 type ProfileSummary = {
