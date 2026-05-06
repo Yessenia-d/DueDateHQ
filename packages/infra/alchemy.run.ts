@@ -31,6 +31,7 @@ export const server = await Worker("server", {
 });
 
 export const web = await Vite("web", {
+  name: "due-date-hq-yessy",
   cwd: "../../apps/web",
   assets: {
     directory: "dist",
