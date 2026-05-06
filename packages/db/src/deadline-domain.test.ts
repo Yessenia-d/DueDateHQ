@@ -30,9 +30,16 @@ test("deadline domain schema keeps the firm-owned client profile task chain", ()
   );
 
   assert.equal(
-    ["id", "firm_id", "display_name", "created_via", "created_at", "updated_at"].every((name) =>
-      clientRelationshipColumns.has(name),
-    ),
+    [
+      "id",
+      "firm_id",
+      "display_name",
+      "source_system",
+      "source_client_id",
+      "created_via",
+      "created_at",
+      "updated_at",
+    ].every((name) => clientRelationshipColumns.has(name)),
     true,
   );
   assert.equal(
@@ -193,6 +200,11 @@ test("workspace foreign keys keep deadline rows inside the owning firm", () => {
 
   assert.ok(auditLogUniqueIndexNames.has("audit_logs_firm_id_id_unique"));
   assert.ok(clientRelationshipUniqueIndexNames.has("client_relationships_firm_id_id_unique"));
+  assert.ok(
+    clientRelationshipUniqueIndexNames.has(
+      "client_relationships_firm_source_client_unique",
+    ),
+  );
   assert.ok(filingProfileUniqueIndexNames.has("filing_profiles_firm_client_id_unique"));
   assert.ok(filingProfileUniqueIndexNames.has("filing_profiles_firm_id_id_unique"));
   assert.ok(taskUniqueIndexNames.has("deadline_tasks_firm_id_id_unique"));

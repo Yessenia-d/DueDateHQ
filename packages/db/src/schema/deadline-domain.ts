@@ -108,6 +108,7 @@ export const clientRelationships = sqliteTable(
     relationshipType: text("relationship_type", { enum: clientRelationshipTypes }).notNull(),
     notes: text("notes"),
     sourceSystem: text("source_system", { enum: sourceSystems }).notNull().default("manual"),
+    sourceClientId: text("source_client_id"),
     createdVia: text("created_via", { enum: clientRelationshipCreatedViaValues }).notNull(),
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
     updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
@@ -115,6 +116,11 @@ export const clientRelationships = sqliteTable(
   (table) => [
     index("client_relationships_firm_display_name_idx").on(table.firmId, table.displayName),
     uniqueIndex("client_relationships_firm_id_id_unique").on(table.firmId, table.id),
+    uniqueIndex("client_relationships_firm_source_client_unique").on(
+      table.firmId,
+      table.sourceSystem,
+      table.sourceClientId,
+    ),
     check(
       "client_relationships_type_check",
       sql`${table.relationshipType} in ('individual', 'business', 'household', 'related_group')`,
