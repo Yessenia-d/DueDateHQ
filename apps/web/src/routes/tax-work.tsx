@@ -486,6 +486,7 @@ function TaxWorkComponent() {
                               </div>
                               <div className="grid gap-2 md:grid-cols-3 xl:grid-cols-4">
                                 <FilterSelect
+                                  isActive={Boolean(workFilters.filingProfileId)}
                                   label="Profile"
                                   value={workFilters.filingProfileId ?? ""}
                                   onChange={(value) => updateWorkFilter("filingProfileId", value)}
@@ -496,6 +497,7 @@ function TaxWorkComponent() {
                                   placeholder="All profiles"
                                 />
                                 <FilterSelect
+                                  isActive={Boolean(workFilters.jurisdiction)}
                                   label="Jurisdiction"
                                   value={workFilters.jurisdiction ?? ""}
                                   onChange={(value) => updateWorkFilter("jurisdiction", value)}
@@ -503,6 +505,7 @@ function TaxWorkComponent() {
                                   placeholder="All jurisdictions"
                                 />
                                 <FilterSelect
+                                  isActive={Boolean(workFilters.entityType)}
                                   label="Entity type"
                                   value={workFilters.entityType ?? ""}
                                   onChange={(value) =>
@@ -515,6 +518,7 @@ function TaxWorkComponent() {
                                   placeholder="All entities"
                                 />
                                 <FilterSelect
+                                  isActive={Boolean(workFilters.taxCategory)}
                                   label="Tax type"
                                   value={workFilters.taxCategory ?? ""}
                                   onChange={(value) => updateWorkFilter("taxCategory", value)}
@@ -522,6 +526,7 @@ function TaxWorkComponent() {
                                   placeholder="All tax types"
                                 />
                                 <FilterSelect
+                                  isActive={Boolean(workFilters.taskStatus)}
                                   label="Status"
                                   value={workFilters.taskStatus ?? ""}
                                   onChange={(value) =>
@@ -539,6 +544,7 @@ function TaxWorkComponent() {
                                   placeholder="All statuses"
                                 />
                                 <FilterSelect
+                                  isActive={Boolean(workFilters.verificationStatus)}
                                   label="Verification"
                                   value={workFilters.verificationStatus ?? ""}
                                   onChange={(value) =>
@@ -556,6 +562,9 @@ function TaxWorkComponent() {
                                   placeholder="All verification"
                                 />
                                 <FilterSelect
+                                  isActive={
+                                    (workFilters.sort ?? "smart_priority") !== "smart_priority"
+                                  }
                                   label="Sort"
                                   value={workFilters.sort ?? "smart_priority"}
                                   onChange={(value) =>
@@ -1626,12 +1635,14 @@ function summarizeProfiles(tasks: DashboardTaskRow[]): ProfileSummary[] {
 }
 
 function FilterSelect({
+  isActive = false,
   label,
   onChange,
   options,
   placeholder,
   value,
 }: {
+  isActive?: boolean;
   label: string;
   onChange: (value: string) => void;
   options: Array<{ value: string; label: string }>;
@@ -1639,13 +1650,19 @@ function FilterSelect({
   value: string;
 }) {
   return (
-    <label className="grid gap-1 text-xs font-medium text-muted-foreground">
+    <label className="grid min-w-0 gap-1 text-xs font-medium text-muted-foreground">
       {label}
       <Select value={value} onValueChange={(nextValue) => onChange(nextValue ?? "")}>
-        <SelectTrigger className="h-8 w-full rounded-lg bg-ddhq-paper">
-          <SelectValue placeholder={placeholder} />
+        <SelectTrigger
+          className={
+            isActive
+              ? "h-8 w-full min-w-0 overflow-hidden rounded-lg bg-ddhq-paper *:data-[slot=select-value]:min-w-0 *:data-[slot=select-value]:overflow-hidden *:data-[slot=select-value]:truncate *:data-[slot=select-value]:font-semibold *:data-[slot=select-value]:text-primary"
+              : "h-8 w-full min-w-0 overflow-hidden rounded-lg bg-ddhq-paper *:data-[slot=select-value]:min-w-0 *:data-[slot=select-value]:overflow-hidden *:data-[slot=select-value]:truncate"
+          }
+        >
+          <SelectValue className="truncate" placeholder={placeholder} />
         </SelectTrigger>
-        <SelectContent className="rounded-lg">
+        <SelectContent className="z-[100] rounded-lg" positionerClassName="z-[100]">
           {placeholder ? <SelectItem value="">{placeholder}</SelectItem> : null}
           {options.map((option) => (
             <SelectItem key={option.value} value={option.value}>
