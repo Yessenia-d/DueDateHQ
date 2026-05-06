@@ -44,8 +44,9 @@ test("Karbon contact exports map client identifiers and full state names", () =>
   );
 
   assert.equal(result.detectedSourceProfile, "karbon_import_file_v1");
-  assert.ok(result.recognizedFields.includes("sourceRowId"));
+  assert.ok(result.recognizedFields.includes("sourceClientId"));
   assert.equal(result.rows[0]?.sourceRowId, "K-0007");
+  assert.equal(result.rows[0]?.profile.sourceClientId, "K-0007");
   assert.deepEqual(result.rows[0]?.profile.states, ["NJ"]);
   assert.equal(result.rows[0]?.relationshipName, "Parent Group");
 });
@@ -87,4 +88,39 @@ test("TaxDome year-round profile exports detect headers across tax-specific colu
   assert.equal(result.rows[0]?.profile.clientName, "Harbor & Pine Family Office");
   assert.equal(result.rows[0]?.profile.entityType, "s_corp");
   assert.deepEqual(result.rows[0]?.profile.states, ["CA"]);
+});
+
+test("DueDateHQ canonical CSV fields support source client ids, filing profile names, and multi-state profiles", () => {
+  const result = parseWithSourceAdapter(
+    "taxdome",
+    [
+      "source_client_id,source_row_id,client_name,filing_profile_name,entity_type,states,fiscal_year_type,ein,ssn_last4",
+      "SRC-100,ROW-1,Harbor Group,Harbor 1120S,S Corporation,CA;NY,calendar_year,12-3456789,",
+    ].join("\n"),
+  );
+
+  assert.ok(result.recognizedFields.includes("sourceClientId"));
+  assert.ok(result.recognizedFields.includes("sourceRowId"));
+  assert.ok(result.recognizedFields.includes("filingProfileName"));
+  assert.ok(result.recognizedFields.includes("state"));
+  assert.equal(result.rows[0]?.sourceRowId, "ROW-1");
+  assert.equal(result.rows[0]?.profile.sourceClientId, "SRC-100");
+  assert.equal(result.rows[0]?.profile.filingProfileName, "Harbor 1120S");
+  assert.equal(result.rows[0]?.profile.entityType, "s_corp");
+  assert.deepEqual(result.rows[0]?.profile.states, ["CA", "NY"]);
+});
+
+test("canonical rows missing entity type stay in review and ambiguous states are not silently treated as verified jurisdictions", () => {
+  const result = parseWithSourceAdapter(
+    "taxdome",
+    [
+      "client_name,entity_type,states",
+      "Review Needed,,CA;Atlantis",
+    ].join("\n"),
+  );
+
+  assert.equal(result.rows[0]?.profile.entityType, null);
+  assert.deepEqual(result.rows[0]?.profile.states, ["CA"]);
+  assert.ok(result.rows[0]?.problemTypes.includes("missing_entity_type"));
+  assert.ok(result.rows[0]?.problemTypes.includes("missing_state"));
 });

@@ -31,9 +31,12 @@ const fieldAliases: Record<CanonicalField, string[]> = {
   ein: ["ein", "fein", "federalid", "federaltaxid", "taxid", "taxidnumber", "ssnein"],
   ssnLast4: ["ssn", "ssnlast4", "ssnlastfour", "tinlast4", "tinlastfour"],
   state: [
+    "states",
     "state",
     "taxstate",
+    "taxstates",
     "filingstate",
+    "filingstates",
     "billingstate",
     "addressstate",
     "province",
@@ -52,16 +55,34 @@ const fieldAliases: Record<CanonicalField, string[]> = {
   ],
   county: ["county", "taxcounty", "filingcounty"],
   fiscalYearType: ["fiscalyear", "fiscalyeartype", "fiscalyearend", "yearend", "fye"],
-  sourceRowId: [
+  sourceClientId: [
+    "sourceclientid",
+    "externalclientid",
+    "externalid",
+    "systemclientid",
+    "clientsourceid",
     "clientid",
     "clientidentifier",
     "clientnumber",
     "accountid",
     "customerid",
     "contactid",
+  ],
+  sourceRowId: [
+    "sourcerowid",
+    "rowid",
+    "importrowid",
     "identifier",
     "id",
     "number",
+  ],
+  filingProfileName: [
+    "filingprofilename",
+    "taxprofilename",
+    "profile",
+    "profilename",
+    "taxprofile",
+    "filingprofile",
   ],
   relationshipName: [
     "linkedaccount",
@@ -119,6 +140,13 @@ function getMappedField(header: string): CanonicalField | null {
   if (normalized.includes("state")) return "state";
   if (normalized.includes("county")) return "county";
   if (normalized.includes("fiscal")) return "fiscalYearType";
+  if (normalized.includes("sourceclient") || normalized.includes("externalclient")) {
+    return "sourceClientId";
+  }
+  if (normalized.includes("sourcerow") || normalized.includes("rowid")) return "sourceRowId";
+  if (normalized.includes("filingprofile") || normalized.includes("taxprofile")) {
+    return "filingProfileName";
+  }
   if (normalized.includes("entity") || normalized.includes("return")) return "entityType";
   if (normalized.includes("email")) return "email";
   if (normalized.includes("phone")) return "phone";
@@ -167,6 +195,32 @@ function normalizeTaxIdentifier(value: string | null): string | null {
   return digits || value.trim();
 }
 
+function normalizeSourceIdentifier(value: string | null): string | null {
+  return normalizeValue(value);
+}
+
+function parseStates(value: string | null): { states: string[]; invalidStates: string[] } {
+  if (!value) return { states: [], invalidStates: [] };
+
+  const values = value
+    .split(/[;|,]/)
+    .map((state) => state.trim())
+    .filter(Boolean);
+  const states: string[] = [];
+  const invalidStates: string[] = [];
+
+  for (const state of values.length > 0 ? values : [value]) {
+    const normalized = normalizeStateCode(state);
+    if (normalized) {
+      if (!states.includes(normalized)) states.push(normalized);
+    } else {
+      invalidStates.push(state);
+    }
+  }
+
+  return { states, invalidStates };
+}
+
 function normalizeSsnLast4(value: string | null): string | null {
   if (!value) return null;
   const digits = value.replace(/\D/g, "");
@@ -199,6 +253,7 @@ function normalizeEntityType(value: string | null): {
   if (/nonprofit|not for profit|501/.test(normalized)) {
     return { entityType: "nonprofit", fuzzy: false };
   }
+  if (/other/.test(normalized)) return { entityType: "other", fuzzy: false };
   if (/business|organization|company|customer/.test(normalized)) {
     return { entityType: null, fuzzy: true };
   }
@@ -253,7 +308,11 @@ function getMappingConfidence(mapping: readonly ImportColumnMapping[]): number {
   return Math.round((score / mapping.length) * 100);
 }
 
-function getRowProblems(profile: ImportCanonicalProfile, fuzzyEntity: boolean) {
+function getRowProblems(
+  profile: ImportCanonicalProfile,
+  fuzzyEntity: boolean,
+  invalidStates: readonly string[],
+) {
   const problemTypes: ImportReviewProblemType[] = [];
   const messages: string[] = [];
 
@@ -273,6 +332,12 @@ function getRowProblems(profile: ImportCanonicalProfile, fuzzyEntity: boolean) {
     problemTypes.push("missing_state");
     messages.push("State is missing; federal tasks can still be reviewed.");
   }
+  if (invalidStates.length > 0) {
+    problemTypes.push("missing_state");
+    messages.push(
+      `State value${invalidStates.length === 1 ? "" : "s"} ${invalidStates.join(", ")} could not be mapped; verified state tasks will only use recognized states.`,
+    );
+  }
   if (!profile.ein && !profile.ssnLast4) {
     problemTypes.push("missing_tax_id");
     messages.push("Tax ID is missing or unavailable in this export.");
@@ -291,27 +356,38 @@ function toCanonicalRows({
   sourceSystem: ImportSourceSystem;
 }): CanonicalImportRow[] {
   return rows.map((row, index) => {
+    const sourceClientId = normalizeSourceIdentifier(
+      readMappedValue(row, mapping, "sourceClientId"),
+    );
     const sourceRowId =
-      readMappedValue(row, mapping, "sourceRowId") ?? `${sourceSystem}-row-${index + 1}`;
+      readMappedValue(row, mapping, "sourceRowId") ??
+      sourceClientId ??
+      `${sourceSystem}-row-${index + 1}`;
     const clientName = readMappedValue(row, mapping, "clientName") ?? combineNameParts(row);
     const rawEntityType = readMappedValue(row, mapping, "entityType");
     const { entityType, fuzzy } = normalizeEntityType(rawEntityType);
-    const state = normalizeStateCode(readMappedValue(row, mapping, "state"));
+    const parsedStates = parseStates(readMappedValue(row, mapping, "state"));
     const ein = normalizeTaxIdentifier(readMappedValue(row, mapping, "ein"));
     const ssnLast4 = normalizeSsnLast4(readMappedValue(row, mapping, "ssnLast4"));
     const profile: ImportCanonicalProfile = {
       clientName,
       ein: entityType === "individual" ? null : ein,
       ssnLast4: entityType === "individual" ? ssnLast4 ?? normalizeSsnLast4(ein) : ssnLast4,
-      state,
-      states: state ? [state] : [],
+      state: parsedStates.states[0] ?? null,
+      states: parsedStates.states,
       entityType,
       county: readMappedValue(row, mapping, "county"),
       fiscalYearType: normalizeFiscalYearType(readMappedValue(row, mapping, "fiscalYearType")),
       sourceSystem,
+      sourceClientId,
       sourceRowId,
+      filingProfileName: normalizeValue(readMappedValue(row, mapping, "filingProfileName")),
     };
-    const { problemTypes, messages } = getRowProblems(profile, fuzzy);
+    const { problemTypes, messages } = getRowProblems(
+      profile,
+      fuzzy,
+      parsedStates.invalidStates,
+    );
 
     return {
       reviewItemId: crypto.randomUUID(),

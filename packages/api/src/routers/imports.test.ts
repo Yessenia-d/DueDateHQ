@@ -7,6 +7,7 @@ import {
   deadlineDateEvents,
   deadlineTasks,
   filingProfiles,
+  type ClientRelationship,
 } from "@due-date-hq/db/schema/deadline-domain";
 import {
   duplicateCandidates,
@@ -161,11 +162,31 @@ function makeReviewItem(overrides: Partial<ImportReviewItem> = {}): ImportReview
       county: null,
       fiscalYearType: "calendar_year",
       sourceSystem: "taxdome",
+      sourceClientId: null,
       sourceRowId: "taxdome-row-1",
+      filingProfileName: null,
     },
     sourceFields: {},
     messages: [],
     createdAt: now,
+    ...overrides,
+  };
+}
+
+function makeClientRelationship(
+  overrides: Partial<ClientRelationship> = {},
+): ClientRelationship {
+  return {
+    id: "client-existing",
+    firmId: "firm-test",
+    displayName: "Acme Advisors LLC",
+    relationshipType: "business",
+    notes: null,
+    sourceSystem: "taxdome",
+    sourceClientId: "SRC-100",
+    createdVia: "csv_import",
+    createdAt: now,
+    updatedAt: now,
     ...overrides,
   };
 }
@@ -241,7 +262,7 @@ test("imports.commit creates client relationships, filing profiles, and verified
   const writes: InsertWrite[] = [];
   const updates: UpdateWrite[] = [];
   const caller = createCaller({
-    selectQueue: [[makeBatch()], [makeReviewItem()], [], [], []],
+    selectQueue: [[makeBatch()], [makeReviewItem()], [], [], [], []],
     updates,
     writes,
   });
@@ -282,7 +303,7 @@ test("imports.commit rejects unresolved relationship suggestions before finalizi
   const writes: InsertWrite[] = [];
   const updates: UpdateWrite[] = [];
   const caller = createCaller({
-    selectQueue: [[makeBatch()], [makeReviewItem()], [], [makeRelationshipSuggestion()], []],
+    selectQueue: [[makeBatch()], [makeReviewItem()], [], [makeRelationshipSuggestion()], [], []],
     updates,
     writes,
   });
@@ -300,7 +321,7 @@ test("imports.commit rejects unresolved duplicate candidates before finalizing t
   const writes: InsertWrite[] = [];
   const updates: UpdateWrite[] = [];
   const caller = createCaller({
-    selectQueue: [[makeBatch()], [makeReviewItem()], [makeDuplicateCandidate()], [], []],
+    selectQueue: [[makeBatch()], [makeReviewItem()], [makeDuplicateCandidate()], [], [], []],
     updates,
     writes,
   });
@@ -318,7 +339,7 @@ test("imports.commit rejects unresolved duplicate candidates before finalizing t
 test("imports.commit applies full state name corrections before creating filing profiles", async () => {
   const writes: InsertWrite[] = [];
   const caller = createCaller({
-    selectQueue: [[makeBatch()], [makeReviewItem()], [], [], []],
+    selectQueue: [[makeBatch()], [makeReviewItem()], [], [], [], []],
     writes,
   });
 
@@ -338,4 +359,136 @@ test("imports.commit applies full state name corrections before creating filing 
 
   assert.ok(profileWrite);
   assert.deepEqual(profileWrite.row.states, ["NJ"]);
+});
+
+test("imports.commit reuses one client relationship for repeated source client ids in the same batch", async () => {
+  const writes: InsertWrite[] = [];
+  const firstRow = makeReviewItem({
+    id: "review-first",
+    sourceRowId: "ROW-1",
+    canonicalProfile: {
+      ...makeReviewItem().canonicalProfile,
+      sourceClientId: "SRC-100",
+      sourceRowId: "ROW-1",
+      filingProfileName: "Harbor federal profile",
+    },
+  });
+  const secondRow = makeReviewItem({
+    id: "review-second",
+    sourceRowId: "ROW-2",
+    rowIndex: 2,
+    canonicalProfile: {
+      ...makeReviewItem().canonicalProfile,
+      sourceClientId: "SRC-100",
+      sourceRowId: "ROW-2",
+      filingProfileName: "Harbor state profile",
+      states: ["NY"],
+      state: "NY",
+    },
+  });
+  const caller = createCaller({
+    selectQueue: [[makeBatch()], [firstRow, secondRow], [], [], [], []],
+    writes,
+  });
+
+  const result = await caller.imports.commit({ batchId: "batch-test" });
+
+  assert.equal(result.createdClientRelationshipCount, 1);
+  assert.equal(result.matchedClientRelationshipCount, 1);
+  assert.equal(result.createdFilingProfileCount, 2);
+
+  const clientWrites = writes.filter((write) => write.table === clientRelationships);
+  const profileWrites = writes.filter((write) => write.table === filingProfiles);
+
+  assert.equal(clientWrites.length, 1);
+  assert.equal(clientWrites[0]?.row.sourceClientId, "SRC-100");
+  assert.equal(profileWrites.length, 2);
+  assert.deepEqual(
+    profileWrites.map((write) => write.row.clientRelationshipId),
+    [clientWrites[0]?.row.id, clientWrites[0]?.row.id],
+  );
+  assert.deepEqual(
+    profileWrites.map((write) => write.row.displayName),
+    ["Harbor federal profile", "Harbor state profile"],
+  );
+});
+
+test("imports.commit reuses existing client relationships by source system and source client id", async () => {
+  const writes: InsertWrite[] = [];
+  const caller = createCaller({
+    selectQueue: [
+      [makeBatch()],
+      [
+        makeReviewItem({
+          canonicalProfile: {
+            ...makeReviewItem().canonicalProfile,
+            sourceClientId: "SRC-100",
+            filingProfileName: "Reimported 1120S profile",
+          },
+        }),
+      ],
+      [],
+      [],
+      [],
+      [makeClientRelationship()],
+    ],
+    writes,
+  });
+
+  const result = await caller.imports.commit({ batchId: "batch-test" });
+
+  assert.equal(result.createdClientRelationshipCount, 0);
+  assert.equal(result.matchedClientRelationshipCount, 1);
+  assert.equal(writes.some((write) => write.table === clientRelationships), false);
+
+  const profileWrite = writes.find((write) => write.table === filingProfiles);
+
+  assert.ok(profileWrite);
+  assert.equal(profileWrite.row.clientRelationshipId, "client-existing");
+  assert.equal(profileWrite.row.displayName, "Reimported 1120S profile");
+});
+
+test("imports.commit stores source client ids when updating an existing duplicate client", async () => {
+  const writes: InsertWrite[] = [];
+  const updates: UpdateWrite[] = [];
+  const caller = createCaller({
+    selectQueue: [
+      [makeBatch()],
+      [
+        makeReviewItem({
+          canonicalProfile: {
+            ...makeReviewItem().canonicalProfile,
+            sourceClientId: "SRC-100",
+            filingProfileName: "Matched duplicate profile",
+          },
+        }),
+      ],
+      [makeDuplicateCandidate()],
+      [],
+      [],
+      [makeClientRelationship({ sourceSystem: "manual", sourceClientId: null })],
+    ],
+    updates,
+    writes,
+  });
+
+  const result = await caller.imports.commit({
+    batchId: "batch-test",
+    duplicateResolutions: [
+      {
+        duplicateCandidateId: "duplicate-test",
+        resolution: "update_existing",
+      },
+    ],
+  });
+
+  assert.equal(result.createdClientRelationshipCount, 0);
+  assert.equal(result.updatedDuplicateCount, 1);
+
+  const clientUpdate = updates.find((update) => update.table === clientRelationships);
+
+  assert.ok(clientUpdate);
+  assert.equal(clientUpdate.values.sourceSystem, "taxdome");
+  assert.equal(clientUpdate.values.sourceClientId, "SRC-100");
+  assert.equal(writes.some((write) => write.table === clientRelationships), false);
 });

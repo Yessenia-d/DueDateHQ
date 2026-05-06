@@ -13,7 +13,9 @@ export type CanonicalField =
   | "entityType"
   | "county"
   | "fiscalYearType"
+  | "sourceClientId"
   | "sourceRowId"
+  | "filingProfileName"
   | "relationshipName"
   | "email"
   | "phone";

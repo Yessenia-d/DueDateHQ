@@ -121,29 +121,47 @@ function appendProblem(
 function getExistingClientMaps(existingClientRelationships: readonly ClientRelationship[]) {
   const byId = new Map<string, ClientRelationship>();
   const byName = new Map<string, ClientRelationship>();
+  const bySourceClientId = new Map<string, ClientRelationship>();
 
   for (const client of existingClientRelationships) {
     byId.set(client.id, client);
     byName.set(normalizeKey(client.displayName), client);
+    if (client.sourceClientId) {
+      bySourceClientId.set(
+        `${client.sourceSystem}:${normalizeKey(client.sourceClientId)}`,
+        client,
+      );
+    }
   }
 
-  return { byId, byName };
+  return { byId, byName, bySourceClientId };
 }
 
 function findDuplicateCandidate({
   clientById,
   clientByName,
+  clientBySourceClientId,
   existingFilingProfiles,
   profile,
 }: {
   clientById: ReadonlyMap<string, ClientRelationship>;
   clientByName: ReadonlyMap<string, ClientRelationship>;
+  clientBySourceClientId: ReadonlyMap<string, ClientRelationship>;
   existingFilingProfiles: readonly FilingProfile[];
   profile: ImportCanonicalProfile;
 }) {
   const matchedFields: string[] = [];
   let matchedProfile: FilingProfile | null = null;
   let matchedClient: ClientRelationship | null = null;
+
+  if (
+    profile.sourceClientId &&
+    clientBySourceClientId.has(
+      `${profile.sourceSystem}:${normalizeKey(profile.sourceClientId)}`,
+    )
+  ) {
+    return null;
+  }
 
   const clientNameKey = normalizeKey(profile.clientName);
   const existingClient = clientNameKey ? clientByName.get(clientNameKey) : undefined;
@@ -242,6 +260,7 @@ export function buildImportReview({
     const duplicate = findDuplicateCandidate({
       clientById: clientMaps.byId,
       clientByName: clientMaps.byName,
+      clientBySourceClientId: clientMaps.bySourceClientId,
       existingFilingProfiles,
       profile: row.profile,
     });

@@ -68,6 +68,7 @@ function makeClient(overrides: Partial<ClientRelationship> = {}): ClientRelation
     relationshipType: "business",
     notes: null,
     sourceSystem: "manual",
+    sourceClientId: null,
     createdVia: "manual",
     createdAt: now,
     updatedAt: now,

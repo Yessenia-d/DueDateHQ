@@ -7,6 +7,7 @@ import {
   filingProfileEntityTypes,
   filingProfiles,
   fiscalYearTypes,
+  type ClientRelationship,
   type FilingProfileEntityType,
   type FiscalYearType,
 } from "@due-date-hq/db/schema/deadline-domain";
@@ -54,6 +55,7 @@ const previewInsertChunkSize = 8;
 
 const profileCorrectionSchema = z.object({
   clientName: z.string().trim().min(1).max(200).optional(),
+  filingProfileName: optionalTextCorrectionSchema,
   ein: optionalTextCorrectionSchema,
   ssnLast4: optionalTextCorrectionSchema,
   state: optionalTextCorrectionSchema,
@@ -144,6 +146,10 @@ export type ImportPreviewResponse = {
     totalRows: number;
     readyProfiles: number;
     reviewProfiles: number;
+    newClientRelationships: number;
+    matchedClientRelationships: number;
+    filingProfiles: number;
+    generatedVerifiedTasks: number;
     duplicateCandidates: number;
     relationshipSuggestions: number;
   };
@@ -154,6 +160,7 @@ export type ImportCommitResponse = {
   status: "committed";
   readyProfileCount: number;
   createdClientRelationshipCount: number;
+  matchedClientRelationshipCount: number;
   createdFilingProfileCount: number;
   createdVerifiedTaskCount: number;
   updatedDuplicateCount: number;
@@ -214,6 +221,7 @@ function normalizeStates(states: readonly string[]): string[] {
   return [
     ...new Set(
       states
+        .flatMap((state) => state.split(/[;|,]/))
         .map((state) => normalizeStateCode(state))
         .filter((state): state is string => Boolean(state)),
     ),
@@ -228,6 +236,103 @@ function normalizeSsnLast4(value: string | null): string | null {
 function normalizeTaxId(value: string | null): string | null {
   const normalized = value?.replace(/\D/g, "") ?? "";
   return normalized || normalizeText(value);
+}
+
+function normalizeSourceClientKey(
+  sourceSystem: string,
+  sourceClientId: string | null | undefined,
+): string | null {
+  const normalized = normalizeText(sourceClientId)?.toLowerCase();
+  return normalized ? `${sourceSystem}:${normalized}` : null;
+}
+
+function createSourceClientIdMap(
+  clients: readonly ClientRelationship[],
+): Map<string, ClientRelationship> {
+  const bySourceClientId = new Map<string, ClientRelationship>();
+
+  for (const client of clients) {
+    const key = normalizeSourceClientKey(client.sourceSystem, client.sourceClientId);
+    if (key) {
+      bySourceClientId.set(key, client);
+    }
+  }
+
+  return bySourceClientId;
+}
+
+function countGeneratedVerifiedTasks(profile: ImportCanonicalProfile): number {
+  if (!profile.entityType) return 0;
+
+  const obligations = getSeedObligations();
+  const rules = getSeedRules();
+  const matchedRules = matchProfileToRules(
+    {
+      id: profile.sourceRowId,
+      firmId: "preview",
+      entityType: profile.entityType,
+      jurisdictions: ["federal", ...profile.states],
+    },
+    obligations,
+    rules,
+  );
+
+  return generateDeadlineTasks(
+    {
+      id: profile.sourceRowId,
+      firmId: "preview",
+      entityType: profile.entityType,
+      jurisdictions: ["federal", ...profile.states],
+    },
+    matchedRules,
+    getTaskGenerationTaxYears(),
+  ).length;
+}
+
+function buildPreviewSummaryDetails({
+  existingClientRelationships,
+  items,
+}: {
+  existingClientRelationships: readonly ClientRelationship[];
+  items: readonly ImportReviewItemDraft[];
+}) {
+  const existingBySourceClientId = createSourceClientIdMap(existingClientRelationships);
+  const batchSourceClientIds = new Set<string>();
+  let newClientRelationships = 0;
+  let matchedClientRelationships = 0;
+  let generatedVerifiedTasks = 0;
+
+  for (const item of items) {
+    const profile = item.canonicalProfile;
+    generatedVerifiedTasks += countGeneratedVerifiedTasks(profile);
+
+    if (!profile.clientName || !profile.entityType) continue;
+
+    const sourceClientKey = normalizeSourceClientKey(
+      profile.sourceSystem,
+      profile.sourceClientId,
+    );
+
+    if (!sourceClientKey) {
+      newClientRelationships++;
+      continue;
+    }
+
+    if (existingBySourceClientId.has(sourceClientKey) || batchSourceClientIds.has(sourceClientKey)) {
+      matchedClientRelationships++;
+      continue;
+    }
+
+    batchSourceClientIds.add(sourceClientKey);
+    newClientRelationships++;
+  }
+
+  return {
+    newClientRelationships,
+    matchedClientRelationships,
+    filingProfiles: items.length,
+    generatedVerifiedTasks,
+  };
 }
 
 function applyProfileCorrection(
@@ -257,6 +362,10 @@ function applyProfileCorrection(
     ...profile,
     clientName:
       correction.clientName === undefined ? profile.clientName : normalizeText(correction.clientName),
+    filingProfileName:
+      correction.filingProfileName === undefined
+        ? profile.filingProfileName
+        : normalizeText(correction.filingProfileName),
     ein: correctedEntityType === "individual" ? null : correctedEin,
     ssnLast4:
       correctedEntityType === "individual"
@@ -313,6 +422,9 @@ function pluralize(count: number, singular: string, plural = `${singular}s`) {
 
 function buildCommitSummary(response: Omit<ImportCommitResponse, "summary">): string {
   return [
+    `${pluralize(response.createdClientRelationshipCount, "client relationship")} created.`,
+    `${pluralize(response.matchedClientRelationshipCount + response.updatedDuplicateCount, "client relationship")} matched or updated.`,
+    `${pluralize(response.createdFilingProfileCount, "filing profile")} created.`,
     `${pluralize(response.readyProfileCount, "filing profile")} ready for deadline work.`,
     `${pluralize(response.createdVerifiedTaskCount, "verified deadline task")} generated from DueDateHQ Verified rules.`,
     `${pluralize(response.profileReviewItemCount, "profile")} still need review.`,
@@ -377,6 +489,8 @@ async function recordImportAuditLog({
     beforeState: null,
     afterState: {
       readyProfileCount: response.readyProfileCount,
+      createdClientRelationshipCount: response.createdClientRelationshipCount,
+      matchedClientRelationshipCount: response.matchedClientRelationshipCount,
       createdFilingProfileCount: response.createdFilingProfileCount,
       createdVerifiedTaskCount: response.createdVerifiedTaskCount,
       profileReviewItemCount: response.profileReviewItemCount,
@@ -489,6 +603,10 @@ export const importsRouter = router({
       });
       const acceptedRows = review.items.filter((item) => item.status === "accepted");
       const reviewRows = review.items.filter((item) => item.status === "needs_review");
+      const previewSummaryDetails = buildPreviewSummaryDetails({
+        existingClientRelationships,
+        items: review.items,
+      });
       const now = new Date();
       const batchId = crypto.randomUUID();
 
@@ -604,6 +722,10 @@ export const importsRouter = router({
           totalRows: review.items.length,
           readyProfiles: acceptedRows.length,
           reviewProfiles: reviewRows.length,
+          newClientRelationships: previewSummaryDetails.newClientRelationships,
+          matchedClientRelationships: previewSummaryDetails.matchedClientRelationships,
+          filingProfiles: previewSummaryDetails.filingProfiles,
+          generatedVerifiedTasks: previewSummaryDetails.generatedVerifiedTasks,
           duplicateCandidates: review.duplicateCandidates.length,
           relationshipSuggestions: review.relationshipSuggestions.length,
         },
@@ -639,6 +761,11 @@ export const importsRouter = router({
         .from(deadlineTasks)
         .where(eq(deadlineTasks.firmId, session.firm.id))
         .orderBy(asc(deadlineTasks.createdAt));
+      const existingClientRelationships = await ctx.db
+        .select()
+        .from(clientRelationships)
+        .where(eq(clientRelationships.firmId, session.firm.id))
+        .orderBy(asc(clientRelationships.displayName));
       const correctionByItemId = new Map(
         input.rowCorrections.map((correction) => [correction.reviewItemId, correction.profile]),
       );
@@ -699,9 +826,19 @@ export const importsRouter = router({
           .map((task) => task.recurrenceKey)
           .filter((key): key is string => Boolean(key)),
       );
+      const sourceClientIdToRelationshipId = new Map(
+        [...createSourceClientIdMap(existingClientRelationships)].map(([key, client]) => [
+          key,
+          client.id,
+        ]),
+      );
+      const existingClientRelationshipById = new Map(
+        existingClientRelationships.map((client) => [client.id, client]),
+      );
       const profileResults: ImportCommitResponse["profileResults"] = [];
       let readyProfileCount = 0;
       let createdClientRelationshipCount = 0;
+      let matchedClientRelationshipCount = 0;
       let createdFilingProfileCount = 0;
       let createdVerifiedTaskCount = 0;
       let updatedDuplicateCount = 0;
@@ -756,9 +893,46 @@ export const importsRouter = router({
 
         const fiscalYearType: FiscalYearType = profile.fiscalYearType ?? "calendar_year";
         let clientRelationshipId = duplicate?.existingClientRelationshipId ?? null;
+        const sourceClientKey = normalizeSourceClientKey(batch.sourceSystem, profile.sourceClientId);
 
         if (duplicateResolution === "update_existing" && clientRelationshipId) {
           updatedDuplicateCount++;
+          if (sourceClientKey) {
+            sourceClientIdToRelationshipId.set(sourceClientKey, clientRelationshipId);
+            const existingClient = existingClientRelationshipById.get(clientRelationshipId);
+            const existingSourceClientKey = existingClient
+              ? normalizeSourceClientKey(existingClient.sourceSystem, existingClient.sourceClientId)
+              : null;
+
+            if (!existingSourceClientKey && profile.sourceClientId) {
+              await ctx.db
+                .update(clientRelationships)
+                .set({
+                  sourceSystem: batch.sourceSystem,
+                  sourceClientId: profile.sourceClientId,
+                  updatedAt: now,
+                })
+                .where(
+                  and(
+                    eq(clientRelationships.firmId, session.firm.id),
+                    eq(clientRelationships.id, clientRelationshipId),
+                  ),
+                )
+                .returning();
+
+              if (existingClient) {
+                existingClientRelationshipById.set(clientRelationshipId, {
+                  ...existingClient,
+                  sourceSystem: batch.sourceSystem,
+                  sourceClientId: profile.sourceClientId,
+                  updatedAt: now,
+                });
+              }
+            }
+          }
+        } else if (sourceClientKey && sourceClientIdToRelationshipId.has(sourceClientKey)) {
+          clientRelationshipId = sourceClientIdToRelationshipId.get(sourceClientKey) ?? null;
+          matchedClientRelationshipCount++;
         } else {
           const [client] = await ctx.db
             .insert(clientRelationships)
@@ -769,6 +943,7 @@ export const importsRouter = router({
               relationshipType: relationshipTypeFromEntity(entityType),
               notes: null,
               sourceSystem: batch.sourceSystem,
+              sourceClientId: profile.sourceClientId,
               createdVia: "csv_import",
               createdAt: now,
               updatedAt: now,
@@ -784,6 +959,16 @@ export const importsRouter = router({
 
           clientRelationshipId = client.id;
           createdClientRelationshipCount++;
+          if (sourceClientKey) {
+            sourceClientIdToRelationshipId.set(sourceClientKey, clientRelationshipId);
+          }
+        }
+
+        if (!clientRelationshipId) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Imported client relationship could not be matched or created.",
+          });
         }
 
         const coverage = summarizeProfileCoverage(profile, obligations, rules);
@@ -797,7 +982,7 @@ export const importsRouter = router({
             id: crypto.randomUUID(),
             firmId: session.firm.id,
             clientRelationshipId,
-            displayName: clientName,
+            displayName: profile.filingProfileName ?? clientName,
             ein: profile.ein,
             ssnLast4: profile.ssnLast4,
             entityType,
@@ -929,6 +1114,7 @@ export const importsRouter = router({
         status: "committed",
         readyProfileCount,
         createdClientRelationshipCount,
+        matchedClientRelationshipCount,
         createdFilingProfileCount,
         createdVerifiedTaskCount,
         updatedDuplicateCount,

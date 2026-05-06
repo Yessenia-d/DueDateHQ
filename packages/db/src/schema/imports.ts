@@ -70,7 +70,9 @@ export type ImportCanonicalProfile = {
   county: string | null;
   fiscalYearType: (typeof fiscalYearTypes)[number] | null;
   sourceSystem: ImportSourceSystem;
+  sourceClientId: string | null;
   sourceRowId: string;
+  filingProfileName: string | null;
 };
 
 export const importBatches = sqliteTable(
