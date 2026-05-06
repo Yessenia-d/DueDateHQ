@@ -1,5 +1,15 @@
 import { Button } from "@due-date-hq/ui/components/button";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@due-date-hq/ui/components/dialog";
+import { Input } from "@due-date-hq/ui/components/input";
+import { Label } from "@due-date-hq/ui/components/label";
+import {
   Pagination,
   PaginationContent,
   PaginationEllipsis,
@@ -15,10 +25,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@due-date-hq/ui/components/select";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { Textarea } from "@due-date-hq/ui/components/textarea";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
   CalendarDays,
+  CalendarPlus,
   Check,
   ChevronLeft,
   ChevronRight,
@@ -41,6 +53,10 @@ import { formatDate, formatDateTime, formatMonthDay } from "@/utils/date-format"
 import { trpc } from "@/utils/trpc";
 
 import type {
+  ClientListItemResponse,
+  FilingProfileResponse,
+} from "@due-date-hq/api/routers/clients";
+import type {
   DashboardHorizon,
   DashboardSection,
   DashboardSort,
@@ -52,6 +68,9 @@ import type {
 } from "@due-date-hq/api/routers/dashboard";
 
 type DeadlineTaskStatus = DashboardTaskRow["status"];
+type DeadlineKind = "filing" | "payment";
+type DeadlinePriority = "low" | "normal" | "high" | "urgent";
+type Recurrence = "none" | "monthly" | "quarterly" | "annual";
 type DashboardExceptionFocus =
   | "source_changed"
   | "needs_review"
@@ -95,6 +114,25 @@ const dashboardHorizons: DashboardTaskHorizon[] = [
   "this_month",
   "long_range",
 ];
+
+const deadlineKindOptions = [
+  { value: "filing", label: "Filing" },
+  { value: "payment", label: "Payment" },
+] as const satisfies readonly { value: DeadlineKind; label: string }[];
+
+const priorityOptions = [
+  { value: "low", label: "Low" },
+  { value: "normal", label: "Normal" },
+  { value: "high", label: "High" },
+  { value: "urgent", label: "Urgent" },
+] as const satisfies readonly { value: DeadlinePriority; label: string }[];
+
+const recurrenceOptions = [
+  { value: "none", label: "One-time" },
+  { value: "monthly", label: "Monthly" },
+  { value: "quarterly", label: "Quarterly" },
+  { value: "annual", label: "Annual" },
+] as const satisfies readonly { value: Recurrence; label: string }[];
 
 const horizonProgressBuckets = {
   overdue: [
@@ -360,6 +398,7 @@ export function DashboardPage() {
   const [selectedTaskIds, setSelectedTaskIds] = React.useState<Set<string>>(new Set());
   const [evidenceTaskId, setEvidenceTaskId] = React.useState<string | null>(null);
   const [showFilters, setShowFilters] = React.useState(false);
+  const [isQuickAddOpen, setIsQuickAddOpen] = React.useState(false);
   const [filterDraft, setFilterDraft] = React.useState<DashboardFilterDraft>(() => ({
     calendarMonthId: null,
     exceptionFocus: null,
@@ -383,6 +422,7 @@ export function DashboardPage() {
     ...trpc.dashboard.summary.queryOptions(dashboardInput),
     placeholderData: keepPreviousData,
   });
+  const clients = useQuery(trpc.clients.list.queryOptions());
   const activeHorizonTasks = React.useMemo(
     () => dashboard.data?.allTasks.filter((task) => task.horizon === activeHorizon) ?? [],
     [activeHorizon, dashboard.data],
@@ -749,6 +789,15 @@ export function DashboardPage() {
                 <Download className="size-3.5" />
                 Download CSV
               </Button>
+              <Button
+                type="button"
+                size="sm"
+                className="h-8 rounded-lg"
+                onClick={() => setIsQuickAddOpen(true)}
+              >
+                <CalendarPlus className="size-3.5" />
+                Add task
+              </Button>
             </div>
           </div>
         </section>
@@ -778,9 +827,364 @@ export function DashboardPage() {
         </section>
       </div>
 
+      <QuickAddTaskDialog
+        clients={clients.data?.clients ?? []}
+        open={isQuickAddOpen}
+        onOpenChange={setIsQuickAddOpen}
+      />
       <EvidenceDrawer taskId={evidenceTaskId} onClose={() => setEvidenceTaskId(null)} />
     </main>
   );
+}
+
+function QuickAddTaskDialog({
+  clients,
+  onOpenChange,
+  open,
+}: {
+  clients: ClientListItemResponse[];
+  onOpenChange: (open: boolean) => void;
+  open: boolean;
+}) {
+  const queryClient = useQueryClient();
+  const [selectedClientId, setSelectedClientId] = React.useState("");
+  const [filingProfileId, setFilingProfileId] = React.useState("");
+  const [taxCategory, setTaxCategory] = React.useState("");
+  const [jurisdiction, setJurisdiction] = React.useState("federal");
+  const [formOrObligation, setFormOrObligation] = React.useState("");
+  const [deadlineKind, setDeadlineKind] = React.useState<DeadlineKind>("filing");
+  const [currentDueDate, setCurrentDueDate] = React.useState("");
+  const [firmTargetDate, setFirmTargetDate] = React.useState("");
+  const [priority, setPriority] = React.useState<DeadlinePriority>("normal");
+  const [recurrence, setRecurrence] = React.useState<Recurrence>("none");
+  const [referenceNote, setReferenceNote] = React.useState("");
+
+  const clientDetail = useQuery({
+    ...trpc.clients.get.queryOptions({ clientId: selectedClientId || "__none__" }),
+    enabled: open && Boolean(selectedClientId),
+  });
+  const selectedClient = clients.find((client) => client.id === selectedClientId);
+  const profiles = clientDetail.data?.profiles ?? [];
+  const selectedProfileId = filingProfileId || profiles[0]?.id || "";
+  const selectedProfile = profiles.find((profile) => profile.id === selectedProfileId);
+  const canSubmit = Boolean(selectedClientId && selectedProfileId);
+
+  const createManual = useMutation(
+    trpc.deadlineTasks.createManual.mutationOptions({
+      onError: (error) => toast.error(error.message),
+      onSuccess: () => {
+        toast.success("Entered deadline task added.");
+        resetForm({ preserveClient: true });
+        onOpenChange(false);
+        void Promise.all([
+          queryClient.invalidateQueries(trpc.dashboard.summary.queryFilter()),
+          queryClient.invalidateQueries(trpc.clients.list.queryFilter()),
+          queryClient.invalidateQueries(trpc.clients.get.queryFilter()),
+        ]);
+      },
+    }),
+  );
+
+  React.useEffect(() => {
+    if (!open || selectedClientId || clients.length === 0) return;
+    setSelectedClientId(clients[0]?.id ?? "");
+  }, [clients, open, selectedClientId]);
+
+  React.useEffect(() => {
+    setFilingProfileId(profiles[0]?.id ?? "");
+  }, [selectedClientId, profiles]);
+
+  function resetForm({ preserveClient = false }: { preserveClient?: boolean } = {}) {
+    if (!preserveClient) {
+      setSelectedClientId(clients[0]?.id ?? "");
+      setFilingProfileId("");
+    }
+    setTaxCategory("");
+    setJurisdiction("federal");
+    setFormOrObligation("");
+    setDeadlineKind("filing");
+    setCurrentDueDate("");
+    setFirmTargetDate("");
+    setPriority("normal");
+    setRecurrence("none");
+    setReferenceNote("");
+  }
+
+  function handleOpenChange(nextOpen: boolean) {
+    if (!nextOpen && createManual.isPending) return;
+    if (!nextOpen) resetForm({ preserveClient: true });
+    onOpenChange(nextOpen);
+  }
+
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!canSubmit) return;
+
+    createManual.mutate({
+      clientRelationshipId: selectedClientId,
+      filingProfileId: selectedProfileId,
+      taxCategory,
+      jurisdiction,
+      formOrObligation,
+      deadlineKind,
+      currentDueDate,
+      firmTargetDate: firmTargetDate || undefined,
+      priority,
+      recurrence,
+      referenceNote,
+    });
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="max-h-[min(760px,calc(100vh-2rem))] gap-0 overflow-hidden p-0 sm:max-w-2xl">
+        <DialogHeader className="border-b border-border px-5 pb-3 pt-5">
+          <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase text-muted-foreground">
+            <CalendarPlus className="size-3.5" />
+            Entered deadline
+          </div>
+          <DialogTitle className="text-base font-semibold">Add task</DialogTitle>
+          <DialogDescription className="mt-1 max-w-xl">
+            Save a manual entered deadline from the dashboard. It stays separate from Verified DueDateHQ rules.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form className="grid max-h-[calc(100vh-13rem)] gap-4 overflow-y-auto px-5 py-5" onSubmit={handleSubmit}>
+          <section className="grid gap-4 md:grid-cols-2">
+            <QuickAddField label="Client" htmlFor="quick-add-client">
+              <Select
+                value={selectedClientId}
+                onValueChange={(value) => {
+                  setSelectedClientId(value ?? "");
+                  setFilingProfileId("");
+                }}
+              >
+                <SelectTrigger id="quick-add-client" className="h-8 w-full">
+                  <QuickAddSelectLabel>
+                    {selectedClient?.displayName ?? "Select client"}
+                  </QuickAddSelectLabel>
+                </SelectTrigger>
+                <SelectContent>
+                  {clients.map((client) => (
+                    <SelectItem key={client.id} value={client.id}>
+                      {client.displayName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </QuickAddField>
+
+            <QuickAddField label="Filing profile" htmlFor="quick-add-profile">
+              <Select
+                value={selectedProfileId}
+                disabled={!selectedClientId || clientDetail.isPending || profiles.length === 0}
+                onValueChange={(value) => setFilingProfileId(value ?? "")}
+              >
+                <SelectTrigger id="quick-add-profile" className="h-8 w-full">
+                  <QuickAddSelectLabel>
+                    {selectedProfile
+                      ? getProfileLabel(selectedProfile)
+                      : getProfilePlaceholder(clientDetail.isPending, profiles)}
+                  </QuickAddSelectLabel>
+                </SelectTrigger>
+                <SelectContent>
+                  {profiles.map((profile) => (
+                    <SelectItem key={profile.id} value={profile.id}>
+                      {getProfileLabel(profile)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </QuickAddField>
+
+            <QuickAddField label="Tax type" htmlFor="quick-add-tax-category">
+              <Input
+                id="quick-add-tax-category"
+                value={taxCategory}
+                onChange={(event) => setTaxCategory(event.target.value)}
+                required
+              />
+            </QuickAddField>
+
+            <QuickAddField label="Jurisdiction" htmlFor="quick-add-jurisdiction">
+              <Input
+                id="quick-add-jurisdiction"
+                value={jurisdiction}
+                onChange={(event) => setJurisdiction(event.target.value)}
+                required
+              />
+            </QuickAddField>
+
+            <QuickAddField label="Form or obligation" htmlFor="quick-add-obligation">
+              <Input
+                id="quick-add-obligation"
+                value={formOrObligation}
+                onChange={(event) => setFormOrObligation(event.target.value)}
+                required
+              />
+            </QuickAddField>
+
+            <QuickAddField label="Filing/payment" htmlFor="quick-add-kind">
+              <Select
+                value={deadlineKind}
+                onValueChange={(value) => setDeadlineKind(value as DeadlineKind)}
+              >
+                <SelectTrigger id="quick-add-kind" className="h-8 w-full">
+                  <QuickAddSelectLabel>
+                    {getOptionLabel(deadlineKindOptions, deadlineKind)}
+                  </QuickAddSelectLabel>
+                </SelectTrigger>
+                <SelectContent>
+                  {deadlineKindOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </QuickAddField>
+
+            <QuickAddField label="Current due date" htmlFor="quick-add-due-date">
+              <Input
+                id="quick-add-due-date"
+                type="date"
+                value={currentDueDate}
+                onChange={(event) => setCurrentDueDate(event.target.value)}
+                required
+              />
+            </QuickAddField>
+
+            <QuickAddField label="Firm target date" htmlFor="quick-add-target-date">
+              <Input
+                id="quick-add-target-date"
+                type="date"
+                value={firmTargetDate}
+                onChange={(event) => setFirmTargetDate(event.target.value)}
+              />
+            </QuickAddField>
+
+            <QuickAddField label="Priority" htmlFor="quick-add-priority">
+              <Select
+                value={priority}
+                onValueChange={(value) => setPriority(value as DeadlinePriority)}
+              >
+                <SelectTrigger id="quick-add-priority" className="h-8 w-full">
+                  <QuickAddSelectLabel>
+                    {getOptionLabel(priorityOptions, priority)}
+                  </QuickAddSelectLabel>
+                </SelectTrigger>
+                <SelectContent>
+                  {priorityOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </QuickAddField>
+
+            <QuickAddField label="Recurrence" htmlFor="quick-add-recurrence">
+              <Select
+                value={recurrence}
+                onValueChange={(value) => setRecurrence(value as Recurrence)}
+              >
+                <SelectTrigger id="quick-add-recurrence" className="h-8 w-full">
+                  <QuickAddSelectLabel>
+                    {getOptionLabel(recurrenceOptions, recurrence)}
+                  </QuickAddSelectLabel>
+                </SelectTrigger>
+                <SelectContent>
+                  {recurrenceOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </QuickAddField>
+          </section>
+
+          <QuickAddField label="Reference" htmlFor="quick-add-reference">
+            <Textarea
+              id="quick-add-reference"
+              className="min-h-20"
+              placeholder="Prior-year workpaper, client notice, source data, or CPA judgment"
+              value={referenceNote}
+              onChange={(event) => setReferenceNote(event.target.value)}
+              required
+            />
+          </QuickAddField>
+
+          {selectedClientId && !clientDetail.isPending && profiles.length === 0 ? (
+            <div className="rounded-lg border border-ddhq-review/30 bg-ddhq-review-soft p-3 text-xs leading-5 text-ddhq-review">
+              This client does not have a filing profile yet. Add one from the client detail page before creating a task.
+            </div>
+          ) : null}
+
+          {selectedProfile ? (
+            <div className="rounded-lg border border-ddhq-line bg-ddhq-paper-muted/55 px-3 py-2 text-xs leading-5 text-muted-foreground">
+              Filing profile: <span className="font-medium text-foreground">{selectedProfile.displayName}</span>
+            </div>
+          ) : null}
+
+          <DialogFooter className="flex-row justify-end border-t border-border pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={createManual.isPending}
+              onClick={() => handleOpenChange(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={createManual.isPending || !canSubmit}>
+              <CalendarPlus className="size-3.5" />
+              Add task
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function QuickAddField({
+  children,
+  htmlFor,
+  label,
+}: {
+  children: React.ReactNode;
+  htmlFor: string;
+  label: string;
+}) {
+  return (
+    <div className="grid gap-1.5">
+      <Label htmlFor={htmlFor}>{label}</Label>
+      {children}
+    </div>
+  );
+}
+
+function QuickAddSelectLabel({ children }: { children: React.ReactNode }) {
+  return <span className="min-w-0 flex-1 truncate text-left">{children}</span>;
+}
+
+function getOptionLabel<T extends string>(
+  options: readonly { value: T; label: string }[],
+  value: T,
+): string {
+  return options.find((option) => option.value === value)?.label ?? value;
+}
+
+function getProfilePlaceholder(isLoading: boolean, profiles: FilingProfileResponse[]): string {
+  if (isLoading) return "Loading profiles";
+  if (profiles.length === 0) return "No filing profiles";
+  return "Select profile";
+}
+
+function getProfileLabel(profile: FilingProfileResponse): string {
+  return profile.states.length > 0
+    ? `${profile.displayName} - ${profile.states.join(", ")}`
+    : profile.displayName;
 }
 
 function DashboardEmptyState() {
