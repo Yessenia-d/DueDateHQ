@@ -82,35 +82,35 @@ const dashboardHorizons: DashboardTaskHorizon[] = [
 
 const horizonToneStyles = {
   overdue: {
-    activeCard: "border-transparent bg-ddhq-risk-soft/45 text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]",
+    activeCard: "border-ddhq-risk/20 bg-ddhq-risk-soft/32 text-foreground shadow-[0_1px_0_oklch(0.44_0.025_78/0.04)]",
     count: "text-ddhq-risk",
     dot: "bg-ddhq-risk",
     idleCard:
-      "border-transparent bg-transparent text-foreground hover:border-transparent hover:bg-ddhq-risk-soft/25",
+      "border-transparent bg-transparent text-foreground hover:bg-ddhq-risk-soft/18",
     title: "text-ddhq-risk",
   },
   due_this_week: {
-    activeCard: "border-transparent bg-ddhq-review-soft/50 text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.72)]",
+    activeCard: "border-ddhq-review/20 bg-ddhq-review-soft/34 text-foreground shadow-[0_1px_0_oklch(0.44_0.025_78/0.04)]",
     count: "text-ddhq-review",
     dot: "bg-ddhq-review",
     idleCard:
-      "border-transparent bg-transparent text-foreground hover:border-transparent hover:bg-ddhq-review-soft/25",
+      "border-transparent bg-transparent text-foreground hover:bg-ddhq-review-soft/18",
     title: "text-ddhq-review",
   },
   this_month: {
-    activeCard: "border-transparent bg-ddhq-accent-soft/45 text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.72)]",
+    activeCard: "border-primary/18 bg-ddhq-accent-soft/30 text-foreground shadow-[0_1px_0_oklch(0.44_0.025_78/0.04)]",
     count: "text-primary",
     dot: "bg-primary",
     idleCard:
-      "border-transparent bg-transparent text-foreground hover:border-transparent hover:bg-ddhq-accent-soft/25",
+      "border-transparent bg-transparent text-foreground hover:bg-ddhq-accent-soft/18",
     title: "text-primary",
   },
   long_range: {
-    activeCard: "border-transparent bg-ddhq-gap-soft/45 text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.72)]",
+    activeCard: "border-ddhq-gap/18 bg-ddhq-gap-soft/32 text-foreground shadow-[0_1px_0_oklch(0.44_0.025_78/0.04)]",
     count: "text-ddhq-gap",
     dot: "bg-ddhq-gap",
     idleCard:
-      "border-transparent bg-transparent text-foreground hover:border-transparent hover:bg-ddhq-gap-soft/25",
+      "border-transparent bg-transparent text-foreground hover:bg-ddhq-gap-soft/18",
     title: "text-ddhq-gap",
   },
 } satisfies Record<
@@ -414,11 +414,11 @@ export function DashboardPage() {
 
   if (dashboard.isPending) {
     return (
-      <main className="min-h-0 overflow-auto bg-background text-foreground">
-        <div className="mx-auto flex max-w-[1440px] flex-col gap-4 px-5 py-5">
-          <div className="h-24 animate-pulse rounded-xl border border-border bg-card" />
-          <div className="h-12 animate-pulse rounded-xl border border-border bg-card" />
-          <div className="h-[420px] animate-pulse rounded-xl border border-border bg-card" />
+      <main className="ddhq-page text-foreground">
+        <div className="ddhq-page-inner max-w-[1440px] gap-4">
+          <div className="h-24 animate-pulse ddhq-panel" />
+          <div className="h-12 animate-pulse ddhq-panel" />
+          <div className="h-[420px] animate-pulse ddhq-panel" />
         </div>
       </main>
     );
@@ -426,8 +426,8 @@ export function DashboardPage() {
 
   if (dashboard.isError) {
     return (
-      <main className="min-h-0 overflow-auto bg-background text-foreground">
-        <div className="mx-auto max-w-[1440px] px-5 py-5">
+      <main className="ddhq-page text-foreground">
+        <div className="ddhq-page-inner max-w-[1440px] gap-4">
           <div className="rounded-xl border border-ddhq-risk/30 bg-ddhq-risk-soft p-4 text-sm text-ddhq-risk">
             Dashboard data could not be loaded.
           </div>
@@ -453,46 +453,46 @@ export function DashboardPage() {
   const focusSummary = createFocusSummary({ exceptionFocus, selectedDate });
 
   return (
-    <main className="h-full min-h-0 overflow-hidden bg-background text-foreground">
-      <div className="mx-auto flex h-full min-h-0 w-full max-w-[1440px] flex-col gap-3 px-5 py-5">
+    <main className="ddhq-page h-full overflow-hidden text-foreground">
+      <div className="ddhq-page-inner h-full min-h-0 max-w-[1440px] gap-4 py-6">
         {/* Page header */}
-        <section className="pb-1">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div className="min-w-0">
-              <h1 className="text-2xl font-semibold leading-tight tracking-normal">
-                Deadline dashboard
-              </h1>
-            </div>
-            <div className="inline-flex items-center gap-1.5 whitespace-nowrap text-xs text-muted-foreground lg:justify-end">
+        <section className="ddhq-page-header">
+          <div className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1">
+            <h1 className="ddhq-title">
+              Deadline dashboard
+            </h1>
+            <p className="text-sm leading-6 text-muted-foreground">
+              Start with the nearest horizon, then narrow by workload date or exception.
+            </p>
+          </div>
+          <div className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg border border-ddhq-line bg-ddhq-paper-raised px-2.5 py-1.5 text-xs text-muted-foreground shadow-[0_1px_0_oklch(0.44_0.025_78/0.035)] md:justify-end">
               <span>Today {formatDate(data.today)}</span>
               <span aria-hidden="true" className="text-muted-foreground/60">
                 &bull;
               </span>
               <span>Generated {formatDateTime(data.generatedAt)}</span>
             </div>
+        </section>
+
+        <section className="grid shrink-0 gap-3 rounded-lg border border-ddhq-line bg-ddhq-paper-raised p-3 lg:grid-cols-[260px_minmax(0,1fr)]">
+          <div className="grid gap-1 rounded-lg bg-ddhq-paper-muted/38 p-1 sm:grid-cols-2 lg:grid-cols-1">
+            {dashboardHorizons.map((horizon) => {
+              const section = data.sections.find((item) => item.id === horizon);
+              const count = section?.count ?? 0;
+
+              return (
+                <HorizonCard
+                  key={horizon}
+                  count={count}
+                  horizon={horizon}
+                  isSelected={activeHorizon === horizon}
+                  onSelect={() => selectHorizon(horizon)}
+                  summary={getHorizonSummary(horizon, data)}
+                />
+              );
+            })}
           </div>
-        </section>
 
-        {/* Horizon selector */}
-        <section className="grid grid-cols-1 gap-1 rounded-xl border border-border/80 bg-card p-1 md:grid-cols-4">
-          {dashboardHorizons.map((horizon) => {
-            const section = data.sections.find((item) => item.id === horizon);
-            const count = section?.count ?? 0;
-
-            return (
-              <HorizonCard
-                key={horizon}
-                count={count}
-                horizon={horizon}
-                isSelected={activeHorizon === horizon}
-                onSelect={() => selectHorizon(horizon)}
-                summary={getHorizonSummary(horizon, data)}
-              />
-            );
-          })}
-        </section>
-
-        <section className="grid shrink-0 grid-cols-1 gap-2 xl:grid-cols-[minmax(0,1fr)_320px]">
           <WorkloadCalendar
             activeHorizon={activeHorizon}
             months={calendarMonths}
@@ -507,18 +507,10 @@ export function DashboardPage() {
               setSectionPages(createInitialSectionPages);
             }}
           />
-          <ExceptionSummary
-            activeFocus={exceptionFocus}
-            items={exceptionItems}
-            onSelect={(focus) => {
-              setExceptionFocus((current) => (current === focus ? null : focus));
-              setSectionPages(createInitialSectionPages);
-            }}
-          />
         </section>
 
         {/* Controls */}
-        <section className="flex flex-col gap-2">
+        <section className="flex flex-col gap-2 px-1 py-1">
           <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex min-h-8 flex-wrap items-center gap-2">
               <div className="relative">
@@ -562,7 +554,7 @@ export function DashboardPage() {
                   : "Default filters"}
               </span>
               {focusSummary ? (
-                <span className="inline-flex items-center gap-1 rounded-lg border border-border/80 bg-card px-2 py-1 text-xs font-medium text-muted-foreground">
+                <span className="inline-flex items-center gap-1 rounded-lg border border-ddhq-line bg-ddhq-paper-muted/55 px-2 py-1 text-xs font-medium text-muted-foreground">
                   {focusSummary}
                   <button
                     type="button"
@@ -577,6 +569,14 @@ export function DashboardPage() {
                   </button>
                 </span>
               ) : null}
+              <ExceptionSummary
+                activeFocus={exceptionFocus}
+                items={exceptionItems}
+                onSelect={(focus) => {
+                  setExceptionFocus((current) => (current === focus ? null : focus));
+                  setSectionPages(createInitialSectionPages);
+                }}
+              />
               {selectedCount > 0 ? (
                 <span className="ml-2 text-sm font-semibold">
                   {selectedCount} selected
@@ -611,7 +611,7 @@ export function DashboardPage() {
         </section>
 
         {/* Task sections */}
-        <section className="flex min-h-0 flex-1 basis-1/2 flex-col gap-1">
+        <section className="flex min-h-0 flex-1 basis-1/2 flex-col gap-2">
           {data.summary.total === 0 && !hasNonDefaultFilters ? (
             <DashboardEmptyState />
           ) : (
@@ -642,7 +642,7 @@ export function DashboardPage() {
 
 function DashboardEmptyState() {
   return (
-    <section className="grid min-h-60 place-items-center rounded-lg border border-border/80 bg-card px-4 py-8 text-center">
+    <section className="grid min-h-60 place-items-center ddhq-panel px-4 py-8 text-center">
       <div className="max-w-xl">
         <div className="mx-auto grid size-9 place-items-center rounded-lg border border-border bg-muted/40 text-primary">
           <FileUp className="size-4" />
@@ -699,7 +699,7 @@ function DeadlineTimeline({
   if (items.length === 0) return null;
 
   return (
-    <section className="rounded-xl border border-border/80 bg-card p-4">
+    <section className="ddhq-panel p-4">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
           <h2 className="text-base font-semibold leading-tight">Deadline timeline</h2>
@@ -736,8 +736,8 @@ function DeadlineTimeline({
                     item.isDone
                       ? "grid size-5 place-items-center rounded-full bg-ddhq-verified text-white"
                       : item.isNext
-                        ? "grid size-6 place-items-center rounded-full border-[5px] border-primary bg-card shadow-[0_0_0_3px_rgba(37,99,235,0.12)]"
-                        : "size-5 rounded-full border-2 border-ddhq-gap/65 bg-card"
+                        ? "grid size-6 place-items-center rounded-full border-[5px] border-primary bg-ddhq-paper-raised shadow-[0_0_0_3px_rgba(37,99,235,0.12)]"
+                        : "size-5 rounded-full border-2 border-ddhq-gap/65 bg-ddhq-paper-raised"
                   }
                 >
                   {item.isDone ? <Check className="size-3" /> : null}
@@ -771,7 +771,7 @@ function DeadlineTimeline({
           ))}
         </ol>
       </div>
-    </section>
+    </div>
   );
 }
 
@@ -789,7 +789,7 @@ function TaxCategoryDonut({
   if (total === 0) return null;
 
   return (
-    <aside className="rounded-xl border border-border/80 bg-card p-4">
+    <aside className="ddhq-panel p-4">
       <h2 className="text-base font-semibold leading-tight">Tax category overview</h2>
       <p className="mt-1 text-xs text-muted-foreground">{label} workload only</p>
       <div className="mt-4 grid gap-4 sm:grid-cols-[136px_minmax(0,1fr)] xl:grid-cols-1 2xl:grid-cols-[136px_minmax(0,1fr)]">
@@ -874,7 +874,7 @@ function TaxCategoryTooltip({
   }
 
   return (
-    <div className="rounded-md border border-border bg-card px-3 py-2 text-xs shadow-sm">
+    <div className="rounded-md border border-ddhq-line bg-ddhq-paper-raised px-3 py-2 text-xs shadow-[0_1px_0_oklch(0.44_0.025_78/0.035)]">
       <div className="font-medium text-foreground">{item.label}</div>
       <div className="mt-1 font-mono text-muted-foreground tabular-nums">
         {item.count} ({item.percent}%)
@@ -1043,25 +1043,25 @@ function createExceptionItems(tasks: DashboardTaskRow[]): ExceptionItem[] {
   return [
     {
       count: tasks.filter((task) => task.verificationStatus === "source_changed").length,
-      description: "Official source changed; evidence should be reviewed.",
+      description: "Source changed",
       id: "source_changed",
       label: "Source changed",
     },
     {
       count: tasks.filter((task) => task.verificationStatus === "needs_review").length,
-      description: "Deadline trust is not ready for automatic reliance.",
+      description: "Needs review",
       id: "needs_review",
       label: "Needs review",
     },
     {
       count: tasks.filter((task) => task.verificationStatus === "entered_deadline").length,
-      description: "Manually entered dates need source context.",
+      description: "Entered deadline",
       id: "entered_deadline",
       label: "Entered deadline",
     },
     {
       count: tasks.filter((task) => task.status === "waiting_on_client").length,
-      description: "Client-side bottlenecks blocking completion.",
+      description: "Waiting on client",
       id: "waiting_on_client",
       label: "Waiting on client",
     },
@@ -1168,30 +1168,26 @@ function WorkloadCalendar({
   );
   const visibleMonth = months[visibleMonthIndex] ?? months[0];
   const visibleRange = visibleMonth?.label ?? today.slice(0, 7);
-  const hasOverdueDays = months.some((month) =>
-    month.days.some((day) => day.tone === "overdue"),
-  );
   const calendarTone = horizonCalendarToneStyles[activeHorizon];
   const canGoPrevious = visibleMonthIndex > 0;
   const canGoNext = visibleMonthIndex < months.length - 1;
-  const showOverdueLegend = hasOverdueDays && activeHorizon !== "overdue";
 
   return (
-    <section className="rounded-lg border border-border/80 bg-card p-2.5">
-      <div className="flex flex-col gap-1.5 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <div className="flex items-center gap-2 text-sm font-semibold">
+    <div className="min-w-0">
+      <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+          <div className="flex shrink-0 items-center gap-2 text-sm font-semibold">
             <CalendarDays className={`size-4 ${calendarTone.icon}`} />
             Workload calendar
           </div>
-          <p className="mt-0.5 text-xs text-muted-foreground">
+          <span className="text-xs text-muted-foreground">
             {visibleRange} density for {horizonLabels[activeHorizon].toLowerCase()} deadlines
-          </p>
+          </span>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-1.5 text-xs text-muted-foreground">
           <span className="font-mono tabular-nums">{taskCount} tasks</span>
           {months.length > 1 ? (
-            <div className="inline-flex items-center rounded-md border border-border bg-background p-0.5">
+            <div className="inline-flex items-center rounded-md border border-ddhq-line bg-ddhq-paper p-0.5">
               <Button
                 type="button"
                 variant="ghost"
@@ -1228,7 +1224,7 @@ function WorkloadCalendar({
           {selectedDate ? (
             <button
               type="button"
-              className="rounded-md border border-border bg-background px-2 py-1 font-medium text-foreground hover:bg-muted"
+              className="rounded-md border border-ddhq-line bg-ddhq-paper px-2 py-1 font-medium text-foreground hover:bg-muted"
               onClick={() => onSelectDate(selectedDate)}
             >
               Clear date focus
@@ -1288,33 +1284,16 @@ function WorkloadCalendar({
           ))}
         </div>
       </div>
-      <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-        <CalendarLegendSwatch className={calendarTone.workloadSwatch} label="Workload" />
-        {showOverdueLegend ? (
-          <CalendarLegendSwatch className="bg-ddhq-risk-soft" label="Overdue" />
-        ) : null}
-        <CalendarLegendSwatch className="bg-ddhq-verified-soft" label="Done" />
-        <CalendarLegendSwatch className={calendarTone.selectedSwatch} label="Selected" />
-      </div>
     </section>
-  );
-}
-
-function CalendarLegendSwatch({ className, label }: { className: string; label: string }) {
-  return (
-    <span className="inline-flex items-center gap-1">
-      <span className={`size-2 rounded-sm border border-border/60 ${className}`} />
-      {label}
-    </span>
   );
 }
 
 const exceptionToneStyles = {
   source_changed: {
-    activeCard: "border-[oklch(0.7_0.075_285)] bg-[oklch(0.94_0.035_285)]",
+    activeCard: "border-[oklch(0.72_0.055_285)] bg-[oklch(0.955_0.026_285)]",
     badge:
-      "border-transparent bg-[oklch(0.94_0.035_285)] text-[oklch(0.45_0.12_285)]",
-    idleHover: "hover:bg-[oklch(0.94_0.035_285)]",
+      "border-[oklch(0.72_0.055_285/0.55)] bg-[oklch(0.955_0.026_285)] text-[oklch(0.46_0.105_285)]",
+    idleHover: "hover:bg-[oklch(0.955_0.026_285/0.65)]",
   },
   needs_review: {
     activeCard: "border-ddhq-gap/30 bg-ddhq-gap-soft/70",
@@ -1336,16 +1315,6 @@ const exceptionToneStyles = {
   { activeCard: string; badge: string; idleHover: string }
 >;
 
-function ExceptionBadge({ item }: { item: ExceptionItem }) {
-  return (
-    <span
-      className={`inline-flex items-center rounded-[6px] border px-1.5 py-0.5 text-[11px] font-semibold leading-[1.1] whitespace-nowrap ${exceptionToneStyles[item.id].badge}`}
-    >
-      {item.label}
-    </span>
-  );
-}
-
 function ExceptionSummary({
   activeFocus,
   items,
@@ -1356,45 +1325,31 @@ function ExceptionSummary({
   onSelect: (focus: DashboardExceptionFocus) => void;
 }) {
   return (
-    <aside className="rounded-lg border border-border/80 bg-card p-2.5">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h2 className="text-sm font-semibold">Exception summary</h2>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Current horizon risks that need human attention
-          </p>
-        </div>
-      </div>
-      <div className="mt-2 grid gap-1.5">
-        {items.map((item) => {
-          const isActive = activeFocus === item.id;
-          const tone = exceptionToneStyles[item.id];
+    <div className="flex flex-wrap items-center gap-1.5" aria-label="Exception quick filters">
+      {items.map((item) => {
+        const isActive = activeFocus === item.id;
+        const tone = exceptionToneStyles[item.id];
 
-          return (
-            <button
-              key={item.id}
-              type="button"
-              aria-pressed={isActive}
-              disabled={item.count === 0}
-              className={
-                isActive
-                  ? `rounded-lg border p-2 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] ${tone.activeCard}`
-                  : `rounded-lg border border-border/70 bg-background p-2 text-left transition-colors ${tone.idleHover} disabled:cursor-not-allowed disabled:opacity-55`
-              }
-              onClick={() => onSelect(item.id)}
-            >
-              <div className="flex items-center justify-between gap-3">
-                <ExceptionBadge item={item} />
-                <span className="font-mono text-sm font-semibold tabular-nums">{item.count}</span>
-              </div>
-              <div className="mt-1 text-xs leading-4 text-muted-foreground">
-                {item.description}
-              </div>
-            </button>
-          );
-        })}
-      </div>
-    </aside>
+        return (
+          <button
+            key={item.id}
+            type="button"
+            aria-pressed={isActive}
+            disabled={item.count === 0}
+            className={
+              isActive
+                ? `inline-flex h-7 items-center gap-1.5 rounded-lg border px-2 text-xs font-semibold shadow-[0_1px_0_oklch(0.44_0.025_78/0.04)] ${tone.activeCard}`
+                : `inline-flex h-7 items-center gap-1.5 rounded-lg border border-ddhq-line bg-ddhq-paper px-2 text-xs font-semibold text-muted-foreground transition-colors ${tone.idleHover} disabled:cursor-not-allowed disabled:opacity-45`
+            }
+            title={item.description}
+            onClick={() => onSelect(item.id)}
+          >
+            <span className="truncate">{item.label}</span>
+            <span className="font-mono text-[11px] tabular-nums">{item.count}</span>
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -1417,7 +1372,7 @@ function FilterPanel({
   ) => void;
 }) {
   return (
-    <div className="absolute left-0 top-10 z-[80] w-[min(900px,calc(100vw-2.5rem))] rounded-xl border border-border/80 bg-popover p-3 text-popover-foreground shadow-xl max-md:fixed max-md:inset-x-3 max-md:bottom-3 max-md:top-auto max-md:w-auto max-md:max-h-[82vh] max-md:overflow-auto">
+    <div className="absolute left-0 top-10 z-[80] w-[min(900px,calc(100vw-2.5rem))] rounded-xl border border-ddhq-line bg-popover p-3 text-popover-foreground shadow-[var(--ddhq-shadow-soft)] max-md:fixed max-md:inset-x-3 max-md:bottom-3 max-md:top-auto max-md:w-auto max-md:max-h-[82vh] max-md:overflow-auto">
       <div className="mb-3 flex items-center justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold">Filters</h2>
@@ -1528,7 +1483,7 @@ function FilterPanel({
           options={Object.entries(sortLabels).map(([value, label]) => ({ value, label }))}
         />
       </div>
-      <div className="mt-3 flex justify-end gap-2 border-t border-border/80 pt-3">
+      <div className="mt-3 flex justify-end gap-2 pt-1">
         <Button type="button" variant="ghost" size="sm" onClick={onReset}>
           <RotateCcw className="size-3.5" />
           Reset filters
@@ -1568,7 +1523,7 @@ function DashboardPagination({
   }
 
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-border/80 bg-card px-3 py-2 md:flex-row md:items-center md:justify-between">
+    <div className="flex flex-col gap-2 px-1 py-1 md:flex-row md:items-center md:justify-between">
       <div className="text-xs text-muted-foreground">
         Showing {start}-{end} of {count} rows
       </div>
@@ -1654,7 +1609,7 @@ function HorizonCard({
     <button
       type="button"
       aria-pressed={isSelected}
-      className={`min-h-[76px] rounded-lg border px-3 py-2.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/35 ${cardClass}`}
+      className={`min-h-[72px] rounded-[7px] border px-3 py-2.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/35 ${cardClass}`}
       onClick={onSelect}
     >
       <div className="flex items-start justify-between gap-3">

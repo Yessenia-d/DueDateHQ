@@ -67,10 +67,10 @@ function ClientsIndexComponent() {
 
   if (clients.isPending) {
     return (
-      <main className="min-h-0 overflow-auto">
-        <div className="mx-auto flex max-w-7xl flex-col gap-6 px-5 py-6">
-          <div className="h-24 animate-pulse rounded-xl border border-border bg-card" />
-          <div className="h-96 animate-pulse rounded-xl border border-border bg-card" />
+      <main className="ddhq-page">
+        <div className="ddhq-page-inner max-w-7xl gap-6">
+          <div className="h-24 animate-pulse ddhq-panel" />
+          <div className="h-96 animate-pulse ddhq-panel" />
         </div>
       </main>
     );
@@ -78,8 +78,8 @@ function ClientsIndexComponent() {
 
   if (clients.isError) {
     return (
-      <main className="min-h-0 overflow-auto">
-        <div className="mx-auto max-w-7xl px-5 py-6">
+      <main className="ddhq-page">
+        <div className="ddhq-page-inner max-w-7xl gap-6">
           <div className="rounded-xl border border-ddhq-risk/30 bg-ddhq-risk-soft p-4 text-sm text-ddhq-risk">
             Client relationships could not be loaded.
           </div>
@@ -91,16 +91,16 @@ function ClientsIndexComponent() {
   const clientRows = clients.data.clients;
 
   return (
-    <main className="min-h-0 overflow-auto">
-      <div className="mx-auto flex max-w-7xl flex-col gap-6 px-5 py-6">
-        <section className="grid gap-4 pb-5 md:grid-cols-[1fr_auto] md:items-end">
+    <main className="ddhq-page">
+      <div className="ddhq-page-inner max-w-7xl gap-6">
+        <section className="ddhq-page-header">
           <div className="max-w-3xl">
-            <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase text-muted-foreground">
+            <div className="ddhq-kicker">
               <Users className="size-3.5" />
               Firm workspace
             </div>
-            <h1 className="text-2xl font-semibold tracking-normal">Clients</h1>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            <h1 className="ddhq-title">Clients</h1>
+            <p className="ddhq-copy">
               Maintain customer records. Tax information, imports, and deadline tasks live in Tax Work.
             </p>
           </div>
@@ -112,8 +112,8 @@ function ClientsIndexComponent() {
         {clientRows.length === 0 ? (
           <EmptyClientsState onAddClient={() => setIsNewClientOpen(true)} />
         ) : (
-          <section className="overflow-hidden rounded-xl border border-border bg-card">
-            <div className="flex flex-wrap items-center justify-between gap-3 bg-muted/20 px-3 py-2">
+          <section className="ddhq-table-shell">
+            <div className="flex flex-wrap items-center justify-between gap-3 bg-ddhq-paper-muted/45 px-3 py-2">
               <div className="text-xs font-medium uppercase text-muted-foreground">
                 Client relationships
               </div>
@@ -123,7 +123,7 @@ function ClientsIndexComponent() {
             </div>
             <Table className="min-w-[860px]">
               <TableHeader className="[&_tr]:border-b-0">
-                <TableRow className="border-b-0 bg-muted/40">
+                <TableRow className="border-b-0 bg-ddhq-paper-muted/70 hover:bg-ddhq-paper-muted/70">
                   <TableHead className="text-[11px] font-semibold uppercase text-muted-foreground">
                     Client
                   </TableHead>
@@ -202,7 +202,7 @@ function ClientRow({ client }: { client: ClientListItemResponse }) {
 
 function EmptyClientsState({ onAddClient }: { onAddClient: () => void }) {
   return (
-    <section className="rounded-xl border border-border bg-muted/20 p-5">
+    <section className="ddhq-panel-muted p-5">
       <div className="flex items-center gap-2 text-sm font-medium">
         <CircleDashed className="size-4" />
         No client relationships

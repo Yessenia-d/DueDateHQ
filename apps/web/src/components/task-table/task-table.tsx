@@ -1,7 +1,6 @@
 import { Button } from "@due-date-hq/ui/components/button";
 import { Checkbox } from "@due-date-hq/ui/components/checkbox";
 import { cn } from "@due-date-hq/ui/lib/utils";
-import { Input } from "@due-date-hq/ui/components/input";
 import { Textarea } from "@due-date-hq/ui/components/textarea";
 import {
   Select,
@@ -31,7 +30,6 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
-  CalendarPlus,
   Check,
   Eye,
   History,
@@ -135,23 +133,19 @@ const trustSortRank: Record<DashboardTaskRow["verificationStatus"], number> = {
 };
 
 const tableHeaderCellClass =
-  "sticky top-0 z-20 bg-muted text-[11px] font-semibold uppercase text-muted-foreground";
+  "sticky top-0 z-20 bg-ddhq-paper-muted text-[11px] font-semibold uppercase text-muted-foreground";
 const stickySelectHeaderClass =
-  "sticky left-0 top-0 z-50 w-10 min-w-10 bg-muted";
+  "sticky left-0 top-0 z-50 w-10 min-w-10 bg-ddhq-paper-muted";
 const stickySelectCellClass =
-  "sticky left-0 z-30 w-10 min-w-10 bg-background group-hover:bg-muted";
-const stickyClientHeaderClass =
-  "sticky left-10 top-0 z-50 w-48 min-w-48 bg-muted";
-const stickyClientCellClass =
-  "sticky left-10 z-30 w-48 min-w-48 bg-background group-hover:bg-muted";
+  "sticky left-0 z-30 w-10 min-w-10 bg-ddhq-paper-raised group-hover:bg-ddhq-paper-muted/80";
 const stickyProfileHeaderClass =
-  "sticky left-[14.5rem] top-0 z-50 w-48 min-w-48 border-r border-border bg-muted shadow-[10px_0_14px_-14px_rgba(0,0,0,0.45)]";
+  "sticky left-10 top-0 z-50 w-56 min-w-56 border-r border-ddhq-line bg-ddhq-paper-muted shadow-[10px_0_18px_-18px_oklch(0.28_0.025_78/0.32)]";
 const stickyProfileCellClass =
-  "sticky left-[14.5rem] z-30 w-48 min-w-48 border-r border-border bg-background shadow-[10px_0_14px_-14px_rgba(0,0,0,0.45)] group-hover:bg-muted";
+  "sticky left-10 z-30 w-56 min-w-56 border-r border-ddhq-line bg-ddhq-paper-raised shadow-[10px_0_18px_-18px_oklch(0.28_0.025_78/0.28)] group-hover:bg-ddhq-paper-muted/80";
 const stickyActionsHeaderClass =
-  "sticky right-0 top-0 z-50 w-[188px] min-w-[188px] rounded-tr-lg border-l border-border bg-muted text-right shadow-[-10px_0_14px_-14px_rgba(0,0,0,0.45)]";
+  "sticky right-0 top-0 z-50 w-[116px] min-w-[116px] rounded-tr-lg border-l border-ddhq-line bg-ddhq-paper-muted text-right shadow-[-10px_0_18px_-18px_oklch(0.28_0.025_78/0.32)]";
 const stickyActionsCellClass =
-  "sticky right-0 z-30 w-[188px] min-w-[188px] border-l border-border bg-background text-right shadow-[-10px_0_14px_-14px_rgba(0,0,0,0.45)] group-hover:bg-muted";
+  "sticky right-0 z-30 w-[116px] min-w-[116px] border-l border-ddhq-line bg-ddhq-paper-raised text-right shadow-[-10px_0_18px_-18px_oklch(0.28_0.025_78/0.28)] group-hover:bg-ddhq-paper-muted/80";
 
 const countdownUrgencyStyles = {
   overdue: {
@@ -189,8 +183,6 @@ export function TaskTable({
   section: DashboardSection;
   selectedTaskIds: Set<string>;
 }) {
-  const [extensionDates, setExtensionDates] = React.useState<Record<string, string>>({});
-  const [activeExtensionTaskId, setActiveExtensionTaskId] = React.useState<string | null>(null);
   const [statusEdit, setStatusEdit] = React.useState<{
     status: DeadlineTaskStatus;
     taskId: string;
@@ -226,25 +218,8 @@ export function TaskTable({
       onError: (error) => toast.error(error.message),
     }),
   );
-  const markExtended = useMutation(
-    trpc.tasks.markExtended.mutationOptions({
-      onSuccess: (_result, variables) => {
-        toast.success("Extension recorded.");
-        setExtensionDates((current) => {
-          const next = { ...current };
-          delete next[variables.taskId];
-          return next;
-        });
-        setActiveExtensionTaskId((current) => (current === variables.taskId ? null : current));
-        void queryClient.invalidateQueries();
-      },
-      onError: (error) => toast.error(error.message),
-    }),
-  );
   const selectedInSection = section.tasks.filter((task) => selectedTaskIds.has(task.id)).length;
   const allSelected = section.tasks.length > 0 && selectedInSection === section.tasks.length;
-  const activeExtensionTask = section.tasks.find((task) => task.id === activeExtensionTaskId);
-  const activeExtensionDate = activeExtensionTask ? (extensionDates[activeExtensionTask.id] ?? "") : "";
   const activeNotesTask = notesEdit
     ? section.tasks.find(
         (task) => task.clientRelationship.id === notesEdit.clientRelationshipId,
@@ -270,9 +245,6 @@ export function TaskTable({
   }
 
   React.useEffect(() => {
-    setActiveExtensionTaskId((current) =>
-      current && section.tasks.some((task) => task.id === current) ? current : null,
-    );
     setStatusEdit((current) =>
       current && section.tasks.some((task) => task.id === current.taskId) ? current : null,
     );
@@ -287,14 +259,14 @@ export function TaskTable({
   return (
     <div className="min-h-0 min-w-0 flex-1">
       {section.tasks.length === 0 ? (
-        <div className="grid min-h-60 place-items-center rounded-lg border border-border/80 bg-card px-3 py-8 text-center text-sm text-muted-foreground">
+        <div className="grid min-h-60 place-items-center ddhq-panel px-3 py-8 text-center text-sm text-muted-foreground">
           No tasks in this horizon.
         </div>
       ) : (
-        <div className="max-h-full max-w-full overflow-auto rounded-lg border border-border/80 bg-card [&_[data-slot=table-container]]:overflow-visible">
-          <Table className="min-w-[1610px]">
+        <div className="max-h-full max-w-full overflow-auto ddhq-table-shell [&_[data-slot=table-container]]:overflow-visible">
+          <Table className="min-w-[1510px]">
             <TableHeader>
-              <TableRow className="bg-muted/40">
+              <TableRow className="bg-ddhq-paper-muted/70 hover:bg-ddhq-paper-muted/70">
               <TableHead
                 className={cn(
                   tableHeaderCellClass,
@@ -305,19 +277,6 @@ export function TaskTable({
                   aria-label={`Select all ${section.label} tasks`}
                   checked={allSelected}
                   onCheckedChange={(checked) => onToggleSection(section.tasks, checked === true)}
-                />
-              </TableHead>
-              <TableHead
-                className={cn(
-                  tableHeaderCellClass,
-                  stickyClientHeaderClass,
-                )}
-              >
-                <SortHeader
-                  label="Client"
-                  sortKey="client"
-                  sortState={sortState}
-                  onSort={toggleSort}
                 />
               </TableHead>
               <TableHead
@@ -375,11 +334,10 @@ export function TaskTable({
                   onSort={toggleSort}
                 />
               </TableHead>
-              <TableHead className={cn(tableHeaderCellClass, "text-right")}>
+              <TableHead className={cn(tableHeaderCellClass, "min-w-44")}>
                 <SortHeader
-                  align="right"
-                  label="Firm target"
-                  sortKey="firmTargetDate"
+                  label="Client"
+                  sortKey="client"
                   sortState={sortState}
                   onSort={toggleSort}
                 />
@@ -396,6 +354,15 @@ export function TaskTable({
                 <SortHeader
                   label="EIN / SSN last 4"
                   sortKey="identifier"
+                  sortState={sortState}
+                  onSort={toggleSort}
+                />
+              </TableHead>
+              <TableHead className={cn(tableHeaderCellClass, "text-right")}>
+                <SortHeader
+                  align="right"
+                  label="Firm target"
+                  sortKey="firmTargetDate"
                   sortState={sortState}
                   onSort={toggleSort}
                 />
@@ -421,7 +388,7 @@ export function TaskTable({
               return (
                 <TableRow
                   key={task.id}
-                  className={cn("group", countdownUrgencyStyle?.rowClass)}
+                  className={cn("group h-[54px]", countdownUrgencyStyle?.rowClass)}
                 >
                 <TableCell className={cn(stickySelectCellClass, stickyUrgencyCellClass)}>
                   <Checkbox
@@ -430,18 +397,15 @@ export function TaskTable({
                     onCheckedChange={() => onToggleTask(task.id)}
                   />
                 </TableCell>
-                <TableCell className={cn(stickyClientCellClass, stickyUrgencyCellClass)}>
-                  <div className="text-sm font-semibold">{task.clientRelationship.displayName}</div>
-                </TableCell>
                 <TableCell className={cn(stickyProfileCellClass, stickyUrgencyCellClass)}>
-                  <div className="text-xs font-medium">{task.filingProfile.displayName}</div>
+                  <div className="text-sm font-semibold">{task.filingProfile.displayName}</div>
                   <div className="mt-0.5 text-xs text-muted-foreground">
                     {task.filingProfile.entityType}
                     {task.filingProfile.states.length > 0 ? ` · ${task.filingProfile.states.join(", ")}` : ""}
                   </div>
                 </TableCell>
                 <TableCell className="min-w-52">
-                  <div className="text-xs font-medium">{task.title}</div>
+                  <div className="text-[13px] font-medium">{task.title}</div>
                   <div className="mt-0.5 text-xs text-muted-foreground">{task.taxCategory}</div>
                 </TableCell>
                 <TableCell className="text-right align-middle">
@@ -528,8 +492,8 @@ export function TaskTable({
                 <TableCell>
                   <VerificationBadge task={task} />
                 </TableCell>
-                <TableCell className="text-right text-xs text-muted-foreground">
-                  {task.firmTargetDate ? formatDate(task.firmTargetDate) : "None"}
+                <TableCell className="min-w-44 text-xs text-muted-foreground">
+                  <div className="font-medium text-foreground/75">{task.clientRelationship.displayName}</div>
                 </TableCell>
                 <TableCell className="text-xs font-medium">{task.jurisdiction}</TableCell>
                 <TableCell className="min-w-32">
@@ -539,6 +503,9 @@ export function TaskTable({
                   <div className="mt-0.5 text-xs text-muted-foreground">
                     {profileIdentifierLabel(task.filingProfile)}
                   </div>
+                </TableCell>
+                <TableCell className="text-right text-xs text-muted-foreground">
+                  {task.firmTargetDate ? formatDate(task.firmTargetDate) : "None"}
                 </TableCell>
                 <TableCell className="min-w-56 max-w-72">
                   <div className="flex items-start gap-1.5">
@@ -581,16 +548,7 @@ export function TaskTable({
                       type="button"
                       variant="outline"
                       size="sm"
-                      disabled={markExtended.isPending}
-                      onClick={() => setActiveExtensionTaskId(task.id)}
-                    >
-                      <CalendarPlus className="size-3.5" />
-                      Extend
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
+                      className="border-ddhq-line bg-ddhq-paper hover:bg-muted/55"
                       aria-label={`Open detail for ${task.title}`}
                       onClick={() => onOpenEvidence(task.id)}
                     >
@@ -606,85 +564,6 @@ export function TaskTable({
           </Table>
         </div>
       )}
-      <Dialog
-        open={Boolean(activeExtensionTask)}
-        onOpenChange={(open) => {
-          if (!open && !markExtended.isPending) {
-            setActiveExtensionTaskId(null);
-          }
-        }}
-      >
-        {activeExtensionTask ? (
-          <DialogContent
-            showCloseButton={false}
-            className="w-[calc(100vw-2rem)] max-w-sm gap-0 rounded-lg p-0 sm:max-w-sm"
-          >
-            <DialogHeader className="border-b border-border p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <DialogTitle>Mark task extended</DialogTitle>
-                  <DialogDescription className="mt-1">
-                    Enter the new official due date for {activeExtensionTask.title}.
-                  </DialogDescription>
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-xs"
-                  aria-label="Cancel extension entry"
-                  disabled={markExtended.isPending}
-                  onClick={() => setActiveExtensionTaskId(null)}
-                >
-                  <X className="size-3" />
-                </Button>
-              </div>
-            </DialogHeader>
-            <div className="grid gap-1.5 p-4">
-              <label className="text-xs font-medium" htmlFor="extension-date">
-                New due date
-              </label>
-              <Input
-                id="extension-date"
-                aria-label={`Extension date for ${activeExtensionTask.title}`}
-                className="h-8 text-xs"
-                type="date"
-                value={activeExtensionDate}
-                onChange={(event) =>
-                  setExtensionDates((current) => ({
-                    ...current,
-                    [activeExtensionTask.id]: event.target.value,
-                  }))
-                }
-              />
-            </div>
-            <DialogFooter className="flex-row justify-end border-t border-border p-4">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                disabled={markExtended.isPending}
-                onClick={() => setActiveExtensionTaskId(null)}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                disabled={!activeExtensionDate || markExtended.isPending}
-                onClick={() =>
-                  markExtended.mutate({
-                    taskId: activeExtensionTask.id,
-                    newCurrentDueDate: activeExtensionDate,
-                  })
-                }
-              >
-                <Check className="size-3.5" />
-                Save extension
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        ) : null}
-      </Dialog>
       <Dialog
         open={Boolean(activeNotesTask)}
         onOpenChange={(open) => {

@@ -70,9 +70,9 @@ export function AppSidebar({
   const pathname = useRouterState({ select: (state) => state.location.pathname });
 
   return (
-    <aside className="sticky top-0 flex h-svh w-[236px] flex-col border-r border-border bg-card">
-      <div className="flex items-center gap-2.5 px-4 pt-5 pb-4">
-        <div className="grid size-[30px] place-items-center rounded-lg border border-ddhq-border-strong bg-card text-sm font-bold text-primary">
+    <aside className="sticky top-0 flex h-svh w-[236px] flex-col border-r border-ddhq-line bg-sidebar">
+      <div className="flex items-center gap-2.5 px-4 pt-6 pb-5">
+        <div className="grid size-[30px] place-items-center rounded-lg border border-ddhq-line bg-ddhq-paper-raised text-sm font-bold text-primary shadow-[0_1px_0_oklch(0.44_0.025_78/0.04)]">
           D
         </div>
         <div className="min-w-0">
@@ -110,8 +110,8 @@ export function AppSidebarContent({
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center gap-2.5 px-4 pt-5 pb-4">
-        <div className="grid size-[30px] place-items-center rounded-lg border border-ddhq-border-strong bg-card text-sm font-bold text-primary">
+      <div className="flex items-center gap-2.5 px-4 pt-6 pb-5">
+        <div className="grid size-[30px] place-items-center rounded-lg border border-ddhq-line bg-ddhq-paper-raised text-sm font-bold text-primary shadow-[0_1px_0_oklch(0.44_0.025_78/0.04)]">
           D
         </div>
         <div className="min-w-0">
@@ -146,11 +146,11 @@ function SidebarNav({
   return (
     <nav className="flex-1 overflow-y-auto px-3">
       {sidebarSections.map((section, sectionIndex) => (
-        <div key={section.label} className={sectionIndex === 0 ? "mt-4" : "mt-5"}>
-          <div className="mb-2 px-2 text-[11px] font-semibold uppercase text-ddhq-ink-soft">
+        <div key={section.label} className={sectionIndex === 0 ? "mt-3" : "mt-6"}>
+          <div className="mb-2.5 px-2 text-[11px] font-semibold uppercase text-ddhq-ink-soft">
             {section.label}
           </div>
-          <div className="grid gap-1">
+          <div className="grid gap-1.5">
             {section.links.map((link) => {
               const isActive =
                 link.to === "/"
@@ -161,10 +161,10 @@ function SidebarNav({
                   key={link.to}
                   to={link.to}
                   onClick={onNavigate}
-                  className={`flex min-h-[34px] w-full items-center gap-2 rounded-lg border px-2 text-sm transition-colors ${
+                  className={`flex min-h-[34px] w-full items-center gap-2 rounded-[7px] border px-2 text-sm transition-colors ${
                     isActive
-                      ? "border-border bg-card text-foreground shadow-[0_1px_1px_rgb(38_31_20/0.03)]"
-                      : "border-transparent text-muted-foreground hover:border-border/60 hover:bg-muted/50"
+                      ? "border-ddhq-line bg-ddhq-paper-raised text-foreground shadow-[0_1px_0_oklch(0.44_0.025_78/0.045)]"
+                      : "border-transparent text-muted-foreground hover:bg-ddhq-paper-muted/70 hover:text-foreground"
                   }`}
                 >
                   <link.icon className="size-4 shrink-0" />
@@ -198,14 +198,14 @@ function SidebarAccountMenu({
   }
 
   return (
-    <div className="border-t border-border px-3 py-3">
+    <div className="border-t border-ddhq-line px-3 py-3">
       <DropdownMenu>
         <DropdownMenuTrigger
           render={
             <Button
               type="button"
               variant="ghost"
-              className="h-auto min-h-12 w-full justify-between gap-2 rounded-lg px-2 py-2 text-left"
+              className="h-auto min-h-12 w-full justify-between gap-2 rounded-lg px-2 py-2 text-left hover:bg-ddhq-paper-muted/70"
               aria-label={`Open account menu for ${secondaryLabel}`}
             />
           }

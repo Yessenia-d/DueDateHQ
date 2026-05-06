@@ -30,7 +30,7 @@ const statusStyles: Record<string, string> = {
   waiting_on_client: "bg-ddhq-review-soft text-ddhq-review",
   ready_to_work: "bg-ddhq-accent-soft text-primary",
   source_changed:
-    "bg-[oklch(0.94_0.035_285)] text-[oklch(0.45_0.12_285)]",
+    "bg-[oklch(0.955_0.026_285)] text-[oklch(0.46_0.105_285)]",
   review: "bg-ddhq-review-soft text-ddhq-review",
   overdue: "bg-ddhq-risk-soft text-ddhq-risk",
   at_risk: "bg-ddhq-review-soft text-ddhq-review",

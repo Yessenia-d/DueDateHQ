@@ -102,7 +102,7 @@ const entityOptions = [
 ] as const satisfies readonly { value: EntityType; label: string }[];
 
 const quietControlClassName =
-  "rounded-[6px] border-transparent bg-background/75 shadow-none ring-1 ring-border/45 hover:bg-background focus-visible:border-primary/35 focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-primary/20";
+  "rounded-[6px] border-transparent bg-ddhq-paper/80 shadow-none ring-1 ring-ddhq-line hover:bg-ddhq-paper focus-visible:border-primary/35 focus-visible:bg-ddhq-paper focus-visible:ring-2 focus-visible:ring-primary/20";
 const importSelectTriggerClassName = `h-8 w-full ${quietControlClassName}`;
 const reviewInputClassName = `h-8 ${quietControlClassName}`;
 const sourceInputClassName = `h-8 ${quietControlClassName}`;
@@ -279,14 +279,18 @@ function ImportComponent() {
   }
 
   return (
-    <main className="min-h-0 overflow-auto">
-      <div className="mx-auto flex max-w-7xl flex-col gap-5 px-4 py-6">
-        <section className="grid gap-4 md:grid-cols-[1fr_auto] md:items-end">
+    <main className="ddhq-page">
+      <div className="ddhq-page-inner max-w-7xl gap-5 px-4">
+        <section className="ddhq-page-header">
           <div className="max-w-3xl">
-            <h1 className="text-2xl font-semibold tracking-normal">
+            <div className="ddhq-kicker">
+              <FileText className="size-3.5" />
+              Import review
+            </div>
+            <h1 className="ddhq-title">
               Import clients and tax profiles
             </h1>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            <p className="ddhq-copy">
               {importMode === "clients_and_profiles"
                 ? "Upload one CSV where each row describes one filing profile. DueDateHQ creates or matches client relationships, creates filing profiles, and generates tasks only from Verified tax rules."
                 : "Upload tax profile rows for the selected client context. Existing relationships stay in control while the import reviews filing profile fields and Verified rule task generation."}
@@ -297,7 +301,7 @@ function ImportComponent() {
               </StatusBadge>
             ) : null}
           </div>
-          <div className="grid min-w-64 gap-1 text-xs text-muted-foreground">
+          <div className="grid min-w-64 gap-1 rounded-lg border border-ddhq-line bg-ddhq-paper-raised px-3 py-2 text-xs text-muted-foreground shadow-[0_1px_0_oklch(0.44_0.025_78/0.035)]">
             <span>{preview ? preview.detectedSourceProfile : "No preview yet"}</span>
             <span>{preview ? `${preview.mappingConfidence}% mapping confidence` : "Adapter idle"}</span>
           </div>
@@ -310,7 +314,7 @@ function ImportComponent() {
         />
 
         <form
-          className="grid gap-4 rounded-lg bg-muted/35 p-4 shadow-[inset_0_1px_0_rgb(255_255_255/0.58)] ring-1 ring-border/35"
+          className="grid gap-4 ddhq-panel-muted p-4"
           onSubmit={handlePreview}
         >
           <div className="flex flex-col gap-1">
@@ -370,7 +374,7 @@ function ImportComponent() {
 
         {preview ? (
           <>
-            <section className="grid gap-1 rounded-lg bg-muted/30 p-1 ring-1 ring-border/35 sm:grid-cols-2 lg:grid-cols-6">
+            <section className="grid gap-1 rounded-lg border border-ddhq-line bg-ddhq-paper-muted/55 p-1 sm:grid-cols-2 lg:grid-cols-6">
               <Metric
                 label="New clients"
                 value={preview.summary.newClientRelationships}
@@ -423,7 +427,7 @@ function ImportComponent() {
               />
             </section>
 
-            <section className="flex flex-col gap-3 rounded-lg bg-muted/30 p-3 ring-1 ring-border/35 md:flex-row md:items-center md:justify-between">
+            <section className="flex flex-col gap-3 ddhq-panel-muted p-3 md:flex-row md:items-center md:justify-between">
               <div className="flex flex-wrap gap-2">
                 {pendingDuplicateCount > 0 ? (
                   <StatusBadge tone="review">{pendingDuplicateCount} duplicate pending</StatusBadge>
@@ -454,7 +458,7 @@ function ImportComponent() {
                   <span
                     id="commit-import-disabled-reason"
                     role="tooltip"
-                    className="pointer-events-none absolute bottom-full right-0 z-20 mb-2 w-72 rounded-[6px] border border-border bg-popover px-2.5 py-2 text-left text-xs leading-5 text-popover-foreground opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus:opacity-100"
+                    className="pointer-events-none absolute bottom-full right-0 z-20 mb-2 w-72 rounded-[6px] border border-ddhq-line bg-popover px-2.5 py-2 text-left text-xs leading-5 text-popover-foreground opacity-0 shadow-[var(--ddhq-shadow-soft)] transition-opacity group-hover:opacity-100 group-focus:opacity-100"
                   >
                     {commitImportDisabledReason}
                   </span>
@@ -501,7 +505,7 @@ function ImportModeSelector({
 
   return (
     <section
-      className="grid gap-1 rounded-lg bg-muted/55 p-1 md:grid-cols-2"
+      className="grid gap-1 rounded-lg border border-ddhq-line bg-ddhq-paper-muted/60 p-1 md:grid-cols-2"
       aria-label="Import mode"
     >
       {options.map((option) => {
@@ -514,8 +518,8 @@ function ImportModeSelector({
             aria-pressed={isSelected}
             className={`rounded-[6px] px-3 py-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/25 ${
               isSelected
-                ? "bg-background text-foreground shadow-[0_1px_1px_rgb(38_31_20/0.05)] ring-1 ring-primary/25"
-                : "text-muted-foreground hover:bg-background/60 hover:text-foreground"
+                ? "bg-ddhq-paper-raised text-foreground shadow-[0_1px_0_oklch(0.44_0.025_78/0.04)] ring-1 ring-primary/20"
+                : "text-muted-foreground hover:bg-ddhq-paper/70 hover:text-foreground"
             }`}
             onClick={() => onChange(option.value)}
           >
@@ -547,7 +551,7 @@ function CsvFileControl({
       />
       <label
         htmlFor="csv-file"
-        className={`${sourceInputClassName} flex cursor-pointer items-center justify-between gap-2 px-2.5 py-1 text-xs transition-colors peer-focus-visible:border-primary/35 peer-focus-visible:bg-background peer-focus-visible:ring-2 peer-focus-visible:ring-primary/20`}
+        className={`${sourceInputClassName} flex cursor-pointer items-center justify-between gap-2 px-2.5 py-1 text-xs transition-colors peer-focus-visible:border-primary/35 peer-focus-visible:bg-ddhq-paper peer-focus-visible:ring-2 peer-focus-visible:ring-primary/20`}
       >
         <span
           id={csvFileStatusId}
@@ -619,7 +623,7 @@ function CsvSourceInput({
           <Textarea
             id={csvTextControlId}
             aria-describedby={csvTextSummaryId}
-            className={`w-full resize-y rounded-[6px] border-transparent bg-background px-2.5 py-2 font-mono text-xs leading-5 shadow-none outline-none ring-1 ring-border/45 focus-visible:border-primary/35 focus-visible:ring-2 focus-visible:ring-primary/20 ${
+            className={`w-full resize-y rounded-[6px] border-transparent bg-ddhq-paper px-2.5 py-2 font-mono text-xs leading-5 shadow-none outline-none ring-1 ring-ddhq-line focus-visible:border-primary/35 focus-visible:ring-2 focus-visible:ring-primary/20 ${
               previewReady ? "min-h-16" : "min-h-28"
             }`}
             value={csvText}
@@ -654,7 +658,7 @@ function ImportSourceMetadata({
   ] satisfies Array<{ label: string; value: string }>;
 
   return (
-    <section className="grid gap-3 rounded-lg bg-muted/25 p-3 ring-1 ring-border/30">
+    <section className="grid gap-3 ddhq-panel p-3">
       <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <div>
           <h2 className="text-base font-semibold">Import source</h2>
@@ -666,7 +670,7 @@ function ImportSourceMetadata({
           {preview.mappingConfidence}% mapping confidence
         </StatusBadge>
       </div>
-      <div className="grid gap-x-4 gap-y-3 border-t border-border/35 pt-3 sm:grid-cols-2 lg:grid-cols-6">
+      <div className="grid gap-x-4 gap-y-3 border-t border-ddhq-line pt-3 sm:grid-cols-2 lg:grid-cols-6">
         {metadata.map((item) => (
           <div key={item.label} className="min-w-0">
             <div className="text-[11px] font-semibold text-muted-foreground">{item.label}</div>
@@ -684,7 +688,7 @@ function MappingPreview({ preview }: { preview: ImportPreviewResponse }) {
   const [isExpanded, setIsExpanded] = React.useState(false);
 
   return (
-    <section className="grid content-start gap-3 rounded-lg bg-muted/25 p-3 ring-1 ring-border/30">
+    <section className="grid content-start gap-3 ddhq-panel p-3">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="min-w-0">
           <h2 className="text-base font-semibold">Mapping preview</h2>
@@ -726,10 +730,10 @@ function MappingPreview({ preview }: { preview: ImportPreviewResponse }) {
       ) : null}
 
       {isExpanded ? (
-        <div className="overflow-hidden rounded-lg bg-background ring-1 ring-border/45">
+        <div className="ddhq-table-shell">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[680px] border-collapse text-left text-xs">
-              <thead className="border-b bg-muted/40 text-muted-foreground">
+              <thead className="border-b border-ddhq-line bg-ddhq-paper-muted/70 text-muted-foreground">
                 <tr>
                   <th className="px-3 py-2 font-medium">Source column</th>
                   <th className="px-3 py-2 font-medium">Canonical field</th>
@@ -847,7 +851,7 @@ function ReviewRows({
             <h2 className="text-base font-semibold">Filing profile review</h2>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-muted/30 px-3 py-2 ring-1 ring-border/30">
+      <div className="flex flex-wrap items-center justify-between gap-2 ddhq-panel-muted px-3 py-2">
         <div className="text-xs text-muted-foreground">
           {selectedRowIds.size} selected
           {selectedRelationshipSuggestions.length > 0
@@ -906,10 +910,10 @@ function ReviewRows({
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-lg bg-background ring-1 ring-border/45">
+      <div className="ddhq-table-shell">
         <div className="max-h-[520px] min-h-[220px] overflow-auto lg:max-h-[calc(100vh-20rem)]">
           <table className="w-full min-w-[1420px] border-collapse text-left text-xs">
-            <thead className="sticky top-0 z-10 border-b bg-muted text-muted-foreground">
+            <thead className="sticky top-0 z-10 border-b border-ddhq-line bg-ddhq-paper-muted text-muted-foreground">
               <tr>
                 <th className="w-10 px-3 py-2 font-medium">
                   <Checkbox
@@ -980,7 +984,7 @@ function ReviewRows({
               return (
                 <tr
                   key={row.id}
-                  className={`border-b align-top last:border-b-0 ${isSelected ? "bg-ddhq-accent-soft/40" : ""}`}
+                  className={`border-b border-ddhq-line align-top last:border-b-0 ${isSelected ? "bg-ddhq-accent-soft/36" : ""}`}
                 >
                   <td className="px-3 py-3">
                     <Checkbox
@@ -1404,7 +1408,7 @@ function SourceFieldList({
           {fields.length}
         </StatusBadge>
       </div>
-      <div className="max-h-72 overflow-auto rounded-[6px] bg-background/75 ring-1 ring-border/35">
+      <div className="max-h-72 overflow-auto rounded-[6px] bg-ddhq-paper/80 ring-1 ring-ddhq-line">
         {fields.length > 0 ? (
           <div className="divide-y">
             {fields.map((field) => (
@@ -1465,9 +1469,9 @@ function DuplicateComparison({
         ))}
       </div>
       {differingFields.length > 0 ? (
-        <div className="overflow-hidden rounded-[6px] bg-background ring-1 ring-border/40">
+        <div className="ddhq-table-shell rounded-[6px]">
           <table className="w-full min-w-[520px] border-collapse text-left text-xs">
-            <thead className="border-b bg-muted/40 text-muted-foreground">
+            <thead className="border-b border-ddhq-line bg-ddhq-paper-muted/70 text-muted-foreground">
               <tr>
                 <th className="px-2.5 py-2 font-medium">Field</th>
                 <th className="px-2.5 py-2 font-medium">Incoming row</th>
@@ -1490,7 +1494,7 @@ function DuplicateComparison({
           </table>
         </div>
       ) : (
-        <div className="rounded-[6px] bg-muted/35 px-2.5 py-2 text-xs text-muted-foreground">
+        <div className="rounded-[6px] bg-ddhq-paper-muted/45 px-2.5 py-2 text-xs text-muted-foreground">
           No differing fields were reported for this candidate.
         </div>
       )}
@@ -1520,7 +1524,7 @@ function RelationshipComparison({
           const decision = decisions[suggestion.id] ?? "pending";
 
           return (
-            <div key={suggestion.id} className="rounded-[6px] bg-muted/35 px-2.5 py-2">
+            <div key={suggestion.id} className="rounded-[6px] bg-ddhq-paper-muted/45 px-2.5 py-2">
               <div className="flex flex-wrap items-center gap-1.5">
                 <StatusBadge tone={decision === "pending" ? "review" : "verified"}>
                   {decisionLabel(decision)}
@@ -1553,7 +1557,7 @@ function EvidenceValue({
   value: string;
 }) {
   return (
-    <div className="min-w-0 rounded-[6px] bg-muted/35 px-2.5 py-2">
+    <div className="min-w-0 rounded-[6px] bg-ddhq-paper-muted/45 px-2.5 py-2">
       <div className="text-[11px] font-semibold text-muted-foreground">{label}</div>
       <div className={`mt-1 break-words text-xs ${mono ? "font-mono" : "font-medium"}`}>
         {formatNullableValue(value)}
@@ -1770,7 +1774,7 @@ function CommitSummary({ result }: { result: ImportCommitResponse }) {
         <Metric label="Profile review" value={result.profileReviewItemCount} tone="review" />
       </div>
       {result.profileResults.length > 0 ? (
-        <div className="overflow-hidden rounded-lg bg-muted/25 ring-1 ring-border/35">
+        <div className="ddhq-table-shell">
           <div className="flex items-center justify-between gap-3 border-b px-3 py-2">
             <h3 className="text-sm font-semibold">Imported clients and tax profiles</h3>
             <Link

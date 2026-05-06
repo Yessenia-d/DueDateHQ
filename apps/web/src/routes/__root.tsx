@@ -85,7 +85,7 @@ function RootComponent() {
         {isPublicRoute ? (
           <Outlet />
         ) : (
-          <div className="grid h-svh grid-cols-1 lg:grid-cols-[236px_minmax(0,1fr)]">
+          <div className="grid h-svh grid-cols-1 bg-background lg:grid-cols-[236px_minmax(0,1fr)]">
             {/* Desktop sidebar */}
             <div className="hidden lg:block">
               <AppSidebar
@@ -98,36 +98,38 @@ function RootComponent() {
               />
             </div>
 
-            {/* Mobile top bar + sheet sidebar */}
-            <div className="flex items-center gap-2 border-b border-border px-3 py-2 lg:hidden">
-              <Sheet open={isMobileNavOpen} onOpenChange={setIsMobileNavOpen}>
-                <SheetTrigger
-                  render={
-                    <Button variant="ghost" size="icon-sm" aria-label="Open navigation" />
-                  }
-                >
-                  <Menu className="size-5" />
-                </SheetTrigger>
-                <SheetContent side="left" className="w-[236px] p-0" showCloseButton={false}>
-                  <SheetTitle className="sr-only">Navigation</SheetTitle>
-                  <AppSidebarContent
-                    firmName={session.data?.firm.name}
-                    userEmail={session.data?.user.email}
-                    userImage={session.data?.user.image}
-                    userName={session.data?.user.name}
-                    isLoggingOut={logout.isPending}
-                    onNavigate={handleMobileNavigate}
-                    onLogout={handleLogout}
-                  />
-                </SheetContent>
-              </Sheet>
-              <span className="text-sm font-semibold">DueDateHQ</span>
-            </div>
+            <div className="flex min-h-0 min-w-0 flex-col">
+              {/* Mobile top bar + sheet sidebar */}
+              <div className="flex items-center gap-2 border-b border-ddhq-line bg-ddhq-paper px-3 py-2 lg:hidden">
+                <Sheet open={isMobileNavOpen} onOpenChange={setIsMobileNavOpen}>
+                  <SheetTrigger
+                    render={
+                      <Button variant="ghost" size="icon-sm" aria-label="Open navigation" />
+                    }
+                  >
+                    <Menu className="size-5" />
+                  </SheetTrigger>
+                  <SheetContent side="left" className="w-[236px] p-0" showCloseButton={false}>
+                    <SheetTitle className="sr-only">Navigation</SheetTitle>
+                    <AppSidebarContent
+                      firmName={session.data?.firm.name}
+                      userEmail={session.data?.user.email}
+                      userImage={session.data?.user.image}
+                      userName={session.data?.user.name}
+                      isLoggingOut={logout.isPending}
+                      onNavigate={handleMobileNavigate}
+                      onLogout={handleLogout}
+                    />
+                  </SheetContent>
+                </Sheet>
+                <span className="text-sm font-semibold">DueDateHQ</span>
+              </div>
 
-            {session.data ? <NoticeAlertBanner /> : null}
+              {session.data ? <NoticeAlertBanner /> : null}
 
-            <div className="min-h-0 min-w-0 overflow-auto">
-              <Outlet />
+              <div className="min-h-0 min-w-0 flex-1 overflow-auto bg-background">
+                <Outlet />
+              </div>
             </div>
           </div>
         )}

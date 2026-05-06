@@ -38,6 +38,7 @@ import {
   Building2,
   CalendarDays,
   ChevronDown,
+  ClipboardList,
   FileUp,
   Filter,
   RotateCcw,
@@ -310,11 +311,11 @@ function TaxWorkComponent() {
 
   if (clients.isPending || dashboard.isPending) {
     return (
-      <main className="min-h-0 overflow-auto">
-        <div className="mx-auto flex max-w-[1440px] flex-col gap-4 px-5 py-5">
-          <div className="h-24 animate-pulse rounded-xl border border-border bg-card" />
-          <div className="h-40 animate-pulse rounded-xl border border-border bg-card" />
-          <div className="h-[420px] animate-pulse rounded-xl border border-border bg-card" />
+      <main className="ddhq-page">
+        <div className="ddhq-page-inner max-w-[1440px] gap-4">
+          <div className="h-24 animate-pulse ddhq-panel" />
+          <div className="h-40 animate-pulse ddhq-panel" />
+          <div className="h-[420px] animate-pulse ddhq-panel" />
         </div>
       </main>
     );
@@ -322,8 +323,8 @@ function TaxWorkComponent() {
 
   if (clients.isError || dashboard.isError) {
     return (
-      <main className="min-h-0 overflow-auto">
-        <div className="mx-auto max-w-[1440px] px-5 py-5">
+      <main className="ddhq-page">
+        <div className="ddhq-page-inner max-w-[1440px] gap-4">
           <div className="rounded-xl border border-ddhq-risk/30 bg-ddhq-risk-soft p-4 text-sm text-ddhq-risk">
             Tax Work data could not be loaded.
           </div>
@@ -333,14 +334,18 @@ function TaxWorkComponent() {
   }
 
   return (
-    <main className="h-full min-h-0 overflow-hidden bg-background text-foreground">
-      <div className="mx-auto flex h-full min-h-0 max-w-[1440px] flex-col gap-4 px-5 py-5">
-        <section className="pb-1">
+    <main className="ddhq-page h-full overflow-hidden text-foreground">
+      <div className="ddhq-page-inner h-full min-h-0 max-w-[1440px] gap-4 py-6">
+        <section className="ddhq-page-header">
           <div className="min-w-0">
-            <h1 className="text-2xl font-semibold leading-tight tracking-normal">
+            <div className="ddhq-kicker">
+              <ClipboardList className="size-3.5" />
+              Client queue
+            </div>
+            <h1 className="ddhq-title">
               Client tax workbench
             </h1>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
+            <p className="ddhq-copy">
               Work from relationship to filing profile to task. Import tax information, narrow
               the scope, and clear one client's deadline queue without leaving context.
             </p>
@@ -348,7 +353,7 @@ function TaxWorkComponent() {
         </section>
 
         {clients.data.clients.length === 0 ? (
-          <section className="rounded-xl border border-border bg-muted/20 p-6">
+          <section className="ddhq-panel-muted p-6">
             <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
               <FileUp className="size-4" />
               Start with import
@@ -367,7 +372,7 @@ function TaxWorkComponent() {
               </Link>
               <Link
                 to="/clients"
-                className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-border bg-background px-2.5 text-xs font-medium text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-ddhq-line bg-ddhq-paper px-2.5 text-xs font-medium text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <Users className="size-3.5" />
                 New client relationship
@@ -378,14 +383,14 @@ function TaxWorkComponent() {
           <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
             <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
               {!selectedClientId || !selectedClient ? (
-                <div className="rounded-xl border border-border bg-muted/20 p-6 text-sm text-muted-foreground">
+                <div className="ddhq-panel-muted p-6 text-sm text-muted-foreground">
                   Select a client to review tax work.
                 </div>
               ) : (
                 <div className="flex h-full min-h-0 min-w-0 flex-col gap-4">
                   <section className="grid min-w-0 shrink-0 gap-4 xl:grid-cols-2 xl:items-stretch">
                     <section className="grid min-w-0 gap-3 xl:grid-rows-[auto_minmax(0,1fr)]">
-                      <section className="min-w-0 rounded-lg border border-border/80 bg-card px-3 py-2.5">
+                      <section className="min-w-0 ddhq-panel px-3 py-2.5">
                         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                           <div className="min-w-0">
                             <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
@@ -406,7 +411,7 @@ function TaxWorkComponent() {
                         </div>
                       </section>
 
-                      <section className="min-w-0 rounded-lg border border-border/80 bg-card p-4 xl:min-h-0">
+                      <section className="min-w-0 ddhq-panel p-4 xl:min-h-0">
                         <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
                           <Building2 className="size-3.5" />
                           Client summary
@@ -427,7 +432,7 @@ function TaxWorkComponent() {
                           </div>
                         </div>
 
-                        <div className="mt-4 grid grid-cols-3 divide-x divide-border/70 rounded-md border border-border/70 bg-muted/20">
+                        <div className="mt-4 grid grid-cols-3 divide-x divide-ddhq-line rounded-md border border-ddhq-line bg-ddhq-paper-muted/45">
                           <ClientSummaryMetric
                             label="Profiles"
                             value={selectedClient.filingProfileCount}
@@ -458,7 +463,7 @@ function TaxWorkComponent() {
                     <AnnualDeadlineCalendarCard clientId={selectedClient.id} />
                   </section>
 
-                  <section className="min-w-0 shrink-0 rounded-lg border border-border/80 bg-card p-3">
+                  <section className="min-w-0 shrink-0 px-1 py-1">
                     <div className="mb-3 flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
                       <div>
                         <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
@@ -508,7 +513,7 @@ function TaxWorkComponent() {
 
                     <div>
                       <div
-                        className={`flex flex-wrap items-center gap-1 rounded-lg border border-border/80 bg-background p-1 ${
+                        className={`flex flex-wrap items-center gap-1 rounded-lg border border-ddhq-line bg-ddhq-paper p-1 ${
                           showWorkFilters ? "mb-2" : ""
                         }`}
                       >
@@ -756,7 +761,7 @@ function TaxWorkPagination({
   }
 
   return (
-    <div className="flex shrink-0 flex-col gap-2 rounded-lg border border-border/80 bg-card px-3 py-2 md:flex-row md:items-center md:justify-between">
+    <div className="flex shrink-0 flex-col gap-2 px-1 py-1 md:flex-row md:items-center md:justify-between">
       <div className="text-xs text-muted-foreground">
         Showing {start}-{end} of {count} rows
       </div>
@@ -908,7 +913,7 @@ function ClientFilterDropdown({
             type="button"
             variant="outline"
             size="sm"
-            className="h-8 min-w-[220px] justify-between rounded-lg bg-background"
+        className="h-8 min-w-[220px] justify-between rounded-lg bg-ddhq-paper"
           />
         }
       >
@@ -920,7 +925,7 @@ function ClientFilterDropdown({
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
-        className="w-[360px] rounded-lg p-2"
+        className="w-[360px] rounded-lg border-ddhq-line p-2 shadow-[var(--ddhq-shadow-soft)]"
         sideOffset={6}
       >
         <div className="px-1 pb-2">
@@ -947,7 +952,7 @@ function ClientFilterDropdown({
           </div>
         </div>
 
-        <div className="max-h-[320px] overflow-auto rounded-md border border-border/80 bg-background p-1">
+        <div className="max-h-[320px] overflow-auto rounded-md border border-ddhq-line bg-ddhq-paper p-1">
           {visibleClients.length === 0 ? (
             <div className="px-2 py-3 text-xs leading-5 text-muted-foreground">
               No clients match this search.
@@ -1009,7 +1014,7 @@ function AnnualDeadlineCalendarCard({ clientId }: { clientId: string }) {
 
   if (calendar.isPending) {
     return (
-      <section className="min-w-0 rounded-lg border border-border/80 bg-card p-3">
+      <section className="min-w-0 ddhq-panel p-3">
         <div className="h-28 animate-pulse rounded-lg bg-muted/40" />
       </section>
     );
@@ -1017,7 +1022,7 @@ function AnnualDeadlineCalendarCard({ clientId }: { clientId: string }) {
 
   if (calendar.isError) {
     return (
-      <section className="min-w-0 rounded-lg border border-border/80 bg-card p-3">
+      <section className="min-w-0 ddhq-panel p-3">
         <div className="rounded-md border border-ddhq-risk/30 bg-ddhq-risk-soft px-3 py-2 text-xs text-ddhq-risk">
           Annual deadline calendar could not be loaded.
         </div>
@@ -1031,7 +1036,7 @@ function AnnualDeadlineCalendarCard({ clientId }: { clientId: string }) {
   const selectedMonthDeadlines = selectedMonthBucket?.deadlines ?? [];
 
   return (
-    <section className="min-w-0 rounded-lg border border-border/80 bg-card p-3">
+    <section className="min-w-0 ddhq-panel p-3">
       <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
@@ -1071,7 +1076,7 @@ function AnnualDeadlineCalendarCard({ clientId }: { clientId: string }) {
                   ? "border-primary/40 bg-ddhq-accent-soft text-primary ring-1 ring-primary/20"
                   : month.count > 0
                   ? "border-primary/20 bg-ddhq-accent-soft/45 text-primary"
-                  : "border-border bg-background text-muted-foreground"
+                  : "border-ddhq-line bg-ddhq-paper text-muted-foreground"
               } hover:border-primary/30 hover:bg-ddhq-accent-soft/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring`}
               onClick={() => setSelectedMonth(month.month)}
             >
@@ -1085,7 +1090,7 @@ function AnnualDeadlineCalendarCard({ clientId }: { clientId: string }) {
           ))}
         </div>
 
-        <div className="flex min-h-[116px] min-w-0 flex-col rounded-md border border-border/80 bg-background/70 p-2.5">
+        <div className="flex min-h-[116px] min-w-0 flex-col rounded-md border border-ddhq-line bg-ddhq-paper/70 p-2.5">
           <div className="mb-1.5 flex items-center justify-between gap-2">
             <div className="text-[11px] font-semibold text-muted-foreground">
               {selectedMonthBucket?.label ?? "Month"} tax list
@@ -1095,7 +1100,7 @@ function AnnualDeadlineCalendarCard({ clientId }: { clientId: string }) {
             </div>
           </div>
           {selectedMonthDeadlines.length === 0 ? (
-            <div className="min-h-0 rounded-md border border-dashed border-border bg-muted/20 px-3 py-2 text-xs leading-5 text-muted-foreground">
+            <div className="min-h-0 rounded-md border border-dashed border-ddhq-line bg-ddhq-paper-muted/35 px-3 py-2 text-xs leading-5 text-muted-foreground">
               No deadlines for this month.
             </div>
           ) : (
@@ -1115,7 +1120,7 @@ function AnnualDeadlineCalendarCard({ clientId }: { clientId: string }) {
 
 function AnnualCalendarDeadline({ deadline }: { deadline: CalendarDeadlineItem }) {
   return (
-    <div className="rounded-md border border-border/80 bg-background px-2 py-1.5">
+    <div className="rounded-md border border-ddhq-line bg-ddhq-paper px-2 py-1.5">
       <div className="flex min-w-0 items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">
@@ -1186,7 +1191,7 @@ function FilterSelect({
     <label className="grid gap-1 text-xs font-medium text-muted-foreground">
       {label}
       <Select value={value} onValueChange={(nextValue) => onChange(nextValue ?? "")}>
-        <SelectTrigger className="h-8 w-full rounded-lg bg-background">
+        <SelectTrigger className="h-8 w-full rounded-lg bg-ddhq-paper">
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent className="rounded-lg">

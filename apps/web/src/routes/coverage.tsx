@@ -119,7 +119,7 @@ const statusHeaderKeys = [
 const statusHeaderIconStyles: Record<VerificationStatusKey, string> = {
   verified: "bg-ddhq-verified-soft text-ddhq-verified",
   needs_review: "bg-ddhq-review-soft text-ddhq-review",
-  source_changed: "border-[oklch(0.7_0.075_285)] bg-[oklch(0.94_0.035_285)] text-[oklch(0.45_0.12_285)]",
+  source_changed: "border-[oklch(0.72_0.055_285/0.55)] bg-[oklch(0.955_0.026_285)] text-[oklch(0.46_0.105_285)]",
   unsupported: "bg-ddhq-gap-soft text-ddhq-gap",
   no_rule: "bg-ddhq-gap-soft text-ddhq-gap",
 };
@@ -142,9 +142,9 @@ const statusSummaryButtonStyles: Record<
   },
   source_changed: {
     active:
-      "border-[oklch(0.7_0.075_285)] bg-[oklch(0.94_0.035_285)] text-[oklch(0.45_0.12_285)] shadow-[0_1px_2px_rgba(105,73,163,0.13),inset_0_0_0_1px_rgba(105,73,163,0.18)] ring-[oklch(0.45_0.12_285/0.2)]",
+      "border-[oklch(0.72_0.055_285)] bg-[oklch(0.955_0.026_285)] text-[oklch(0.46_0.105_285)] shadow-[0_1px_2px_rgba(105,73,163,0.10),inset_0_0_0_1px_rgba(105,73,163,0.13)] ring-[oklch(0.46_0.105_285/0.16)]",
     idle:
-      "border-[oklch(0.7_0.075_285/0.45)] bg-[oklch(0.94_0.035_285/0.72)] text-[oklch(0.45_0.12_285)] shadow-[0_1px_1px_rgba(105,73,163,0.06)] hover:border-[oklch(0.7_0.075_285)] hover:bg-[oklch(0.94_0.035_285)] hover:shadow-[0_2px_5px_rgba(105,73,163,0.13)]",
+      "border-[oklch(0.72_0.055_285/0.40)] bg-[oklch(0.955_0.026_285/0.72)] text-[oklch(0.46_0.105_285)] shadow-[0_1px_1px_rgba(105,73,163,0.05)] hover:border-[oklch(0.72_0.055_285/0.70)] hover:bg-[oklch(0.955_0.026_285)] hover:shadow-[0_2px_5px_rgba(105,73,163,0.10)]",
   },
   unsupported: {
     active:
@@ -167,12 +167,12 @@ const sourceMonitorBadgeStatus: Record<SourceMonitorStatus, Parameters<typeof St
   unsupported: "unsupported",
 };
 
-const coverageFilterSelectTriggerClassName = "h-8 min-w-36 !rounded-[6px]";
+const coverageFilterSelectTriggerClassName = "h-8 min-w-36 !rounded-[6px] !border-ddhq-line !bg-ddhq-paper";
 const coverageFilterSelectContentClassName = "!rounded-[6px]";
 const coverageFilterSelectItemClassName =
   "data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground data-[selected]:bg-accent data-[selected]:text-accent-foreground";
 const coverageActionButtonClassName =
-  "min-h-7 w-full cursor-pointer rounded-[6px] !border-ddhq-border-strong !bg-background px-2 py-1 text-[11px] font-semibold leading-3 shadow-[inset_0_-1px_0_rgba(0,0,0,0.04)] hover:!border-primary/60 hover:!bg-ddhq-accent-soft/60 hover:!text-foreground focus-visible:!border-primary focus-visible:!ring-primary/25";
+  "min-h-7 w-full cursor-pointer rounded-[6px] !border-ddhq-line !bg-ddhq-paper px-2 py-1 text-[11px] font-semibold leading-3 shadow-none hover:!border-primary/45 hover:!bg-ddhq-accent-soft/45 hover:!text-foreground focus-visible:!border-primary focus-visible:!ring-primary/25";
 const evidenceLabelClassName =
   "text-[11px] font-semibold uppercase leading-4 text-muted-foreground";
 const dateHighlightClassName =
@@ -208,10 +208,10 @@ function CoverageComponent() {
 
   if (coverage.isPending) {
     return (
-      <main className="min-h-0 overflow-auto">
-        <div className="mx-auto flex max-w-7xl flex-col gap-6 px-5 py-6">
-          <div className="h-24 animate-pulse rounded-xl border border-border bg-card" />
-          <div className="h-96 animate-pulse rounded-xl border border-border bg-card" />
+      <main className="ddhq-page">
+        <div className="ddhq-page-inner max-w-7xl gap-6">
+          <div className="h-24 animate-pulse ddhq-panel" />
+          <div className="h-96 animate-pulse ddhq-panel" />
         </div>
       </main>
     );
@@ -219,8 +219,8 @@ function CoverageComponent() {
 
   if (coverage.isError) {
     return (
-      <main className="min-h-0 overflow-auto">
-        <div className="mx-auto max-w-7xl px-5 py-6">
+      <main className="ddhq-page">
+        <div className="ddhq-page-inner max-w-7xl gap-6">
           <div className="rounded-xl border border-ddhq-risk/30 bg-ddhq-risk-soft p-4 text-sm text-ddhq-risk">
             Coverage data could not be loaded.
           </div>
@@ -293,23 +293,23 @@ function CoverageComponent() {
   }
 
   return (
-    <main className="min-h-0 overflow-auto">
-      <div className="mx-auto flex max-w-7xl flex-col gap-5 px-5 py-6">
-        <section className="grid gap-3">
+    <main className="ddhq-page">
+      <div className="ddhq-page-inner max-w-7xl gap-5">
+        <section className="ddhq-page-header">
           <div className="max-w-3xl">
-            <div className="mb-1.5 flex items-center gap-2 text-xs font-medium uppercase text-muted-foreground">
+            <div className="ddhq-kicker">
               <Shield className="size-3.5" />
               Tax obligation library
             </div>
-            <h1 className="text-2xl font-semibold tracking-normal">Coverage Matrix</h1>
-            <p className="mt-1.5 max-w-2xl text-sm leading-6 text-muted-foreground">
+            <h1 className="ddhq-title">Coverage Matrix</h1>
+            <p className="ddhq-copy">
               Beta coverage is limited to P0 official sources. Non-verified obligations stay
               visible, but they cannot generate DueDateHQ Verified deadline tasks.
             </p>
           </div>
         </section>
 
-        <section className="-mx-5 bg-muted/20 px-5 py-3">
+        <section className="-mx-5 bg-ddhq-paper-muted/30 px-5 py-3">
           <div className="flex flex-col gap-3">
             <div
               role="group"
@@ -486,7 +486,7 @@ function CoverageComponent() {
 
         <section className="flex flex-col gap-4">
           {filteredGroups.length === 0 && (
-            <div className="rounded-xl border border-border bg-muted/20 p-6 text-center text-sm text-muted-foreground">
+            <div className="ddhq-panel-muted p-6 text-center text-sm text-muted-foreground">
               No obligations match the current filters.
             </div>
           )}
@@ -508,7 +508,7 @@ function CoverageComponent() {
                 <GroupCountList counts={group.counts} />
               </div>
 
-              <div className="overflow-hidden rounded-[8px] border border-border/80">
+              <div className="ddhq-table-shell rounded-[8px]">
                 <Table className="min-w-[1120px] table-fixed">
                   <colgroup>
                     <col className="w-[27%]" />
@@ -519,7 +519,7 @@ function CoverageComponent() {
                     <col className="w-[12%]" />
                   </colgroup>
                   <TableHeader>
-                    <TableRow className="border-border/70 bg-muted/30 hover:bg-muted/30">
+                    <TableRow className="border-ddhq-line bg-ddhq-paper-muted/70 hover:bg-ddhq-paper-muted/70">
                       <TableHead className="text-[11px] font-semibold uppercase text-muted-foreground">Obligation</TableHead>
                       <TableHead className="text-[11px] font-semibold uppercase text-muted-foreground">Scope</TableHead>
                       <TableHead className="text-[11px] font-semibold uppercase text-muted-foreground">
@@ -535,7 +535,7 @@ function CoverageComponent() {
                       const statusKey = getStatusKey(obligation.verificationStatus);
 
                       return (
-                        <TableRow key={obligation.obligationId} className="border-border/70 align-top">
+                        <TableRow key={obligation.obligationId} className="border-ddhq-line align-top">
                           <TableCell className="min-w-0 whitespace-normal">
                             <div className="max-w-full break-words font-medium leading-5 [overflow-wrap:anywhere]">
                               {obligation.obligationName}
@@ -553,7 +553,7 @@ function CoverageComponent() {
                                 {obligation.entityTypes.map((entityType) => (
                                   <span
                                     key={entityType}
-                                    className="rounded-[6px] border border-border bg-card px-1.5 py-0.5 text-[11px] text-muted-foreground"
+                                    className="rounded-[6px] border border-ddhq-line bg-ddhq-paper px-1.5 py-0.5 text-[11px] text-muted-foreground"
                                   >
                                     {formatEntityType(entityType)}
                                   </span>
@@ -953,7 +953,7 @@ function CoverageDetailContent({
             {obligation.entityTypes.map((entityType) => (
               <span
                 key={entityType}
-                className="rounded-[6px] border border-border bg-card px-1.5 py-0.5 text-[11px] text-muted-foreground"
+                className="rounded-[6px] border border-ddhq-line bg-ddhq-paper px-1.5 py-0.5 text-[11px] text-muted-foreground"
               >
                 {formatEntityType(entityType)}
               </span>
@@ -1112,7 +1112,7 @@ function RuleDetailContent({
               {ruleDetail.data.entityTypes.map((entityType) => (
                 <span
                   key={entityType}
-                  className="rounded-[6px] border border-border bg-card px-1.5 py-0.5 text-[11px] text-muted-foreground"
+                  className="rounded-[6px] border border-ddhq-line bg-ddhq-paper px-1.5 py-0.5 text-[11px] text-muted-foreground"
                 >
                   {formatEntityType(entityType)}
                 </span>
