@@ -34,6 +34,8 @@ export type CoverageObligationItem = {
   lastVerifiedAt: string | null;
   sourceLastCheckedAt: string | null;
   sourceLastChangedAt: string | null;
+  sourceMonitorStatus: "monitored" | "source_changed" | "not_monitored" | "unsupported";
+  sourceMonitorLabel: string;
   currentVersion: number | null;
 };
 
@@ -116,6 +118,37 @@ function getCoverageStatus(
   return null;
 }
 
+function getSourceMonitorState(
+  knownStatus: KnownStatus,
+  rule: ReturnType<typeof getSeedRules>[number] | undefined,
+): Pick<CoverageObligationItem, "sourceMonitorLabel" | "sourceMonitorStatus"> {
+  if (!rule) {
+    if (knownStatus === "unsupported") {
+      return {
+        sourceMonitorStatus: "unsupported",
+        sourceMonitorLabel: "Unsupported in beta",
+      };
+    }
+
+    return {
+      sourceMonitorStatus: "not_monitored",
+      sourceMonitorLabel: "No verified source monitor",
+    };
+  }
+
+  if (rule.verificationStatus === "source_changed") {
+    return {
+      sourceMonitorStatus: "source_changed",
+      sourceMonitorLabel: "Source changed",
+    };
+  }
+
+  return {
+    sourceMonitorStatus: "monitored",
+    sourceMonitorLabel: "Source monitored",
+  };
+}
+
 function buildCoverageItems(): CoverageObligationItem[] {
   const obligations = getSeedObligations();
   const rules = getSeedRules();
@@ -128,6 +161,7 @@ function buildCoverageItems(): CoverageObligationItem[] {
   return obligations.map((obl) => {
     const rule = rulesByObligation.get(obl.id);
     const verificationStatus = getCoverageStatus(obl.knownStatus, rule);
+    const sourceMonitorState = getSourceMonitorState(obl.knownStatus, rule);
 
     return {
       obligationId: obl.id,
@@ -146,6 +180,7 @@ function buildCoverageItems(): CoverageObligationItem[] {
       lastVerifiedAt: toISOOrNull(rule?.lastVerifiedAt),
       sourceLastCheckedAt: toISOOrNull(rule?.sourceLastCheckedAt),
       sourceLastChangedAt: toISOOrNull(rule?.sourceLastChangedAt),
+      ...sourceMonitorState,
       currentVersion: rule?.currentVersion ?? null,
     };
   });

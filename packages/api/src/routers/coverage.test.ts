@@ -117,6 +117,8 @@ test("coverage.matrix obligations have required fields", async () => {
       assert.ok(obl.obligationName, "Should have obligationName");
       assert.ok(obl.taxCategory, "Should have taxCategory");
       assert.ok(obl.entityTypes.length > 0, "Should have entity types");
+      assert.ok(obl.sourceMonitorStatus, "Should expose source monitor status");
+      assert.ok(obl.sourceMonitorLabel, "Should expose source monitor label");
 
       if (obl.verificationStatus) {
         assert.ok(
@@ -221,11 +223,27 @@ test("coverage.matrix keeps gaps and unsupported obligations non-official", asyn
   assert.ok(partnershipGap);
   assert.equal(partnershipGap.verificationStatus, null);
   assert.equal(partnershipGap.ruleId, null);
+  assert.equal(partnershipGap.sourceMonitorStatus, "not_monitored");
+  assert.equal(partnershipGap.sourceMonitorLabel, "No verified source monitor");
 
   const unsupported = items.find((item) => item.obligationId === "obl-fl-rt6");
   assert.ok(unsupported);
   assert.equal(unsupported.verificationStatus, "unsupported");
   assert.equal(unsupported.ruleId, null);
+  assert.equal(unsupported.sourceMonitorStatus, "unsupported");
+  assert.equal(unsupported.sourceMonitorLabel, "Unsupported in beta");
+});
+
+test("coverage.matrix highlights source-changed monitor state", async () => {
+  const result = await caller.coverage.matrix();
+  const items = result.groups.flatMap((g) => g.obligations);
+
+  const sourceChanged = items.find((item) => item.verificationStatus === "source_changed");
+  assert.ok(sourceChanged);
+  assert.equal(sourceChanged.sourceMonitorStatus, "source_changed");
+  assert.equal(sourceChanged.sourceMonitorLabel, "Source changed");
+  assert.ok(sourceChanged.sourceLastCheckedAt);
+  assert.ok(sourceChanged.sourceLastChangedAt);
 });
 
 test("coverage.matrix supported sources include P0 agencies", async () => {
