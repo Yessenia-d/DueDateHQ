@@ -6,6 +6,7 @@ import {
   deadlineDateEvents,
   deadlineTaskUpdateRecords,
   deadlineTasks,
+  type ClientRelationship,
   type DeadlineTask,
   filingProfiles,
   type FilingProfile,
@@ -37,6 +38,8 @@ function createSelectChain(selectQueue: unknown[][]) {
     where: (_predicate: unknown) => chain,
     orderBy: async (..._columns: unknown[]) => nextSelectResult(selectQueue),
     limit: async (_count: number) => nextSelectResult(selectQueue),
+    then: (resolve: (value: unknown[]) => void, reject: (reason?: unknown) => void) =>
+      Promise.resolve(nextSelectResult(selectQueue)).then(resolve, reject),
   };
 
   return chain;
@@ -197,6 +200,23 @@ function makeProfile(overrides: Partial<FilingProfile> = {}): FilingProfile {
   };
 }
 
+function makeClient(overrides: Partial<ClientRelationship> = {}): ClientRelationship {
+  const now = new Date("2026-05-05T00:00:00.000Z");
+
+  return {
+    id: "client-test",
+    firmId: "firm-test",
+    displayName: "Gulf Coast Holdings",
+    relationshipType: "business",
+    notes: null,
+    sourceSystem: "manual",
+    createdVia: "manual",
+    createdAt: now,
+    updatedAt: now,
+    ...overrides,
+  };
+}
+
 function makeDecisionRow(proposal: NoticeImpactProposal = makeProposal()) {
   const now = new Date("2026-05-05T00:00:00.000Z");
 
@@ -244,6 +264,32 @@ function makeDecisionRow(proposal: NoticeImpactProposal = makeProposal()) {
     } satisfies typeof officialSources.$inferSelect,
   };
 }
+
+test("noticeProposals.listForNotice includes affected client and task targets for diffs", async () => {
+  const proposal = makeProposal({
+    filingProfileId: null,
+    deadlineTaskId: "task-test",
+  });
+  const caller = createCaller({
+    selectQueue: [
+      [
+        {
+          proposal,
+          task: makeTask(),
+          profile: makeProfile(),
+          client: makeClient(),
+        },
+      ],
+    ],
+  });
+
+  const result = await caller.noticeProposals.listForNotice({ noticeId: "notice-test" });
+  const [item] = result.proposals;
+
+  assert.equal(item?.target.clientDisplayName, "Gulf Coast Holdings");
+  assert.equal(item?.target.taskTitle, "Form 1120 Filing");
+  assert.equal(item?.target.filingProfileDisplayName, "Gulf Coast 1120");
+});
 
 test("noticeProposals.reject records audit and action without mutating workspace state", async () => {
   const writes: Write[] = [];

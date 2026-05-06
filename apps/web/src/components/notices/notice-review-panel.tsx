@@ -310,8 +310,11 @@ function ProposalDiffCard({
   selected: boolean;
 }) {
   const actionable = proposal.status === "pending" || proposal.status === "decide_later";
-  const targetMeta = [
-    proposal.target.clientDisplayName,
+  const affectedClient = proposal.target.clientDisplayName ?? "Client not linked";
+  const affectedTask =
+    proposal.target.taskTitle ??
+    (proposal.deadlineTaskId ? `Task ${proposal.deadlineTaskId}` : "No deadline task");
+  const profileMeta = [
     proposal.target.filingProfileDisplayName,
     proposal.target.jurisdiction,
     proposal.target.taxCategory,
@@ -330,13 +333,21 @@ function ProposalDiffCard({
             onCheckedChange={(checked) => onToggle(Boolean(checked))}
           />
           <div className="min-w-0">
-            <div className="break-words text-sm font-semibold">
-              {proposal.target.taskTitle ??
-                proposal.target.filingProfileDisplayName ??
-                "Affected profile"}
-            </div>
-            <div className="mt-1 break-words text-xs text-muted-foreground">
-              {targetMeta}
+            <div className="grid min-w-0 gap-1 text-sm">
+              <div className="grid min-w-0 gap-0.5 sm:grid-cols-[112px_minmax(0,1fr)]">
+                <span className="text-xs font-semibold text-muted-foreground">Affected client</span>
+                <span className="min-w-0 break-words font-semibold text-foreground">{affectedClient}</span>
+              </div>
+              <div className="grid min-w-0 gap-0.5 sm:grid-cols-[112px_minmax(0,1fr)]">
+                <span className="text-xs font-semibold text-muted-foreground">Task</span>
+                <span className="min-w-0 break-words font-semibold text-foreground">{affectedTask}</span>
+              </div>
+              {profileMeta ? (
+                <div className="grid min-w-0 gap-0.5 sm:grid-cols-[112px_minmax(0,1fr)]">
+                  <span className="text-xs font-semibold text-muted-foreground">Filing profile</span>
+                  <span className="min-w-0 break-words text-xs text-muted-foreground">{profileMeta}</span>
+                </div>
+              ) : null}
             </div>
             <div className="mt-2 flex flex-wrap gap-1.5">
               <StatusBadge status="neutral">

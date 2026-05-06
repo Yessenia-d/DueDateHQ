@@ -1,4 +1,4 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, or } from "drizzle-orm";
 import { auditLogs } from "@due-date-hq/db/schema/audit";
 import {
   clientRelationships,
@@ -104,14 +104,20 @@ export const noticeProposalsRouter = router({
           filingProfiles,
           and(
             eq(noticeImpactProposals.firmId, filingProfiles.firmId),
-            eq(noticeImpactProposals.filingProfileId, filingProfiles.id),
+            or(
+              eq(noticeImpactProposals.filingProfileId, filingProfiles.id),
+              eq(deadlineTasks.filingProfileId, filingProfiles.id),
+            ),
           ),
         )
         .leftJoin(
           clientRelationships,
           and(
             eq(filingProfiles.firmId, clientRelationships.firmId),
-            eq(filingProfiles.clientRelationshipId, clientRelationships.id),
+            or(
+              eq(filingProfiles.clientRelationshipId, clientRelationships.id),
+              eq(deadlineTasks.clientRelationshipId, clientRelationships.id),
+            ),
           ),
         )
         .where(
