@@ -1,4 +1,5 @@
 import { publicProcedure, router } from "../index";
+import { accountRouter } from "./account";
 import { authRouter } from "./auth";
 import { clientsRouter } from "./clients";
 import { coverageRouter } from "./coverage";
@@ -17,6 +18,7 @@ export const appRouter = router({
   healthCheck: publicProcedure.query(() => {
     return "OK";
   }),
+  account: accountRouter,
   auth: authRouter,
   clients: clientsRouter,
   coverage: coverageRouter,

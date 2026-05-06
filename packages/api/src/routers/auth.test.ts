@@ -46,8 +46,10 @@ test("auth.session returns the firm-scoped Better Auth session", async () => {
   const result = await caller.auth.session();
 
   assert.equal(result?.user.email, "cpa@example.com");
+  assert.equal(result?.user.createdAt, "2026-05-05T00:00:00.000Z");
   assert.equal(result?.firm.name, "North Star CPA");
   assert.equal(result?.firm.ownerUserId, "user-1");
+  assert.equal(result?.firm.createdAt, "2026-05-05T00:00:00.000Z");
 });
 
 test("auth.workspace rejects unauthenticated business access", async () => {
