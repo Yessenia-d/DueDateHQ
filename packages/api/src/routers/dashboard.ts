@@ -59,6 +59,12 @@ export type DashboardUrgency =
   | "due_this_week"
   | "due_this_month"
   | "long_range";
+export type DashboardRiskStatus =
+  | "on_track"
+  | "at_risk"
+  | "blocked"
+  | "overdue"
+  | "resolved";
 
 export const dateStringSchema = z
   .string()
@@ -120,6 +126,10 @@ export type DashboardTaskRow = {
   isExtended: boolean;
   daysRemaining: number;
   status: DeadlineTask["status"];
+  statusLabel: string;
+  statusDetailLabel: string;
+  riskStatus: DashboardRiskStatus;
+  riskLabel: string;
   priority: DeadlineTask["priority"];
   sourceType: DeadlineTask["sourceType"];
   verificationStatus: DashboardVerificationStatus;
@@ -298,6 +308,21 @@ function getVerificationLabel(status: DashboardVerificationStatus): string {
   }
 }
 
+function getTaskStatusLabel(status: DeadlineTask["status"]): string {
+  switch (status) {
+    case "not_started":
+      return "Not started";
+    case "waiting_on_client":
+      return "Waiting on client";
+    case "ready_to_work":
+      return "Ready to work";
+    case "in_progress":
+      return "In progress";
+    case "done":
+      return "Done";
+  }
+}
+
 function getDateState({
   currentDueDate,
   status,
@@ -330,6 +355,74 @@ function getDateState({
   return { daysRemaining, horizon: "long_range", urgency: "long_range" };
 }
 
+function getTaskRiskStatus({
+  status,
+  urgency,
+  verificationStatus,
+}: {
+  status: DeadlineTask["status"];
+  urgency: DashboardUrgency;
+  verificationStatus: DashboardVerificationStatus;
+}): DashboardRiskStatus {
+  if (status === "done") return "resolved";
+  if (urgency === "overdue") return "overdue";
+  if (status === "waiting_on_client") return "blocked";
+  if (
+    urgency === "due_today" ||
+    urgency === "due_this_week" ||
+    verificationStatus === "source_changed" ||
+    verificationStatus === "needs_review"
+  ) {
+    return "at_risk";
+  }
+
+  return "on_track";
+}
+
+function getTaskRiskLabel(status: DashboardRiskStatus): string {
+  switch (status) {
+    case "on_track":
+      return "On track";
+    case "at_risk":
+      return "At risk";
+    case "blocked":
+      return "Blocked";
+    case "overdue":
+      return "Overdue";
+    case "resolved":
+      return "Resolved";
+  }
+}
+
+function getTaskStatusDetailLabel({
+  isExtended,
+  riskStatus,
+  sourceType,
+  status,
+  verificationStatus,
+}: {
+  isExtended: boolean;
+  riskStatus: DashboardRiskStatus;
+  sourceType: DeadlineTask["sourceType"];
+  status: DeadlineTask["status"];
+  verificationStatus: DashboardVerificationStatus;
+}): string {
+  switch (status) {
+    case "not_started":
+      return sourceType === "entered_deadline" ? "Entered by CPA" : "Not requested";
+    case "waiting_on_client":
+      return riskStatus === "blocked" ? "Materials or signature" : "Client action";
+    case "ready_to_work":
+      return "Materials ready";
+    case "in_progress":
+      if (verificationStatus === "source_changed") return "Review source first";
+      if (isExtended) return "Extended prep";
+      return "Prep or review";
+    case "done":
+      return sourceType === "entered_deadline" ? "Closed by CPA" : "Filed or closed";
+  }
+}
+
 function getSmartPriorityScore(row: Omit<DashboardTaskRow, "smartPriorityScore">): number {
   const urgencyScore: Record<DashboardUrgency, number> = {
     overdue: 1000,
@@ -346,7 +439,8 @@ function getSmartPriorityScore(row: Omit<DashboardTaskRow, "smartPriorityScore">
   };
   const statusScore: Record<DeadlineTask["status"], number> = {
     not_started: 40,
-    waiting_on_client: 25,
+    waiting_on_client: 35,
+    ready_to_work: 30,
     in_progress: 15,
     done: -250,
   };
@@ -385,7 +479,12 @@ function createDashboardTaskRow({
   });
   const isExtended = events.some(
     (event) => event.eventType === "official_extension" || event.eventType === "official_relief_change",
-  );
+  ) || Boolean(task.originalDueDate && task.originalDueDate !== task.currentDueDate);
+  const riskStatus = getTaskRiskStatus({
+    status: task.status,
+    urgency: dateState.urgency,
+    verificationStatus,
+  });
   const baseRow = {
     id: task.id,
     clientRelationship: {
@@ -413,6 +512,16 @@ function createDashboardTaskRow({
     isExtended,
     daysRemaining: dateState.daysRemaining,
     status: task.status,
+    statusLabel: getTaskStatusLabel(task.status),
+    statusDetailLabel: getTaskStatusDetailLabel({
+      isExtended,
+      riskStatus,
+      sourceType: task.sourceType,
+      status: task.status,
+      verificationStatus,
+    }),
+    riskStatus,
+    riskLabel: getTaskRiskLabel(riskStatus),
     priority: task.priority,
     sourceType: task.sourceType,
     verificationStatus,
@@ -705,6 +814,8 @@ export function createDashboardCsv(rows: DashboardTaskRow[]): string {
     "Original due date",
     "Firm target date",
     "Status",
+    "Status detail",
+    "Risk status",
     "Verification status",
     "Source type",
     "Source name",
@@ -727,7 +838,9 @@ export function createDashboardCsv(rows: DashboardTaskRow[]): string {
         row.currentDueDate,
         row.originalDueDate,
         row.firmTargetDate,
-        row.status,
+        row.statusLabel,
+        row.statusDetailLabel,
+        row.riskLabel,
         row.verificationLabel,
         row.sourceType === "entered_deadline" ? ENTERED_DEADLINE_LABEL : row.sourceType,
         row.sourceName,

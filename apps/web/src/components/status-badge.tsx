@@ -5,8 +5,12 @@ type StatusBadgeStatus =
   | "done"
   | "needs_review"
   | "waiting_on_client"
+  | "ready_to_work"
   | "source_changed"
   | "overdue"
+  | "at_risk"
+  | "on_track"
+  | "resolved"
   | "unsupported"
   | "coverage_gap"
   | "no_rule"
@@ -24,10 +28,14 @@ const statusStyles: Record<string, string> = {
   done: "bg-ddhq-verified-soft text-ddhq-verified",
   needs_review: "bg-ddhq-review-soft text-ddhq-review",
   waiting_on_client: "bg-ddhq-review-soft text-ddhq-review",
+  ready_to_work: "bg-ddhq-accent-soft text-primary",
   source_changed:
     "bg-[oklch(0.94_0.035_285)] text-[oklch(0.45_0.12_285)]",
   review: "bg-ddhq-review-soft text-ddhq-review",
   overdue: "bg-ddhq-risk-soft text-ddhq-risk",
+  at_risk: "bg-ddhq-review-soft text-ddhq-review",
+  on_track: "bg-muted text-muted-foreground",
+  resolved: "bg-ddhq-verified-soft text-ddhq-verified",
   risk: "bg-ddhq-risk-soft text-ddhq-risk",
   blocked: "bg-ddhq-risk-soft text-ddhq-risk",
   unsupported: "bg-ddhq-gap-soft text-ddhq-gap",
@@ -45,8 +53,12 @@ const statusLabels: Record<string, string> = {
   done: "Done",
   needs_review: "Needs review",
   waiting_on_client: "Waiting on client",
+  ready_to_work: "Ready to work",
   source_changed: "Source changed",
   overdue: "Overdue",
+  at_risk: "At risk",
+  on_track: "On track",
+  resolved: "Resolved",
   unsupported: "Unsupported",
   coverage_gap: "Coverage gap",
   no_rule: "Coverage gap",

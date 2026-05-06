@@ -74,7 +74,13 @@ test("deadline domain schema keeps the firm-owned client profile task chain", ()
 
 test("deadline task enums preserve the verified versus entered-deadline trust boundary", () => {
   assert.deepEqual(deadlineTaskSourceTypes, ["verified_rule", "entered_deadline"]);
-  assert.ok(deadlineTaskStatuses.includes("waiting_on_client"));
+  assert.deepEqual(deadlineTaskStatuses, [
+    "not_started",
+    "waiting_on_client",
+    "ready_to_work",
+    "in_progress",
+    "done",
+  ]);
   assert.ok(filingProfileEntityTypes.includes("individual"));
   assert.ok(filingProfileEntityTypes.includes("s_corp"));
   assert.ok(filingProfileEntityTypes.includes("partnership"));

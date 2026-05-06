@@ -76,15 +76,17 @@ type CountdownUrgencyStyle = {
 
 const statusLabels = {
   not_started: "Not started",
-  in_progress: "In progress",
   waiting_on_client: "Waiting on client",
+  ready_to_work: "Ready to work",
+  in_progress: "In progress",
   done: "Done",
 } satisfies Record<DeadlineTaskStatus, string>;
 
 const statusOptions = [
   { label: statusLabels.not_started, value: "not_started" },
-  { label: statusLabels.in_progress, value: "in_progress" },
   { label: statusLabels.waiting_on_client, value: "waiting_on_client" },
+  { label: statusLabels.ready_to_work, value: "ready_to_work" },
+  { label: statusLabels.in_progress, value: "in_progress" },
   { label: statusLabels.done, value: "done" },
 ] satisfies readonly { label: string; value: DeadlineTaskStatus }[];
 
@@ -104,6 +106,11 @@ const statusBadgeStyles = {
     label: statusLabels.waiting_on_client,
     tone: "text-ddhq-review",
   },
+  ready_to_work: {
+    indicator: "bg-primary/65",
+    label: statusLabels.ready_to_work,
+    tone: "text-primary",
+  },
   done: {
     indicator: "bg-ddhq-verified",
     label: statusLabels.done,
@@ -113,9 +120,10 @@ const statusBadgeStyles = {
 
 const statusSortRank: Record<DeadlineTaskStatus, number> = {
   not_started: 1,
-  in_progress: 2,
-  waiting_on_client: 3,
-  done: 4,
+  waiting_on_client: 2,
+  ready_to_work: 3,
+  in_progress: 4,
+  done: 5,
 };
 
 const trustSortRank: Record<DashboardTaskRow["verificationStatus"], number> = {
@@ -436,29 +444,13 @@ export function TaskTable({
                   <div className="text-xs font-medium">{task.title}</div>
                   <div className="mt-0.5 text-xs text-muted-foreground">{task.taxCategory}</div>
                 </TableCell>
-                <TableCell className="text-right">
-                  <div className="text-xs font-semibold">{formatDate(task.currentDueDate)}</div>
-                  {task.isExtended ? (
-                    <div className="mt-1 flex flex-wrap items-center justify-end gap-1">
-                      <StatusBadge status="review">Extended</StatusBadge>
-                      {task.originalDueDate ? (
-                        <span className="text-[11px] text-muted-foreground">
-                          Original {formatDate(task.originalDueDate)}
-                        </span>
-                      ) : null}
-                    </div>
-                  ) : null}
-                  {task.hasDateHistory ? (
-                    <div className="mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground">
-                      <History className="size-3" />
-                      History
-                    </div>
-                  ) : null}
+                <TableCell className="text-right align-middle">
+                  <DueDateCell task={task} />
                 </TableCell>
                 <TableCell className="text-right">
                   <CountdownBadge task={task} />
                 </TableCell>
-                <TableCell className="min-w-[11rem]">
+                <TableCell className="min-w-[11rem] align-middle">
                   {statusEdit?.taskId === task.id ? (
                     <div className="flex min-w-72 items-center gap-1.5">
                       <Select
@@ -512,8 +504,8 @@ export function TaskTable({
                       </Button>
                     </div>
                   ) : (
-                    <div className="inline-flex items-center gap-1">
-                      <DeadlineStatusBadge status={task.status} />
+                    <div className="flex min-w-0 items-center gap-1">
+                      <TaskStatusStack task={task} />
                       <Button
                         type="button"
                         variant="ghost"
@@ -830,18 +822,89 @@ function SortHeader({
   );
 }
 
-function DeadlineStatusBadge({ status }: { status: DeadlineTaskStatus }) {
+function DueDateCell({ task }: { task: DashboardTaskRow }) {
+  const originalDate = task.originalDueDate;
+  const hasOriginalDatePair = Boolean(
+    task.isExtended && originalDate && originalDate !== task.currentDueDate,
+  );
+
+  return (
+    <div className="grid justify-items-end gap-1">
+      <div className="text-xs font-semibold">{formatDate(task.currentDueDate)}</div>
+      {hasOriginalDatePair ? (
+        <div className="inline-flex items-center gap-1 rounded-md bg-ddhq-review-soft/70 px-1.5 py-0.5 text-[11px] font-medium text-ddhq-review">
+          <span className="font-semibold">Extended</span>
+          <span aria-hidden="true">·</span>
+          <span>original {formatDate(originalDate!)}</span>
+        </div>
+      ) : task.hasDateHistory ? (
+        <div className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+          <History className="size-3" />
+          History
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function TaskStatusStack({ task }: { task: DashboardTaskRow }) {
+  const tooltipLabel = getStatusTooltipLabel(task);
+  const tooltipId = tooltipLabel ? `status-tooltip-${task.id}` : undefined;
+
+  return (
+    <DeadlineStatusBadge
+      ariaDescribedBy={tooltipId}
+      status={task.status}
+      tooltipId={tooltipId}
+      tooltipLabel={tooltipLabel}
+    />
+  );
+}
+
+function getStatusTooltipLabel(task: DashboardTaskRow): string | null {
+  if (task.status === "waiting_on_client") {
+    return task.statusDetailLabel;
+  }
+
+  return null;
+}
+
+function DeadlineStatusBadge({
+  ariaDescribedBy,
+  status,
+  tooltipId,
+  tooltipLabel,
+}: {
+  ariaDescribedBy?: string;
+  status: DeadlineTaskStatus;
+  tooltipId?: string;
+  tooltipLabel?: string | null;
+}) {
   const style = statusBadgeStyles[status];
 
   return (
-    <span
-      className={cn(
-        "inline-flex min-w-[7.25rem] items-center gap-1.5 text-xs font-semibold leading-none whitespace-nowrap",
-        style.tone,
-      )}
-    >
-      <span className={cn("size-1.5 rounded-full", style.indicator)} aria-hidden="true" />
-      {style.label}
+    <span className="group/status relative inline-flex min-w-[7.25rem] items-center">
+      <span
+        aria-describedby={ariaDescribedBy}
+        className={cn(
+          "inline-flex items-center gap-1.5 rounded-[4px] text-xs font-semibold leading-none whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-ring/45 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+          style.tone,
+          tooltipLabel ? "cursor-help" : "",
+        )}
+        tabIndex={tooltipLabel ? 0 : undefined}
+      >
+        <span className={cn("size-1.5 rounded-full", style.indicator)} aria-hidden="true" />
+        {style.label}
+      </span>
+      {tooltipLabel && tooltipId ? (
+        <span
+          id={tooltipId}
+          role="tooltip"
+          className="pointer-events-none absolute left-0 top-full z-[80] mt-2 hidden max-w-56 rounded-md border border-border bg-popover px-2.5 py-1.5 text-xs font-medium leading-5 text-popover-foreground shadow-lg group-hover/status:block group-focus-within/status:block"
+        >
+          {tooltipLabel}
+        </span>
+      ) : null}
     </span>
   );
 }

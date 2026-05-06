@@ -63,8 +63,9 @@ export type FilingProfileCoverageState = (typeof filingProfileCoverageStates)[nu
 
 export const deadlineTaskStatuses = [
   "not_started",
-  "in_progress",
   "waiting_on_client",
+  "ready_to_work",
+  "in_progress",
   "done",
 ] as const;
 export type DeadlineTaskStatus = (typeof deadlineTaskStatuses)[number];
@@ -256,7 +257,7 @@ export const deadlineTasks = sqliteTable(
     }).onDelete("cascade"),
     check(
       "deadline_tasks_status_check",
-      sql`${table.status} in ('not_started', 'in_progress', 'waiting_on_client', 'done')`,
+      sql`${table.status} in ('not_started', 'waiting_on_client', 'ready_to_work', 'in_progress', 'done')`,
     ),
     check(
       "deadline_tasks_priority_check",

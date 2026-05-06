@@ -126,8 +126,9 @@ const verificationLabels: Record<DashboardVerificationStatus, string> = {
 
 const taskStatusLabels: Record<DashboardTaskRow["status"], string> = {
   not_started: "Not started",
-  in_progress: "In progress",
   waiting_on_client: "Waiting on client",
+  ready_to_work: "Ready to work",
+  in_progress: "In progress",
   done: "Done",
 };
 

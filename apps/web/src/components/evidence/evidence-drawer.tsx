@@ -69,6 +69,8 @@ function EvidenceContent({ evidence }: { evidence: TaskEvidenceResponse }) {
   const tabBaseId = React.useId();
   const activityItems = React.useMemo(() => createActivityItems(evidence), [evidence]);
   const dateHistoryItems = React.useMemo(() => createDateHistoryItems(evidence), [evidence]);
+  const hasExtendedDatePair = React.useMemo(() => hasOfficialDatePair(evidence), [evidence]);
+  const workState = React.useMemo(() => createEvidenceWorkState(evidence), [evidence]);
 
   React.useEffect(() => {
     setActiveTab("activity");
@@ -113,29 +115,35 @@ function EvidenceContent({ evidence }: { evidence: TaskEvidenceResponse }) {
           {evidence.clientRelationship.displayName} / {evidence.filingProfile.displayName}
         </div>
         <div className="mt-3 grid gap-2 text-xs sm:grid-cols-2">
-          <OfficialDateField
-            label={
-              evidence.task.sourceType === "entered_deadline"
-                ? "Current due date"
-                : "Current official due date"
-            }
-            tone="current"
-            value={formatDate(evidence.task.currentDueDate)}
-          />
-          <OfficialDateField
-            label="Original due date"
-            tone="original"
-            value={
-              evidence.task.originalDueDate
-                ? formatDate(evidence.task.originalDueDate)
-                : "None recorded"
-            }
-          />
+          {hasExtendedDatePair ? (
+            <>
+              <OfficialDateField
+                label={
+                  evidence.task.sourceType === "entered_deadline"
+                    ? "Current due date"
+                    : "Current official due date"
+                }
+                tone="current"
+                value={formatDate(evidence.task.currentDueDate)}
+              />
+              <OfficialDateField
+                label="Original due date"
+                tone="original"
+                value={formatDate(evidence.task.originalDueDate!)}
+              />
+            </>
+          ) : (
+            <OfficialDateField
+              label={evidence.task.sourceType === "entered_deadline" ? "Due date" : "Official due date"}
+              tone="current"
+              value={formatDate(evidence.task.currentDueDate)}
+            />
+          )}
           <EvidenceField
             label="Firm target date"
             value={evidence.task.firmTargetDate ? formatDate(evidence.task.firmTargetDate) : "None"}
           />
-          <EvidenceStatusField label="Work status" status={evidence.task.status} />
+          <EvidenceStatusField label="Work status" workState={workState} />
         </div>
       </section>
 
@@ -385,17 +393,157 @@ function OfficialDateField({
 
 function EvidenceStatusField({
   label,
-  status,
+  workState,
 }: {
   label: string;
-  status: TaskEvidenceResponse["task"]["status"];
+  workState: EvidenceWorkState;
 }) {
   return (
     <div className="grid content-start gap-1">
       <span className="text-muted-foreground">{label}</span>
-      <StatusBadge status={status} />
+      <div className="flex flex-wrap items-center gap-1">
+        <StatusBadge status={workState.status} />
+        <StatusBadge status="neutral">{workState.detailLabel}</StatusBadge>
+        <StatusBadge status={workState.riskStatus}>{workState.riskLabel}</StatusBadge>
+      </div>
     </div>
   );
+}
+
+type EvidenceWorkState = {
+  detailLabel: string;
+  riskLabel: string;
+  riskStatus: "on_track" | "at_risk" | "blocked" | "overdue" | "resolved";
+  status: TaskEvidenceResponse["task"]["status"];
+};
+
+function hasOfficialDatePair(evidence: TaskEvidenceResponse): boolean {
+  return Boolean(
+    evidence.task.originalDueDate &&
+      evidence.task.originalDueDate !== evidence.task.currentDueDate,
+  );
+}
+
+function createEvidenceWorkState(evidence: TaskEvidenceResponse): EvidenceWorkState {
+  const daysRemaining = diffInDays(
+    evidence.task.currentDueDate,
+    new Date().toISOString().slice(0, 10),
+  );
+  const verificationStatus =
+    evidence.task.sourceType === "entered_deadline"
+      ? "entered_deadline"
+      : (evidence.rule?.verificationStatus ?? "needs_review");
+  const isExtended =
+    hasOfficialDatePair(evidence) ||
+    evidence.dateEvents.some(
+      (event) =>
+        event.eventType === "official_extension" ||
+        event.eventType === "official_relief_change",
+    );
+  const riskStatus = getEvidenceRiskStatus({
+    daysRemaining,
+    status: evidence.task.status,
+    verificationStatus,
+  });
+
+  return {
+    detailLabel: getEvidenceStatusDetailLabel({
+      isExtended,
+      riskStatus,
+      sourceType: evidence.task.sourceType,
+      status: evidence.task.status,
+      verificationStatus,
+    }),
+    riskLabel: getEvidenceRiskLabel(riskStatus),
+    riskStatus,
+    status: evidence.task.status,
+  };
+}
+
+function diffInDays(date: string, today: string): number {
+  const MS_PER_DAY = 24 * 60 * 60 * 1000;
+  return Math.round(
+    (new Date(`${date}T00:00:00.000Z`).getTime() -
+      new Date(`${today}T00:00:00.000Z`).getTime()) /
+      MS_PER_DAY,
+  );
+}
+
+function getEvidenceRiskStatus({
+  daysRemaining,
+  status,
+  verificationStatus,
+}: {
+  daysRemaining: number;
+  status: TaskEvidenceResponse["task"]["status"];
+  verificationStatus:
+    | "verified"
+    | "needs_review"
+    | "source_changed"
+    | "unsupported"
+    | "entered_deadline";
+}): EvidenceWorkState["riskStatus"] {
+  if (status === "done") return "resolved";
+  if (daysRemaining < 0) return "overdue";
+  if (status === "waiting_on_client") return "blocked";
+  if (
+    daysRemaining <= 6 ||
+    verificationStatus === "source_changed" ||
+    verificationStatus === "needs_review"
+  ) {
+    return "at_risk";
+  }
+
+  return "on_track";
+}
+
+function getEvidenceRiskLabel(status: EvidenceWorkState["riskStatus"]): string {
+  switch (status) {
+    case "on_track":
+      return "On track";
+    case "at_risk":
+      return "At risk";
+    case "blocked":
+      return "Blocked";
+    case "overdue":
+      return "Overdue";
+    case "resolved":
+      return "Resolved";
+  }
+}
+
+function getEvidenceStatusDetailLabel({
+  isExtended,
+  riskStatus,
+  sourceType,
+  status,
+  verificationStatus,
+}: {
+  isExtended: boolean;
+  riskStatus: EvidenceWorkState["riskStatus"];
+  sourceType: TaskEvidenceResponse["task"]["sourceType"];
+  status: TaskEvidenceResponse["task"]["status"];
+  verificationStatus:
+    | "verified"
+    | "needs_review"
+    | "source_changed"
+    | "unsupported"
+    | "entered_deadline";
+}): string {
+  switch (status) {
+    case "not_started":
+      return sourceType === "entered_deadline" ? "Entered by CPA" : "Not requested";
+    case "waiting_on_client":
+      return riskStatus === "blocked" ? "Materials or signature" : "Client action";
+    case "ready_to_work":
+      return "Materials ready";
+    case "in_progress":
+      if (verificationStatus === "source_changed") return "Review source first";
+      if (isExtended) return "Extended prep";
+      return "Prep or review";
+    case "done":
+      return sourceType === "entered_deadline" ? "Closed by CPA" : "Filed or closed";
+  }
 }
 
 type HistoryItem = {

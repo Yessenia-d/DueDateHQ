@@ -64,6 +64,13 @@
       "when": 1778026200000,
       "tag": "0008_source_client_ids",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1778065200000,
+      "tag": "0010_deadline_task_ready_to_work_status",
+      "breakpoints": true
     }
   ]
 }
