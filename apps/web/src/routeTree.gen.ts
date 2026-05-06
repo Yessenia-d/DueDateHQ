@@ -18,7 +18,6 @@ import { Route as CoverageRouteImport } from './routes/coverage'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ClientsIndexRouteImport } from './routes/clients/index'
 import { Route as NoticesNoticeIdRouteImport } from './routes/notices/$noticeId'
-import { Route as ClientsNewRouteImport } from './routes/clients/new'
 import { Route as ClientsClientIdRouteImport } from './routes/clients/$clientId'
 import { Route as ClientsClientIdDeadlinesNewRouteImport } from './routes/clients/$clientId/deadlines/new'
 
@@ -67,11 +66,6 @@ const NoticesNoticeIdRoute = NoticesNoticeIdRouteImport.update({
   path: '/$noticeId',
   getParentRoute: () => NoticesRoute,
 } as any)
-const ClientsNewRoute = ClientsNewRouteImport.update({
-  id: '/clients/new',
-  path: '/clients/new',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ClientsClientIdRoute = ClientsClientIdRouteImport.update({
   id: '/clients/$clientId',
   path: '/clients/$clientId',
@@ -93,7 +87,6 @@ export interface FileRoutesByFullPath {
   '/progress': typeof ProgressRoute
   '/tax-work': typeof TaxWorkRoute
   '/clients/$clientId': typeof ClientsClientIdRouteWithChildren
-  '/clients/new': typeof ClientsNewRoute
   '/notices/$noticeId': typeof NoticesNoticeIdRoute
   '/clients/': typeof ClientsIndexRoute
   '/clients/$clientId/deadlines/new': typeof ClientsClientIdDeadlinesNewRoute
@@ -107,7 +100,6 @@ export interface FileRoutesByTo {
   '/progress': typeof ProgressRoute
   '/tax-work': typeof TaxWorkRoute
   '/clients/$clientId': typeof ClientsClientIdRouteWithChildren
-  '/clients/new': typeof ClientsNewRoute
   '/notices/$noticeId': typeof NoticesNoticeIdRoute
   '/clients': typeof ClientsIndexRoute
   '/clients/$clientId/deadlines/new': typeof ClientsClientIdDeadlinesNewRoute
@@ -122,7 +114,6 @@ export interface FileRoutesById {
   '/progress': typeof ProgressRoute
   '/tax-work': typeof TaxWorkRoute
   '/clients/$clientId': typeof ClientsClientIdRouteWithChildren
-  '/clients/new': typeof ClientsNewRoute
   '/notices/$noticeId': typeof NoticesNoticeIdRoute
   '/clients/': typeof ClientsIndexRoute
   '/clients/$clientId/deadlines/new': typeof ClientsClientIdDeadlinesNewRoute
@@ -138,7 +129,6 @@ export interface FileRouteTypes {
     | '/progress'
     | '/tax-work'
     | '/clients/$clientId'
-    | '/clients/new'
     | '/notices/$noticeId'
     | '/clients/'
     | '/clients/$clientId/deadlines/new'
@@ -152,7 +142,6 @@ export interface FileRouteTypes {
     | '/progress'
     | '/tax-work'
     | '/clients/$clientId'
-    | '/clients/new'
     | '/notices/$noticeId'
     | '/clients'
     | '/clients/$clientId/deadlines/new'
@@ -166,7 +155,6 @@ export interface FileRouteTypes {
     | '/progress'
     | '/tax-work'
     | '/clients/$clientId'
-    | '/clients/new'
     | '/notices/$noticeId'
     | '/clients/'
     | '/clients/$clientId/deadlines/new'
@@ -181,7 +169,6 @@ export interface RootRouteChildren {
   ProgressRoute: typeof ProgressRoute
   TaxWorkRoute: typeof TaxWorkRoute
   ClientsClientIdRoute: typeof ClientsClientIdRouteWithChildren
-  ClientsNewRoute: typeof ClientsNewRoute
   ClientsIndexRoute: typeof ClientsIndexRoute
 }
 
@@ -250,13 +237,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NoticesNoticeIdRouteImport
       parentRoute: typeof NoticesRoute
     }
-    '/clients/new': {
-      id: '/clients/new'
-      path: '/clients/new'
-      fullPath: '/clients/new'
-      preLoaderRoute: typeof ClientsNewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/clients/$clientId': {
       id: '/clients/$clientId'
       path: '/clients/$clientId'
@@ -306,7 +286,6 @@ const rootRouteChildren: RootRouteChildren = {
   ProgressRoute: ProgressRoute,
   TaxWorkRoute: TaxWorkRoute,
   ClientsClientIdRoute: ClientsClientIdRouteWithChildren,
-  ClientsNewRoute: ClientsNewRoute,
   ClientsIndexRoute: ClientsIndexRoute,
 }
 export const routeTree = rootRouteImport
