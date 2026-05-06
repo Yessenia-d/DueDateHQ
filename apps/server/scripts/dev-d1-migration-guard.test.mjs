@@ -8,6 +8,7 @@ import {
   getExpectedMigrationNames,
   parseWranglerConfigPath,
   runLocalD1MigrationGuard,
+  withDefaultDevArgs,
   withDefaultEnvFile,
 } from "./dev-d1-migration-guard.mjs";
 
@@ -31,6 +32,25 @@ test("withDefaultEnvFile adds the package env file unless already provided", () 
   assert.deepEqual(withDefaultEnvFile(["--port", "3000"]), ["--env-file", ".env", "--port", "3000"]);
   assert.deepEqual(withDefaultEnvFile(["--env-file", ".env.local"]), ["--env-file", ".env.local"]);
   assert.deepEqual(withDefaultEnvFile(["--env-file=.env.local"]), ["--env-file=.env.local"]);
+});
+
+test("withDefaultDevArgs adds the expected local server port unless already provided", () => {
+  assert.deepEqual(withDefaultDevArgs([]), ["--env-file", ".env", "--port", "3000"]);
+  assert.deepEqual(withDefaultDevArgs(["--config", "wrangler.jsonc"]), [
+    "--env-file",
+    ".env",
+    "--config",
+    "wrangler.jsonc",
+    "--port",
+    "3000",
+  ]);
+  assert.deepEqual(withDefaultDevArgs(["--port", "8787"]), [
+    "--env-file",
+    ".env",
+    "--port",
+    "8787",
+  ]);
+  assert.deepEqual(withDefaultDevArgs(["--port=8787"]), ["--env-file", ".env", "--port=8787"]);
 });
 
 test("runLocalD1MigrationGuard applies local migrations before validating schema", async () => {

@@ -169,12 +169,22 @@ function formatMigrationCommand(configArgs) {
 }
 
 function startWranglerDev(args) {
-  const result = spawnSync("wrangler", ["dev", ...withDefaultEnvFile(args)], {
+  const result = spawnSync("wrangler", ["dev", ...withDefaultDevArgs(args)], {
     env: process.env,
     stdio: "inherit",
   });
 
   process.exit(result.status ?? 1);
+}
+
+export function withDefaultDevArgs(args) {
+  const argsWithEnvFile = withDefaultEnvFile(args);
+
+  if (hasPortArg(argsWithEnvFile)) {
+    return argsWithEnvFile;
+  }
+
+  return [...argsWithEnvFile, "--port", "3000"];
 }
 
 export function withDefaultEnvFile(args) {
@@ -187,6 +197,10 @@ export function withDefaultEnvFile(args) {
   }
 
   return ["--env-file", ".env", ...args];
+}
+
+function hasPortArg(args) {
+  return args.some((arg) => arg === "--port" || arg.startsWith("--port="));
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
