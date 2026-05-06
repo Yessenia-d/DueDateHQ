@@ -331,7 +331,7 @@ function CoverageComponent() {
           )}
 
           {filteredGroups.map((group) => (
-            <div key={group.jurisdiction} className="border-b border-border pb-5 last:border-b-0">
+            <div key={group.jurisdiction} className="pb-5">
               <div className="mb-3 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
                 <div>
                   <h2 className="text-base font-medium">
