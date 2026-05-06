@@ -170,8 +170,8 @@ function SidebarAccountMenu({
   userName,
 }: AppSidebarProps & { pathname: string }) {
   const navigate = useNavigate();
-  const primaryLabel = firmName ?? userName ?? userEmail ?? "Account";
-  const secondaryLabel = userEmail ?? userName ?? "Account settings";
+  const primaryLabel = firmName || userName || userEmail || "Account";
+  const secondaryLabel = userEmail || userName || "Account settings";
 
   if (!firmName && !userEmail && !userName) {
     return null;
