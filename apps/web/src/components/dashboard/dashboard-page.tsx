@@ -64,6 +64,22 @@ type DashboardFilterDraft = {
   filters: DashboardSummaryInput;
   selectedDate: string | null;
 };
+type HorizonProgressBucket = {
+  days: number | null;
+  description: string;
+  direction: "future" | "past";
+  id: string;
+  label: string;
+};
+type HorizonProgressItem = {
+  completionPercent: number;
+  description: string;
+  done: number;
+  id: string;
+  label: string;
+  open: number;
+  total: number;
+};
 
 const horizonLabels: Record<DashboardHorizon, string> = {
   all: "All horizons",
@@ -79,6 +95,101 @@ const dashboardHorizons: DashboardTaskHorizon[] = [
   "this_month",
   "long_range",
 ];
+
+const horizonProgressBuckets = {
+  overdue: [
+    {
+      days: 1,
+      description: "Past due by 1 day",
+      direction: "past",
+      id: "overdue-1-day",
+      label: "1 day late",
+    },
+    {
+      days: 7,
+      description: "Past due by 7 days",
+      direction: "past",
+      id: "overdue-7-days",
+      label: "7 days late",
+    },
+    {
+      days: null,
+      description: "All past-due tasks",
+      direction: "past",
+      id: "overdue-all",
+      label: "All overdue",
+    },
+  ],
+  due_this_week: [
+    {
+      days: 1,
+      description: "Due within 1 day",
+      direction: "future",
+      id: "week-1-day",
+      label: "1 day",
+    },
+    {
+      days: 3,
+      description: "Due within 3 days",
+      direction: "future",
+      id: "week-3-days",
+      label: "3 days",
+    },
+    {
+      days: 7,
+      description: "Due within 1 week",
+      direction: "future",
+      id: "week-7-days",
+      label: "1 week",
+    },
+  ],
+  this_month: [
+    {
+      days: 10,
+      description: "Due within 10 days",
+      direction: "future",
+      id: "month-10-days",
+      label: "10 days",
+    },
+    {
+      days: 20,
+      description: "Due within 20 days",
+      direction: "future",
+      id: "month-20-days",
+      label: "20 days",
+    },
+    {
+      days: 30,
+      description: "Due within 1 month",
+      direction: "future",
+      id: "month-30-days",
+      label: "1 month",
+    },
+  ],
+  long_range: [
+    {
+      days: 30,
+      description: "Due within 1 month",
+      direction: "future",
+      id: "later-1-month",
+      label: "1 month",
+    },
+    {
+      days: 60,
+      description: "Due within 2 months",
+      direction: "future",
+      id: "later-2-months",
+      label: "2 months",
+    },
+    {
+      days: 90,
+      description: "Due within 3 months",
+      direction: "future",
+      id: "later-3-months",
+      label: "3 months",
+    },
+  ],
+} satisfies Record<DashboardTaskHorizon, HorizonProgressBucket[]>;
 
 const horizonToneStyles = {
   overdue: {
@@ -193,6 +304,13 @@ const horizonCalendarToneStyles = {
     tones: Record<Exclude<WorkloadTone, "empty" | "overdue" | "done">, string>;
   }
 >;
+
+const horizonProgressFillClassNames = {
+  overdue: "bg-ddhq-verified",
+  due_this_week: "bg-ddhq-verified",
+  this_month: "bg-ddhq-verified",
+  long_range: "bg-ddhq-verified",
+} satisfies Record<DashboardTaskHorizon, string>;
 
 const sortLabels: Record<DashboardSort, string> = {
   smart_priority: "Smart priority",
@@ -459,6 +577,11 @@ export function DashboardPage() {
   );
   const exceptionItems = createExceptionItems(activeHorizonTasks);
   const focusSummary = createFocusSummary({ exceptionFocus, selectedDate });
+  const horizonProgressItems = createHorizonProgressItems(
+    activeHorizonTasks,
+    activeHorizon,
+    data.today,
+  );
 
   return (
     <main className="ddhq-page h-full overflow-hidden text-foreground">
@@ -482,7 +605,7 @@ export function DashboardPage() {
             </div>
         </section>
 
-        <section className="grid shrink-0 gap-3 rounded-lg border border-ddhq-line bg-ddhq-paper-raised p-3 lg:grid-cols-[260px_minmax(0,1fr)]">
+        <section className="grid shrink-0 gap-5 rounded-lg border border-ddhq-line bg-ddhq-paper-raised p-3 lg:grid-cols-2 xl:grid-cols-3">
           <div className="grid gap-1 rounded-lg bg-ddhq-paper-muted/38 p-1 sm:grid-cols-2 lg:grid-cols-1">
             {dashboardHorizons.map((horizon) => {
               const section = data.sections.find((item) => item.id === horizon);
@@ -514,6 +637,11 @@ export function DashboardPage() {
               setCalendarMonthId(date.slice(0, 7));
               setSectionPages(createInitialSectionPages);
             }}
+          />
+          <HorizonProgressSummary
+            activeHorizon={activeHorizon}
+            className="lg:col-start-2 xl:col-start-auto"
+            items={horizonProgressItems}
           />
         </section>
 
@@ -1083,6 +1211,45 @@ function createExceptionItems(tasks: DashboardTaskRow[]): ExceptionItem[] {
   ];
 }
 
+function createHorizonProgressItems(
+  tasks: DashboardTaskRow[],
+  horizon: DashboardTaskHorizon,
+  today: string,
+): HorizonProgressItem[] {
+  return horizonProgressBuckets[horizon].map((bucket) => {
+    const bucketTasks = tasks.filter((task) => isTaskInProgressBucket(task, bucket, today));
+    const done = bucketTasks.filter((task) => task.status === "done").length;
+    const total = bucketTasks.length;
+    const open = total - done;
+
+    return {
+      completionPercent: total > 0 ? Math.round((done / total) * 100) : 0,
+      description: bucket.description,
+      done,
+      id: bucket.id,
+      label: bucket.label,
+      open,
+      total,
+    };
+  });
+}
+
+function isTaskInProgressBucket(
+  task: DashboardTaskRow,
+  bucket: HorizonProgressBucket,
+  today: string,
+): boolean {
+  const dayDifference = getDayDifference(task.currentDueDate, today);
+
+  if (bucket.direction === "past") {
+    if (dayDifference >= 0) return false;
+    return bucket.days === null || Math.abs(dayDifference) <= bucket.days;
+  }
+
+  if (dayDifference < 0) return false;
+  return bucket.days === null || dayDifference <= bucket.days;
+}
+
 const exceptionFocusLabels = {
   source_changed: "Source changed",
   needs_review: "Needs review",
@@ -1124,7 +1291,7 @@ function getCalendarDayClassName(
     day.isSelected || day.isToday ? calendarTone.selectedBorder : "border-border/70";
 
   return [
-    "min-h-[44px] rounded-[6px] border p-1 text-left text-[11px] transition-colors focus-visible:outline-none focus-visible:ring-2",
+    "min-h-[38px] rounded-[6px] border p-1 text-left text-[10px] transition-colors focus-visible:outline-none focus-visible:ring-2",
     calendarTone.focusRing,
     toneClass,
     currentMonthClass,
@@ -1280,21 +1447,21 @@ function WorkloadCalendar({
       </div>
 
       <div className="mt-2">
-        <div className="grid grid-cols-7 gap-1.5 text-center text-[10px] font-semibold text-muted-foreground">
+        <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-semibold text-muted-foreground">
           {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
             <div key={`${visibleMonthKey}-${day}`} className="h-4">
               {day}
             </div>
           ))}
         </div>
-        <div className="grid grid-cols-7 gap-1.5">
+        <div className="grid grid-cols-7 gap-1">
           {visibleCalendarCells.map((cell) => {
             if (cell.kind === "placeholder") {
               return (
                 <div
                   key={cell.id}
                   aria-hidden="true"
-                  className="min-h-[44px] rounded-[6px] border border-transparent p-1"
+                  className="min-h-[38px] rounded-[6px] border border-transparent p-1"
                 />
               );
             }
@@ -1320,20 +1487,14 @@ function WorkloadCalendar({
                   {day.count > 0 ? (
                     <>
                       {day.incompleteCount > 0 ? (
-                        <span className="shrink-0">
+                        <span className="truncate">
                           {day.incompleteCount} open
                         </span>
-                      ) : null}
-                      {day.incompleteCount > 0 && day.doneCount > 0 ? (
-                        <span aria-hidden="true" className="shrink-0 text-muted-foreground/70">
-                          ·
+                      ) : (
+                        <span className="truncate text-ddhq-verified">
+                          done
                         </span>
-                      ) : null}
-                      {day.doneCount > 0 ? (
-                        <span className="shrink-0 text-ddhq-verified">
-                          {day.doneCount} done
-                        </span>
-                      ) : null}
+                      )}
                     </>
                   ) : (
                     <span aria-hidden="true"> </span>
@@ -1687,6 +1848,78 @@ function HorizonCard({
         </div>
       </div>
     </button>
+  );
+}
+
+function HorizonProgressSummary({
+  activeHorizon,
+  className = "",
+  items,
+}: {
+  activeHorizon: DashboardTaskHorizon;
+  className?: string;
+  items: HorizonProgressItem[];
+}) {
+  const progressFillClassName = horizonProgressFillClassNames[activeHorizon];
+  const totalOpen = items.at(-1)?.open ?? 0;
+  const totalTasks = items.at(-1)?.total ?? 0;
+  const totalDone = Math.max(totalTasks - totalOpen, 0);
+  const totalCompletionPercent = totalTasks > 0 ? Math.round((totalDone / totalTasks) * 100) : 0;
+
+  return (
+    <aside className={`min-w-0 px-1 py-1 ${className}`}>
+      <div className="grid gap-2">
+        <div className="min-w-0">
+          <div className="text-sm font-semibold leading-tight">Workload summary</div>
+          <p className="mt-1 text-xs leading-4 text-muted-foreground">
+            {horizonLabels[activeHorizon]} by official due-date window
+          </p>
+        </div>
+        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-xs font-semibold">
+          <span className="font-mono text-ddhq-review tabular-nums">{totalOpen} open</span>
+          <span className="font-mono text-ddhq-verified tabular-nums">{totalDone} done</span>
+          <span className="font-mono text-muted-foreground tabular-nums">
+            {totalCompletionPercent}%
+          </span>
+        </div>
+      </div>
+
+      <ul className="mt-5 grid gap-7">
+        {items.map((item) => (
+          <li key={item.id} className="grid gap-2">
+            <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+              <div className="truncate text-xs font-semibold text-foreground">
+                {item.label}
+              </div>
+              <div className="flex shrink-0 items-baseline gap-2 text-[11px] font-semibold">
+                <span className="font-mono text-ddhq-review tabular-nums">
+                  {item.open} open
+                </span>
+                <span className="font-mono text-ddhq-verified tabular-nums">
+                  {item.done} done
+                </span>
+                <span className="font-mono text-muted-foreground tabular-nums">
+                  {item.completionPercent}%
+                </span>
+              </div>
+            </div>
+            <div
+              className="h-1.5 overflow-hidden rounded-full bg-ddhq-paper shadow-inner"
+              role="progressbar"
+              aria-label={`${item.description}: ${item.done} of ${item.total} done`}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={item.completionPercent}
+            >
+              <div
+                className={`h-full rounded-full ${progressFillClassName}`}
+                style={{ width: `${item.completionPercent}%` }}
+              />
+            </div>
+          </li>
+        ))}
+      </ul>
+    </aside>
   );
 }
 

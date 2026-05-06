@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/web/frontend/index.md", "reason": "Dashboard is an apps/web product frontend change."}
+{"file": ".trellis/spec/ui/frontend/index.md", "reason": "Dashboard uses shared UI primitives and must preserve compact product UI rules."}
