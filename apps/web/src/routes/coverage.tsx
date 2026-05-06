@@ -79,7 +79,7 @@ const statusIcons: Record<VerificationStatusKey, typeof CheckCircle2> = {
 const statusToBadge: Record<VerificationStatusKey, Parameters<typeof StatusBadge>[0]["status"]> = {
   verified: "verified",
   needs_review: "needs_review",
-  source_changed: "needs_review",
+  source_changed: "source_changed",
   unsupported: "unsupported",
   no_rule: "no_rule",
 };
@@ -119,22 +119,50 @@ const statusHeaderKeys = [
 const statusHeaderIconStyles: Record<VerificationStatusKey, string> = {
   verified: "bg-ddhq-verified-soft text-ddhq-verified",
   needs_review: "bg-ddhq-review-soft text-ddhq-review",
-  source_changed: "border-ddhq-review/30 bg-ddhq-review-soft text-ddhq-review",
+  source_changed: "border-[oklch(0.7_0.075_285)] bg-[oklch(0.94_0.035_285)] text-[oklch(0.45_0.12_285)]",
   unsupported: "bg-ddhq-gap-soft text-ddhq-gap",
   no_rule: "bg-ddhq-gap-soft text-ddhq-gap",
 };
 
-const statusSummaryButtonStyles: Record<VerificationStatusKey, string> = {
-  verified: "bg-ddhq-verified-soft/70 text-ddhq-verified hover:bg-ddhq-verified-soft",
-  needs_review: "bg-ddhq-review-soft/75 text-ddhq-review hover:bg-ddhq-review-soft",
-  source_changed: "bg-ddhq-review-soft/75 text-ddhq-review hover:bg-ddhq-review-soft",
-  unsupported: "bg-ddhq-gap-soft/80 text-ddhq-gap hover:bg-ddhq-gap-soft",
-  no_rule: "bg-ddhq-gap-soft/80 text-ddhq-gap hover:bg-ddhq-gap-soft",
+const statusSummaryButtonStyles: Record<
+  VerificationStatusKey,
+  { active: string; idle: string }
+> = {
+  verified: {
+    active:
+      "border-ddhq-verified/70 bg-ddhq-verified-soft text-ddhq-verified shadow-[0_1px_2px_rgba(21,128,61,0.12),inset_0_0_0_1px_rgba(21,128,61,0.16)] ring-ddhq-verified/20",
+    idle:
+      "border-ddhq-verified/25 bg-ddhq-verified-soft/65 text-ddhq-verified shadow-[0_1px_1px_rgba(21,128,61,0.05)] hover:border-ddhq-verified/55 hover:bg-ddhq-verified-soft hover:shadow-[0_2px_5px_rgba(21,128,61,0.12)]",
+  },
+  needs_review: {
+    active:
+      "border-ddhq-review/75 bg-ddhq-review-soft text-ddhq-review shadow-[0_1px_2px_rgba(180,121,22,0.13),inset_0_0_0_1px_rgba(180,121,22,0.18)] ring-ddhq-review/20",
+    idle:
+      "border-ddhq-review/30 bg-ddhq-review-soft/70 text-ddhq-review shadow-[0_1px_1px_rgba(180,121,22,0.06)] hover:border-ddhq-review/60 hover:bg-ddhq-review-soft hover:shadow-[0_2px_5px_rgba(180,121,22,0.13)]",
+  },
+  source_changed: {
+    active:
+      "border-[oklch(0.7_0.075_285)] bg-[oklch(0.94_0.035_285)] text-[oklch(0.45_0.12_285)] shadow-[0_1px_2px_rgba(105,73,163,0.13),inset_0_0_0_1px_rgba(105,73,163,0.18)] ring-[oklch(0.45_0.12_285/0.2)]",
+    idle:
+      "border-[oklch(0.7_0.075_285/0.45)] bg-[oklch(0.94_0.035_285/0.72)] text-[oklch(0.45_0.12_285)] shadow-[0_1px_1px_rgba(105,73,163,0.06)] hover:border-[oklch(0.7_0.075_285)] hover:bg-[oklch(0.94_0.035_285)] hover:shadow-[0_2px_5px_rgba(105,73,163,0.13)]",
+  },
+  unsupported: {
+    active:
+      "border-ddhq-gap/65 bg-ddhq-gap-soft text-ddhq-gap shadow-[0_1px_2px_rgba(71,91,133,0.12),inset_0_0_0_1px_rgba(71,91,133,0.16)] ring-ddhq-gap/20",
+    idle:
+      "border-ddhq-gap/25 bg-ddhq-gap-soft/75 text-ddhq-gap shadow-[0_1px_1px_rgba(71,91,133,0.05)] hover:border-ddhq-gap/55 hover:bg-ddhq-gap-soft hover:shadow-[0_2px_5px_rgba(71,91,133,0.12)]",
+  },
+  no_rule: {
+    active:
+      "border-ddhq-gap/65 bg-ddhq-gap-soft text-ddhq-gap shadow-[0_1px_2px_rgba(71,91,133,0.12),inset_0_0_0_1px_rgba(71,91,133,0.16)] ring-ddhq-gap/20",
+    idle:
+      "border-ddhq-gap/25 bg-ddhq-gap-soft/75 text-ddhq-gap shadow-[0_1px_1px_rgba(71,91,133,0.05)] hover:border-ddhq-gap/55 hover:bg-ddhq-gap-soft hover:shadow-[0_2px_5px_rgba(71,91,133,0.12)]",
+  },
 };
 
 const sourceMonitorBadgeStatus: Record<SourceMonitorStatus, Parameters<typeof StatusBadge>[0]["status"]> = {
   monitored: "verified",
-  source_changed: "needs_review",
+  source_changed: "source_changed",
   not_monitored: "neutral",
   unsupported: "unsupported",
 };
@@ -240,11 +268,6 @@ function CoverageComponent() {
     taxCategoryFilter,
     statusFilter,
   ].filter((value) => value !== "all").length;
-  const actionableCount =
-    data.summary.totalSourceChanged +
-    data.summary.totalNeedsReview +
-    data.summary.totalNoRule +
-    data.summary.totalUnsupported;
   const selectedObligation =
     selectedDetail?.mode === "coverage"
       ? allObligations.find((obligation) => obligation.obligationId === selectedDetail.obligationId)
@@ -272,7 +295,7 @@ function CoverageComponent() {
   return (
     <main className="min-h-0 overflow-auto">
       <div className="mx-auto flex max-w-7xl flex-col gap-5 px-5 py-6">
-        <section className="grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
+        <section className="grid gap-3">
           <div className="max-w-3xl">
             <div className="mb-1.5 flex items-center gap-2 text-xs font-medium uppercase text-muted-foreground">
               <Shield className="size-3.5" />
@@ -284,166 +307,163 @@ function CoverageComponent() {
               visible, but they cannot generate DueDateHQ Verified deadline tasks.
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground md:max-w-xs md:justify-end">
-            <span className="font-medium text-foreground">{actionableCount} non-verified</span>
-            <span>Updated {formatDate(data.generatedAt)}</span>
-            <span>{data.summary.jurisdictionCount} jurisdictions</span>
-          </div>
         </section>
 
         <section className="-mx-5 bg-muted/20 px-5 py-3">
           <div className="flex flex-col gap-3">
-            <div className="flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between">
-              <div
-                role="group"
-                aria-label="Filter by verification status"
-                className="flex flex-wrap items-center gap-1.5"
-              >
-                {statusSummaryOrder.map((statusKey) => (
-                  <StatusSummaryButton
-                    key={statusKey}
-                    active={statusFilter === statusKey}
-                    count={getSummaryCount(data.summary, statusKey)}
-                    statusKey={statusKey}
-                    onClick={() => setStatusFilter(statusFilter === statusKey ? "all" : statusKey)}
-                  />
-                ))}
-              </div>
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                <span className="inline-flex items-center gap-1.5">
-                  <ListFilter className="size-3.5" />
-                  Showing {filteredObligationCount} of {data.summary.totalObligations}
-                </span>
-                {activeFilterCount > 0 && (
-                  <span>{activeFilterCount} active filter{activeFilterCount === 1 ? "" : "s"}</span>
-                )}
-              </div>
+            <div
+              role="group"
+              aria-label="Filter by verification status"
+              className="flex flex-wrap items-center gap-1.5"
+            >
+              {statusSummaryOrder.map((statusKey) => (
+                <StatusSummaryButton
+                  key={statusKey}
+                  active={statusFilter === statusKey}
+                  count={getSummaryCount(data.summary, statusKey)}
+                  statusKey={statusKey}
+                  onClick={() => setStatusFilter(statusFilter === statusKey ? "all" : statusKey)}
+                />
+              ))}
             </div>
 
             <div className="flex flex-wrap items-end gap-3">
-              <FilterField label="Jurisdiction">
-                <Select value={jurisdictionFilter} onValueChange={(value) => setJurisdictionFilter(value ?? "all")}>
-                  <SelectTrigger
-                    aria-label="Filter by jurisdiction"
-                    className={coverageFilterSelectTriggerClassName}
-                  >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent
-                    alignItemWithTrigger={false}
-                    className={coverageFilterSelectContentClassName}
-                  >
-                    <SelectItem className={coverageFilterSelectItemClassName} value="all">
-                      All jurisdictions
-                    </SelectItem>
-                    {jurisdictions.map((jurisdiction) => (
-                      <SelectItem
-                        key={jurisdiction}
-                        className={coverageFilterSelectItemClassName}
-                        value={jurisdiction}
-                      >
-                        {formatJurisdiction(jurisdiction)}
+              <div className="flex flex-wrap items-end gap-3">
+                <FilterField label="Jurisdiction">
+                  <Select value={jurisdictionFilter} onValueChange={(value) => setJurisdictionFilter(value ?? "all")}>
+                    <SelectTrigger
+                      aria-label="Filter by jurisdiction"
+                      className={coverageFilterSelectTriggerClassName}
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent
+                      alignItemWithTrigger={false}
+                      className={coverageFilterSelectContentClassName}
+                    >
+                      <SelectItem className={coverageFilterSelectItemClassName} value="all">
+                        All jurisdictions
                       </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </FilterField>
+                      {jurisdictions.map((jurisdiction) => (
+                        <SelectItem
+                          key={jurisdiction}
+                          className={coverageFilterSelectItemClassName}
+                          value={jurisdiction}
+                        >
+                          {formatJurisdiction(jurisdiction)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FilterField>
 
-              <FilterField label="Entity type">
-                <Select value={entityTypeFilter} onValueChange={(value) => setEntityTypeFilter(value ?? "all")}>
-                  <SelectTrigger
-                    aria-label="Filter by entity type"
-                    className={coverageFilterSelectTriggerClassName}
-                  >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent
-                    alignItemWithTrigger={false}
-                    className={coverageFilterSelectContentClassName}
-                  >
-                    <SelectItem className={coverageFilterSelectItemClassName} value="all">
-                      All entity types
-                    </SelectItem>
-                    {entityTypes.map((entityType) => (
-                      <SelectItem
-                        key={entityType}
-                        className={coverageFilterSelectItemClassName}
-                        value={entityType}
-                      >
-                        {formatEntityType(entityType)}
+                <FilterField label="Entity type">
+                  <Select value={entityTypeFilter} onValueChange={(value) => setEntityTypeFilter(value ?? "all")}>
+                    <SelectTrigger
+                      aria-label="Filter by entity type"
+                      className={coverageFilterSelectTriggerClassName}
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent
+                      alignItemWithTrigger={false}
+                      className={coverageFilterSelectContentClassName}
+                    >
+                      <SelectItem className={coverageFilterSelectItemClassName} value="all">
+                        All entity types
                       </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </FilterField>
+                      {entityTypes.map((entityType) => (
+                        <SelectItem
+                          key={entityType}
+                          className={coverageFilterSelectItemClassName}
+                          value={entityType}
+                        >
+                          {formatEntityType(entityType)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FilterField>
 
-              <FilterField label="Tax category">
-                <Select value={taxCategoryFilter} onValueChange={(value) => setTaxCategoryFilter(value ?? "all")}>
-                  <SelectTrigger
-                    aria-label="Filter by tax category"
-                    className={coverageFilterSelectTriggerClassName}
-                  >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent
-                    alignItemWithTrigger={false}
-                    className={coverageFilterSelectContentClassName}
-                  >
-                    <SelectItem className={coverageFilterSelectItemClassName} value="all">
-                      All tax categories
-                    </SelectItem>
-                    {taxCategories.map((taxCategory) => (
-                      <SelectItem
-                        key={taxCategory}
-                        className={coverageFilterSelectItemClassName}
-                        value={taxCategory}
-                      >
-                        {taxCategory}
+                <FilterField label="Tax category">
+                  <Select value={taxCategoryFilter} onValueChange={(value) => setTaxCategoryFilter(value ?? "all")}>
+                    <SelectTrigger
+                      aria-label="Filter by tax category"
+                      className={coverageFilterSelectTriggerClassName}
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent
+                      alignItemWithTrigger={false}
+                      className={coverageFilterSelectContentClassName}
+                    >
+                      <SelectItem className={coverageFilterSelectItemClassName} value="all">
+                        All tax categories
                       </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </FilterField>
+                      {taxCategories.map((taxCategory) => (
+                        <SelectItem
+                          key={taxCategory}
+                          className={coverageFilterSelectItemClassName}
+                          value={taxCategory}
+                        >
+                          {taxCategory}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FilterField>
 
-              <FilterField label="Status">
-                <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as StatusFilter)}>
-                  <SelectTrigger
-                    aria-label="Filter by verification status"
-                    className={coverageFilterSelectTriggerClassName}
-                  >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent
-                    alignItemWithTrigger={false}
-                    className={coverageFilterSelectContentClassName}
-                  >
-                    <SelectItem className={coverageFilterSelectItemClassName} value="all">
-                      All statuses
-                    </SelectItem>
-                    {statusHeaderKeys.map((statusKey) => (
-                      <SelectItem
-                        key={statusKey}
-                        className={coverageFilterSelectItemClassName}
-                        value={statusKey}
-                      >
-                        {statusLabels[statusKey]}
+                <FilterField label="Status">
+                  <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as StatusFilter)}>
+                    <SelectTrigger
+                      aria-label="Filter by verification status"
+                      className={coverageFilterSelectTriggerClassName}
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent
+                      alignItemWithTrigger={false}
+                      className={coverageFilterSelectContentClassName}
+                    >
+                      <SelectItem className={coverageFilterSelectItemClassName} value="all">
+                        All statuses
                       </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </FilterField>
+                      {statusHeaderKeys.map((statusKey) => (
+                        <SelectItem
+                          key={statusKey}
+                          className={coverageFilterSelectItemClassName}
+                          value={statusKey}
+                        >
+                          {statusLabels[statusKey]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FilterField>
 
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-8 rounded-[6px]"
-                disabled={activeFilterCount === 0}
-                onClick={resetFilters}
-              >
-                <FilterX className="size-3.5" />
-                Reset filters
-              </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 rounded-[6px]"
+                  disabled={activeFilterCount === 0}
+                  onClick={resetFilters}
+                >
+                  <FilterX className="size-3.5" />
+                  Reset filters
+                </Button>
+              </div>
+
+              <div className="flex min-h-8 items-center gap-x-2 gap-y-1 pb-1 text-xs text-muted-foreground">
+                <ListFilter className="size-3.5" />
+                <span>{filteredObligationCount} of {data.summary.totalObligations} shown</span>
+                {activeFilterCount > 0 && (
+                  <>
+                    <span aria-hidden="true">·</span>
+                    <span>{activeFilterCount} filter active</span>
+                  </>
+                )}
+              </div>
             </div>
 
             <details className="text-sm">
@@ -636,15 +656,15 @@ function StatusSummaryButton({
   statusKey: VerificationStatusKey;
 }) {
   const Icon = statusIcons[statusKey];
+  const tone = statusSummaryButtonStyles[statusKey];
 
   return (
     <button
       type="button"
       aria-pressed={active}
-      className={`inline-flex min-h-8 items-center gap-2 whitespace-nowrap rounded-[6px] px-2.5 py-1.5 text-left text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-        active
-          ? "bg-ddhq-accent-soft text-foreground ring-1 ring-inset ring-primary/45"
-          : statusSummaryButtonStyles[statusKey]
+      title={`Filter by ${statusLabels[statusKey]}`}
+      className={`inline-flex min-h-9 cursor-pointer items-center gap-2 whitespace-nowrap rounded-[7px] border px-3 py-1.5 text-left text-xs font-semibold transition-[background-color,border-color,box-shadow] focus-visible:outline-none focus-visible:ring-2 ${
+        active ? tone.active : tone.idle
       }`}
       onClick={onClick}
     >
@@ -904,7 +924,6 @@ function CoverageDetailContent({
           <div className="text-xs font-semibold text-muted-foreground">Coverage detail</div>
           <h2 className="text-base font-semibold leading-5">{statusLabels[statusKey]}</h2>
         </div>
-        <VerificationBadge statusKey={statusKey} />
       </div>
 
       <div className="min-h-0 flex-1 overflow-auto p-4">
