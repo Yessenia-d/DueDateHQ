@@ -6,6 +6,8 @@ import { dashboardRouter } from "./dashboard";
 import { deadlineTasksRouter } from "./deadlineTasks";
 import { filingProfilesRouter } from "./filingProfiles";
 import { importsRouter } from "./imports";
+import { noticeProposalsRouter } from "./noticeProposals";
+import { noticesRouter } from "./notices";
 import { officialNoticesRouter } from "./officialNotices";
 import { officialSourcesRouter } from "./officialSources";
 import { progressRouter } from "./progress";
@@ -22,6 +24,8 @@ export const appRouter = router({
   deadlineTasks: deadlineTasksRouter,
   filingProfiles: filingProfilesRouter,
   imports: importsRouter,
+  noticeProposals: noticeProposalsRouter,
+  notices: noticesRouter,
   officialNotices: officialNoticesRouter,
   officialSources: officialSourcesRouter,
   progress: progressRouter,

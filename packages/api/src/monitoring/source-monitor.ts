@@ -239,7 +239,6 @@ async function upsertOfficialSource(
         allowlistLevel: source.allowlistLevel,
         deadlineScope: source.deadlineScope,
         monitorFrequencyHours: source.monitorFrequencyHours,
-        active: source.active,
         updatedAt: now,
       },
     });

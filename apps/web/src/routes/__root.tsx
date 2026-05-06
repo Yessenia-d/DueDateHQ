@@ -14,6 +14,7 @@ import { Menu } from "lucide-react";
 import * as React from "react";
 
 import { AppSidebar, AppSidebarContent } from "@/components/app-sidebar";
+import { NoticeAlertBanner } from "@/components/notices/notice-alert-banner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { authClient } from "@/utils/auth-client";
 import { trpc } from "@/utils/trpc";
@@ -113,12 +114,14 @@ function RootComponent() {
               <span className="text-sm font-semibold">DueDateHQ</span>
             </div>
 
+            {session.data ? <NoticeAlertBanner /> : null}
+
             <div className="min-h-0 min-w-0 overflow-auto">
               <Outlet />
             </div>
           </div>
         )}
-        <Toaster richColors />
+        <Toaster position="top-right" richColors />
       </ThemeProvider>
       <TanStackRouterDevtools position="bottom-left" />
       <ReactQueryDevtools position="bottom" buttonPosition="bottom-right" />

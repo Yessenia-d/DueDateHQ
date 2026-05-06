@@ -8,6 +8,8 @@ AFK vertical slice.
 
 Implement CPA-facing in-app notice alerts and affected-item review so CPAs can approve, reject, or decide later on proposed task/profile changes individually or in bulk, with clear before/after diffs and audit logs.
 
+Latest user constraint: notice alerts use a banner notification that does not occupy normal page layout space. The banner floats or overlays at the top of the working page, supports an expanded state, and lets CPAs review the notice summary, confidence, affected proposal count, and direct actions without leaving the current page. Expanded detail should open in an overlay, popover, or drawer pattern so the main dashboard/table layout is not pushed down. Full detail can still be available through a secondary detail route when needed.
+
 ## Blocked By
 
 - `05-05-core-deadline-domain-schema`
@@ -60,7 +62,15 @@ Uses:
 
 ## Acceptance Criteria
 
-- Dashboard/in-app notice banner links to notice detail.
+- App sidebar includes a `Notices` entry so CPAs can return to notice review after dismissing or navigating away from the banner.
+- `/notices` is a durable notice operations page with pending/deferred notice review and an official-source monitor section.
+- Monitor section shows supported source status, active/inactive state, last checked/changed timestamps, last error, and run/check status.
+- CPA/admin can enable or disable monitoring for a supported source from the Notices page without deleting source history.
+- CPA/admin can request a monitor check for an enabled supported source; disabled sources cannot be queued from the UI.
+- Dashboard/in-app notice alert uses a banner notification that overlays the page and does not reserve vertical layout space.
+- Collapsed banner shows the highest-priority pending notice/proposal signal, source/jurisdiction, confidence, affected count, and a clear expand control.
+- Expanded banner opens detail in an overlay/popover/drawer pattern that shows notice detail first, then affected proposal summaries with approve/reject/decide-later entry points while preserving the current page context.
+- Full notice detail may open in a secondary detail route, but the primary workflow must not force CPAs to start from a standalone notice inbox or shift the dashboard layout down.
 - Notice detail appears first: official source, source URL, AI summary, jurisdiction, confidence label, confidence reasons, affected conditions.
 - Affected items table appears second with before/after diff per task/profile.
 - Proposal types include task date/status diff and coverage/review status diff.

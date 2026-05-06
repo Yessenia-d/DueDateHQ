@@ -5,10 +5,24 @@ import type { Context } from "../context";
 import { requireOfficialSourceMonitorToken } from "./officialSources";
 import { appRouter } from "./index";
 
-function createMockDb(selectRows: unknown[] = []) {
+type MockDbState = {
+  selectRows?: unknown[];
+  writtenSources?: unknown[];
+};
+
+function createMockDb({ selectRows = [], writtenSources = [] }: MockDbState = {}) {
   return {
     select: () => ({
       from: async (_table: unknown) => selectRows,
+    }),
+    insert: (_table: unknown) => ({
+      values: (row: unknown) => {
+        writtenSources.push(row);
+
+        return {
+          onConflictDoUpdate: async (_config: unknown) => undefined,
+        };
+      },
     }),
   } as unknown as Context["db"];
 }
@@ -42,10 +56,14 @@ const firmSession = {
   },
 } satisfies NonNullable<Context["session"]>;
 
-function createCaller(selectRows: unknown[] = [], session: Context["session"] = null) {
+function createCaller({
+  selectRows = [],
+  session = null,
+  writtenSources = [],
+}: MockDbState & { session?: Context["session"] } = {}) {
   return appRouter.createCaller({
     auth: null as unknown as Context["auth"],
-    db: createMockDb(selectRows),
+    db: createMockDb({ selectRows, writtenSources }),
     firm: session?.firm ?? null,
     session,
   });
@@ -64,8 +82,31 @@ test("officialSources.list returns explicit P0 official source allowlist", async
   assert.equal(result.sources.every((source) => source.monitorStatus === "not_checked"), true);
 });
 
+test("officialSources.list exposes persisted active state", async () => {
+  const caller = createCaller({
+    selectRows: [
+      {
+        id: "irs-federal-deadlines-relief",
+        active: false,
+        lastCheckedAt: new Date("2026-05-05T10:00:00.000Z"),
+        lastChangedAt: new Date("2026-05-05T10:05:00.000Z"),
+        lastStatus: "failed",
+        lastErrorMessage: "Fetch failed",
+      },
+    ],
+  });
+
+  const result = await caller.officialSources.list();
+  const irs = result.sources.find((source) => source.id === "irs-federal-deadlines-relief");
+
+  assert.ok(irs);
+  assert.equal(irs.active, false);
+  assert.equal(irs.monitorStatus, "failed");
+  assert.equal(irs.lastErrorMessage, "Fetch failed");
+});
+
 test("officialSources.enqueueCheck accepts only allowlisted sources", async () => {
-  const caller = createCaller([], firmSession);
+  const caller = createCaller({ session: firmSession });
 
   const accepted = await caller.officialSources.enqueueCheck({
     sourceId: "irs-federal-deadlines-relief",
@@ -80,6 +121,21 @@ test("officialSources.enqueueCheck accepts only allowlisted sources", async () =
   );
 });
 
+test("officialSources.enqueueCheck rejects inactive sources", async () => {
+  const caller = createCaller({
+    selectRows: [{ id: "irs-federal-deadlines-relief", active: false }],
+    session: firmSession,
+  });
+
+  await assert.rejects(
+    () =>
+      caller.officialSources.enqueueCheck({
+        sourceId: "irs-federal-deadlines-relief",
+      }),
+    /inactive/,
+  );
+});
+
 test("officialSources.enqueueCheck requires a firm session", async () => {
   const caller = createCaller();
 
@@ -90,6 +146,24 @@ test("officialSources.enqueueCheck requires a firm session", async () => {
       }),
     /Sign in/,
   );
+});
+
+test("officialSources.setActive persists monitor active state", async () => {
+  const writtenSources: unknown[] = [];
+  const caller = createCaller({ session: firmSession, writtenSources });
+
+  const result = await caller.officialSources.setActive({
+    sourceId: "irs-federal-deadlines-relief",
+    active: false,
+  });
+
+  assert.equal(result.active, false);
+  assert.equal(writtenSources.length, 1);
+  assert.equal(
+    (writtenSources[0] as { id: string; active: boolean }).id,
+    "irs-federal-deadlines-relief",
+  );
+  assert.equal((writtenSources[0] as { active: boolean }).active, false);
 });
 
 test("requireOfficialSourceMonitorToken enforces platform monitor token", () => {

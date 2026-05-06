@@ -20,6 +20,7 @@ import {
 import { recordSourceCheckResult } from "../monitoring/source-monitor";
 
 export type OfficialSourceListItem = OfficialSourceDefinition & {
+  active: boolean;
   monitorStatus: SourceCheckRun["status"] | "not_checked";
   lastCheckedAt: string | null;
   lastChangedAt: string | null;
@@ -81,16 +82,54 @@ export const officialSourcesRouter = router({
 
   enqueueCheck: publicProcedure.input(sourceIdInput).mutation(({ ctx, input }) => {
     requireFirmSession(ctx);
-    const source = ensureKnownSource(input.sourceId);
-
-    return {
-      accepted: true,
-      sourceId: source.id,
-      queued: false,
-      message:
-        "Official source check accepted. Queue binding is handled by the Cloudflare deployment task; call recordCheckResult from the monitor worker.",
-    };
+    return enqueueSourceCheck(ctx, input.sourceId);
   }),
+
+  setActive: publicProcedure
+    .input(sourceIdInput.extend({ active: z.boolean() }))
+    .mutation(async ({ ctx, input }) => {
+      requireFirmSession(ctx);
+      const source = ensureKnownSource(input.sourceId);
+      const now = new Date();
+
+      await ctx.db
+        .insert(officialSources)
+        .values({
+          id: source.id,
+          jurisdiction: source.jurisdiction,
+          agencyName: source.agencyName,
+          sourceType: source.sourceType,
+          sourceUrl: source.sourceUrl,
+          allowlistLevel: source.allowlistLevel,
+          deadlineScope: source.deadlineScope,
+          monitorFrequencyHours: source.monitorFrequencyHours,
+          active: input.active,
+          createdAt: now,
+          updatedAt: now,
+        })
+        .onConflictDoUpdate({
+          target: officialSources.id,
+          set: {
+            jurisdiction: source.jurisdiction,
+            agencyName: source.agencyName,
+            sourceType: source.sourceType,
+            sourceUrl: source.sourceUrl,
+            allowlistLevel: source.allowlistLevel,
+            deadlineScope: source.deadlineScope,
+            monitorFrequencyHours: source.monitorFrequencyHours,
+            active: input.active,
+            updatedAt: now,
+          },
+        });
+
+      return {
+        sourceId: source.id,
+        active: input.active,
+        message: input.active
+          ? "Official source monitor enabled."
+          : "Official source monitor disabled.",
+      };
+    }),
 
   recordCheckResult: publicProcedure
     .input(
@@ -195,10 +234,33 @@ function serializeSourceDefinition(
 ): OfficialSourceListItem {
   return {
     ...definition,
+    active: persisted?.active ?? definition.active,
     monitorStatus: persisted?.lastStatus ?? "not_checked",
     lastCheckedAt: persisted?.lastCheckedAt?.toISOString() ?? null,
     lastChangedAt: persisted?.lastChangedAt?.toISOString() ?? null,
     lastErrorMessage: persisted?.lastErrorMessage ?? null,
+  };
+}
+
+async function enqueueSourceCheck(ctx: Context, sourceId: string) {
+  const source = ensureKnownSource(sourceId);
+  const persistedSources = await ctx.db.select().from(officialSources);
+  const persisted = persistedSources.find((row) => row.id === source.id);
+  const active = persisted?.active ?? source.active;
+
+  if (!active) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Official source monitor is inactive. Enable it before requesting a check.",
+    });
+  }
+
+  return {
+    accepted: true,
+    sourceId: source.id,
+    queued: false,
+    message:
+      "Official source check accepted. Queue binding is handled by the Cloudflare deployment task; call recordCheckResult from the monitor worker.",
   };
 }
 

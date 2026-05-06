@@ -101,6 +101,14 @@ test("demo datasets cover triage, coverage, and notice workflows", () => {
   assert.ok(
     triage.filingProfiles.some((profile) => profile.coverageState === "coverage_gap"),
   );
+  assert.ok(
+    triage.noticeImpactProposals.some(
+      (proposal) =>
+        proposal.id === "demo-triage-proposal-tx-sales-review" &&
+        proposal.status === "pending" &&
+        proposal.officialNoticeId === "demo-notice-tx-sales-source-change",
+    ),
+  );
 
   assert.ok(
     coverage.filingProfiles.some((profile) => profile.coverageState === "coverage_gap"),
@@ -144,6 +152,7 @@ function rowsForFirm(plan: ReturnType<typeof buildDemoSeedPlan>, firmId: string)
     dateEvents: plan.deadlineDateEvents.filter((row) => row.firmId === firmId),
     deadlineTasks: plan.deadlineTasks.filter((row) => row.firmId === firmId),
     filingProfiles: plan.filingProfiles.filter((row) => row.firmId === firmId),
+    noticeImpactProposals: plan.noticeImpactProposals.filter((row) => row.firmId === firmId),
     updateRecords: plan.deadlineTaskUpdateRecords.filter((row) => row.firmId === firmId),
     verificationRequests: plan.verificationRequests.filter((row) => row.firmId === firmId),
   };

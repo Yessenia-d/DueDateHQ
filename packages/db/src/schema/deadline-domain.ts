@@ -168,6 +168,7 @@ export const filingProfiles = sqliteTable(
       table.clientRelationshipId,
       table.id,
     ),
+    uniqueIndex("filing_profiles_firm_id_id_unique").on(table.firmId, table.id),
     foreignKey({
       name: "filing_profiles_firm_client_relationship_fk",
       columns: [table.firmId, table.clientRelationshipId],

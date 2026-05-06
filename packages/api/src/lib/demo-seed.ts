@@ -24,6 +24,10 @@ import {
   sourceSnapshots,
 } from "@due-date-hq/db/schema/monitoring";
 import {
+  noticeImpactProposals,
+  noticeProposalActions,
+} from "@due-date-hq/db/schema/notice-proposals";
+import {
   taxObligations,
   taxRules,
   verificationRequests,
@@ -421,6 +425,82 @@ export function buildDemoSeedPlan({
         updatedAt: now,
       },
     ] satisfies Array<typeof officialNotices.$inferInsert>,
+    noticeImpactProposals: [
+      {
+        id: "demo-triage-proposal-tx-sales-review",
+        officialNoticeId: "demo-notice-tx-sales-source-change",
+        firmId: identity(DEMO_ACCOUNTS[0]).firmId,
+        filingProfileId: "demo-triage-profile-barton-sales",
+        deadlineTaskId: null,
+        proposalType: "coverage_review_status_update",
+        beforeState: {
+          coverageState: "ready",
+        },
+        afterState: {
+          coverageState: "needs_review",
+          reason:
+            "Texas sales tax source content changed and should be reviewed for Barton Retail Group before relying on existing coverage.",
+        },
+        confidenceLabel: "medium",
+        confidenceReasons: ["Known P0 source changed", "Barton TX sales tax profile match"],
+        status: "pending",
+        decidedBy: null,
+        decidedAt: null,
+        auditLogId: null,
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        id: "demo-notices-proposal-irs-relief-task",
+        officialNoticeId: "demo-notice-irs-disaster-relief",
+        firmId: identity(DEMO_ACCOUNTS[2]).firmId,
+        filingProfileId: "demo-notices-profile-gulf-1120",
+        deadlineTaskId: "demo-notices-task-irs-relief",
+        proposalType: "task_update",
+        beforeState: {
+          currentDueDate: "2026-04-15",
+          originalDueDate: "2026-04-15",
+          status: "in_progress",
+        },
+        afterState: {
+          currentDueDate: "2026-10-15",
+          originalDueDate: "2026-04-15",
+          status: "in_progress",
+          reason: "IRS disaster relief notice postpones affected filing deadlines.",
+        },
+        confidenceLabel: "high",
+        confidenceReasons: ["P0 IRS source", "Deadline date text detected", "Gulf Coast profile match"],
+        status: "pending",
+        decidedBy: null,
+        decidedAt: null,
+        auditLogId: null,
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        id: "demo-notices-proposal-tx-sales-review",
+        officialNoticeId: "demo-notice-tx-sales-source-change",
+        firmId: identity(DEMO_ACCOUNTS[2]).firmId,
+        filingProfileId: "demo-notices-profile-lonestar-sales",
+        deadlineTaskId: null,
+        proposalType: "coverage_review_status_update",
+        beforeState: {
+          coverageState: "ready",
+        },
+        afterState: {
+          coverageState: "needs_review",
+          reason: "Texas sales tax source content changed and should be reviewed before relying on existing coverage.",
+        },
+        confidenceLabel: "medium",
+        confidenceReasons: ["Known P0 source changed", "Local TX sales tax profile match"],
+        status: "pending",
+        decidedBy: null,
+        decidedAt: null,
+        auditLogId: null,
+        createdAt: now,
+        updatedAt: now,
+      },
+    ] satisfies Array<typeof noticeImpactProposals.$inferInsert>,
     officialSources: [
       {
         id: "demo-source-irs-disaster-relief",
@@ -627,6 +707,7 @@ export async function seedDemoData(dbBinding: D1DatabaseBinding) {
   await insertIfAny(db, clientRelationships, plan.clientRelationships);
   await insertIfAny(db, filingProfiles, plan.filingProfiles);
   await insertIfAny(db, deadlineTasks, plan.deadlineTasks);
+  await insertIfAny(db, noticeImpactProposals, plan.noticeImpactProposals, { optional: true });
   await insertIfAny(db, auditLogs, plan.auditLogs);
   await insertIfAny(db, deadlineDateEvents, plan.deadlineDateEvents);
   await insertIfAny(db, deadlineTaskUpdateRecords, plan.deadlineTaskUpdateRecords, { optional: true });
@@ -948,6 +1029,12 @@ function remapFirm(identities: IdentityOverride) {
 }
 
 async function resetFirmWorkspace(db: ReturnType<typeof createDb>, firmId: string) {
+  await ignoreMissingTable(
+    db.delete(noticeProposalActions).where(eq(noticeProposalActions.firmId, firmId)),
+  );
+  await ignoreMissingTable(
+    db.delete(noticeImpactProposals).where(eq(noticeImpactProposals.firmId, firmId)),
+  );
   await ignoreMissingTable(
     db.delete(relationshipSuggestions).where(eq(relationshipSuggestions.firmId, firmId)),
   );

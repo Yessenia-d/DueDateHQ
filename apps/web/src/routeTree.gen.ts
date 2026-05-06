@@ -11,11 +11,13 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TaxWorkRouteImport } from './routes/tax-work'
 import { Route as ProgressRouteImport } from './routes/progress'
+import { Route as NoticesRouteImport } from './routes/notices'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ImportRouteImport } from './routes/import'
 import { Route as CoverageRouteImport } from './routes/coverage'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ClientsIndexRouteImport } from './routes/clients/index'
+import { Route as NoticesNoticeIdRouteImport } from './routes/notices/$noticeId'
 import { Route as ClientsNewRouteImport } from './routes/clients/new'
 import { Route as ClientsClientIdRouteImport } from './routes/clients/$clientId'
 import { Route as ClientsClientIdDeadlinesNewRouteImport } from './routes/clients/$clientId/deadlines/new'
@@ -28,6 +30,11 @@ const TaxWorkRoute = TaxWorkRouteImport.update({
 const ProgressRoute = ProgressRouteImport.update({
   id: '/progress',
   path: '/progress',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NoticesRoute = NoticesRouteImport.update({
+  id: '/notices',
+  path: '/notices',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -55,6 +62,11 @@ const ClientsIndexRoute = ClientsIndexRouteImport.update({
   path: '/clients/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const NoticesNoticeIdRoute = NoticesNoticeIdRouteImport.update({
+  id: '/$noticeId',
+  path: '/$noticeId',
+  getParentRoute: () => NoticesRoute,
+} as any)
 const ClientsNewRoute = ClientsNewRouteImport.update({
   id: '/clients/new',
   path: '/clients/new',
@@ -77,10 +89,12 @@ export interface FileRoutesByFullPath {
   '/coverage': typeof CoverageRoute
   '/import': typeof ImportRoute
   '/login': typeof LoginRoute
+  '/notices': typeof NoticesRouteWithChildren
   '/progress': typeof ProgressRoute
   '/tax-work': typeof TaxWorkRoute
   '/clients/$clientId': typeof ClientsClientIdRouteWithChildren
   '/clients/new': typeof ClientsNewRoute
+  '/notices/$noticeId': typeof NoticesNoticeIdRoute
   '/clients/': typeof ClientsIndexRoute
   '/clients/$clientId/deadlines/new': typeof ClientsClientIdDeadlinesNewRoute
 }
@@ -89,10 +103,12 @@ export interface FileRoutesByTo {
   '/coverage': typeof CoverageRoute
   '/import': typeof ImportRoute
   '/login': typeof LoginRoute
+  '/notices': typeof NoticesRouteWithChildren
   '/progress': typeof ProgressRoute
   '/tax-work': typeof TaxWorkRoute
   '/clients/$clientId': typeof ClientsClientIdRouteWithChildren
   '/clients/new': typeof ClientsNewRoute
+  '/notices/$noticeId': typeof NoticesNoticeIdRoute
   '/clients': typeof ClientsIndexRoute
   '/clients/$clientId/deadlines/new': typeof ClientsClientIdDeadlinesNewRoute
 }
@@ -102,10 +118,12 @@ export interface FileRoutesById {
   '/coverage': typeof CoverageRoute
   '/import': typeof ImportRoute
   '/login': typeof LoginRoute
+  '/notices': typeof NoticesRouteWithChildren
   '/progress': typeof ProgressRoute
   '/tax-work': typeof TaxWorkRoute
   '/clients/$clientId': typeof ClientsClientIdRouteWithChildren
   '/clients/new': typeof ClientsNewRoute
+  '/notices/$noticeId': typeof NoticesNoticeIdRoute
   '/clients/': typeof ClientsIndexRoute
   '/clients/$clientId/deadlines/new': typeof ClientsClientIdDeadlinesNewRoute
 }
@@ -116,10 +134,12 @@ export interface FileRouteTypes {
     | '/coverage'
     | '/import'
     | '/login'
+    | '/notices'
     | '/progress'
     | '/tax-work'
     | '/clients/$clientId'
     | '/clients/new'
+    | '/notices/$noticeId'
     | '/clients/'
     | '/clients/$clientId/deadlines/new'
   fileRoutesByTo: FileRoutesByTo
@@ -128,10 +148,12 @@ export interface FileRouteTypes {
     | '/coverage'
     | '/import'
     | '/login'
+    | '/notices'
     | '/progress'
     | '/tax-work'
     | '/clients/$clientId'
     | '/clients/new'
+    | '/notices/$noticeId'
     | '/clients'
     | '/clients/$clientId/deadlines/new'
   id:
@@ -140,10 +162,12 @@ export interface FileRouteTypes {
     | '/coverage'
     | '/import'
     | '/login'
+    | '/notices'
     | '/progress'
     | '/tax-work'
     | '/clients/$clientId'
     | '/clients/new'
+    | '/notices/$noticeId'
     | '/clients/'
     | '/clients/$clientId/deadlines/new'
   fileRoutesById: FileRoutesById
@@ -153,6 +177,7 @@ export interface RootRouteChildren {
   CoverageRoute: typeof CoverageRoute
   ImportRoute: typeof ImportRoute
   LoginRoute: typeof LoginRoute
+  NoticesRoute: typeof NoticesRouteWithChildren
   ProgressRoute: typeof ProgressRoute
   TaxWorkRoute: typeof TaxWorkRoute
   ClientsClientIdRoute: typeof ClientsClientIdRouteWithChildren
@@ -174,6 +199,13 @@ declare module '@tanstack/react-router' {
       path: '/progress'
       fullPath: '/progress'
       preLoaderRoute: typeof ProgressRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notices': {
+      id: '/notices'
+      path: '/notices'
+      fullPath: '/notices'
+      preLoaderRoute: typeof NoticesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -211,6 +243,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ClientsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/notices/$noticeId': {
+      id: '/notices/$noticeId'
+      path: '/$noticeId'
+      fullPath: '/notices/$noticeId'
+      preLoaderRoute: typeof NoticesNoticeIdRouteImport
+      parentRoute: typeof NoticesRoute
+    }
     '/clients/new': {
       id: '/clients/new'
       path: '/clients/new'
@@ -235,6 +274,17 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface NoticesRouteChildren {
+  NoticesNoticeIdRoute: typeof NoticesNoticeIdRoute
+}
+
+const NoticesRouteChildren: NoticesRouteChildren = {
+  NoticesNoticeIdRoute: NoticesNoticeIdRoute,
+}
+
+const NoticesRouteWithChildren =
+  NoticesRoute._addFileChildren(NoticesRouteChildren)
+
 interface ClientsClientIdRouteChildren {
   ClientsClientIdDeadlinesNewRoute: typeof ClientsClientIdDeadlinesNewRoute
 }
@@ -252,6 +302,7 @@ const rootRouteChildren: RootRouteChildren = {
   CoverageRoute: CoverageRoute,
   ImportRoute: ImportRoute,
   LoginRoute: LoginRoute,
+  NoticesRoute: NoticesRouteWithChildren,
   ProgressRoute: ProgressRoute,
   TaxWorkRoute: TaxWorkRoute,
   ClientsClientIdRoute: ClientsClientIdRouteWithChildren,

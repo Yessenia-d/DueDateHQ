@@ -517,7 +517,10 @@ function CoverageComponent() {
 
       {/* Rule evidence drawer */}
       <Sheet open={Boolean(selectedRuleId)} onOpenChange={(open) => { if (!open) setSelectedRuleId(null); }}>
-        <SheetContent side="right" className="w-full max-w-2xl p-0 sm:max-w-2xl">
+        <SheetContent
+          side="right"
+          className="!w-[min(100vw,720px)] !max-w-[720px] p-0 sm:!w-[min(42vw,720px)] sm:!max-w-[720px]"
+        >
           <SheetTitle className="sr-only">Rule evidence</SheetTitle>
           {selectedRuleId && (
             <RuleDetailContent ruleId={selectedRuleId} />

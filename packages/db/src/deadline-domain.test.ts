@@ -194,6 +194,7 @@ test("workspace foreign keys keep deadline rows inside the owning firm", () => {
   assert.ok(auditLogUniqueIndexNames.has("audit_logs_firm_id_id_unique"));
   assert.ok(clientRelationshipUniqueIndexNames.has("client_relationships_firm_id_id_unique"));
   assert.ok(filingProfileUniqueIndexNames.has("filing_profiles_firm_client_id_unique"));
+  assert.ok(filingProfileUniqueIndexNames.has("filing_profiles_firm_id_id_unique"));
   assert.ok(taskUniqueIndexNames.has("deadline_tasks_firm_id_id_unique"));
   assert.ok(filingProfileForeignKeyNames.has("filing_profiles_firm_client_relationship_fk"));
   assert.ok(taskForeignKeyNames.has("deadline_tasks_firm_client_relationship_fk"));

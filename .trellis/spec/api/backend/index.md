@@ -55,6 +55,83 @@ into tRPC context. `routers/index.ts` registers the app router and exports
   on a Saturday and DC Emancipation Day is observed on Monday, the adjusted
   deadline moves to Tuesday.
 
+## Scenario: Notice Proposal Review and Source Monitor Controls
+
+### 1. Scope / Trigger
+
+- Trigger: code exposes official-source notices, human proposal decisions, or
+  source-monitor controls across DB, API, and web UI.
+
+### 2. Signatures
+
+- `notices.list({ includeDecideLater?: boolean, limit?: number }): { notices }`.
+- `notices.get({ noticeId: string }): NoticeDetailResponse`.
+- `noticeProposals.listForNotice({ noticeId: string }): { proposals }`.
+- `noticeProposals.approve|reject|decideLater({ proposalId: string })`.
+- `noticeProposals.bulkApprove|bulkReject|bulkDecideLater({ proposalIds: string[] })`.
+- `officialSources.list(): { sources }`.
+- `officialSources.setActive({ sourceId: string, active: boolean })`.
+- `officialSources.enqueueCheck({ sourceId: string })`.
+
+### 3. Contracts
+
+- CPA-facing notice APIs must require firm session and return only
+  `workspace_alert` notices with `high | medium` confidence.
+- Notice proposal rows are firm-owned and scoped by `firm_id`; actions must
+  write audit logs before mutating tasks or profile coverage.
+- `pending` and `decide_later` proposals remain reviewable. `approved` and
+  `rejected` rows remain historical but should not drive top banner alerts.
+- Monitor `active=false` preserves source history and blocks user-queued checks;
+  it must not delete source, run, snapshot, notice, or proposal rows.
+- Captured official links must remain visible in notice review surfaces.
+- Notice review opens in contextual drawers from banners and the Notices page;
+  standalone detail routes are secondary.
+
+### 4. Validation & Error Matrix
+
+- Missing firm session -> `UNAUTHORIZED`.
+- Unknown notice/proposal/source id -> `NOT_FOUND`.
+- Low-confidence or `internal_queue` notice -> `NOT_FOUND` from CPA-facing
+  detail/action paths.
+- Disabled official source passed to `enqueueCheck` -> `BAD_REQUEST`.
+- Proposal action with invalid after-state fields -> Zod validation error before
+  workspace mutation.
+
+### 5. Good/Base/Bad Cases
+
+- Good: a high-confidence IRS notice with a pending task update appears in the
+  banner and Notices page, shows the captured official URL, and only mutates the
+  task after approval with audit history.
+- Base: a medium-confidence source-change notice creates a coverage review
+  proposal and can be deferred without changing coverage state.
+- Bad: a low-confidence internal notice appears in CPA UI, or a disabled source
+  can still be queued from the UI.
+
+### 6. Tests Required
+
+- Router tests for firm scoping, low-confidence exclusion, active/inactive
+  source behavior, individual decisions, bulk action ids, and audit writes.
+- DB schema tests for notice proposal/action CHECK constraints and composite
+  firm FKs.
+- Web type-check for notice banner, Notices page, monitor toggles, and drawer
+  review flows.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```typescript
+// Applies notice impact immediately when the monitor finds it.
+await updateDeadlineTaskFromNotice(noticeImpact);
+```
+
+#### Correct
+
+```typescript
+// Persist a proposal and wait for explicit CPA approval.
+await ctx.db.insert(noticeImpactProposals).values(proposal);
+```
+
 ## Scenario: Tax Due-Date Calendar Adjustment
 
 ### 1. Scope / Trigger

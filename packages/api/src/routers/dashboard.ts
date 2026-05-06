@@ -383,7 +383,9 @@ function createDashboardTaskRow({
     status: task.status,
     today,
   });
-  const isExtended = events.some((event) => event.eventType === "official_extension");
+  const isExtended = events.some(
+    (event) => event.eventType === "official_extension" || event.eventType === "official_relief_change",
+  );
   const baseRow = {
     id: task.id,
     clientRelationship: {

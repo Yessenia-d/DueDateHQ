@@ -27,7 +27,10 @@ export function EvidenceDrawer({
 
   return (
     <Sheet open={Boolean(taskId)} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <SheetContent side="right" className="w-full max-w-xl p-0 sm:max-w-xl">
+      <SheetContent
+        side="right"
+        className="!w-[min(100vw,720px)] !max-w-[720px] p-0 sm:!w-[min(42vw,720px)] sm:!max-w-[720px]"
+      >
         <SheetTitle className="sr-only">Deadline evidence</SheetTitle>
 
         <div className="flex items-center justify-between border-b border-border px-4 py-3">

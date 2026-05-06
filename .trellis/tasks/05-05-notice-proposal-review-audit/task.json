@@ -3,7 +3,7 @@
   "name": "notice-proposal-review-audit",
   "title": "Implement notice proposal review and audit workflow",
   "description": "Implement CPA-facing notice alerts, affected diff review, approve/reject/decide-later actions, and audit records.",
-  "status": "planning",
+  "status": "in_progress",
   "dev_type": null,
   "scope": null,
   "package": "web",

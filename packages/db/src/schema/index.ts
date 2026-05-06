@@ -5,4 +5,5 @@ export * from "./feature-progress";
 export * from "./firms";
 export * from "./imports";
 export * from "./monitoring";
+export * from "./notice-proposals";
 export * from "./tax-rules";
