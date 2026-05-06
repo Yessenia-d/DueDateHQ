@@ -599,10 +599,11 @@ export function TaskTable({
                       type="button"
                       variant="outline"
                       size="sm"
+                      aria-label={`Open detail for ${task.title}`}
                       onClick={() => onOpenEvidence(task.id)}
                     >
                       <Eye className="size-3.5" />
-                      Evidence
+                      Detail
                     </Button>
                   </div>
                 </TableCell>

@@ -57,6 +57,12 @@ type DashboardExceptionFocus =
   | "entered_deadline"
   | "waiting_on_client";
 type WorkloadTone = "empty" | "low" | "medium" | "high" | "risk" | "overdue" | "done";
+type DashboardFilterDraft = {
+  calendarMonthId: string | null;
+  exceptionFocus: DashboardExceptionFocus | null;
+  filters: DashboardSummaryInput;
+  selectedDate: string | null;
+};
 
 const horizonLabels: Record<DashboardHorizon, string> = {
   all: "All horizons",
@@ -234,6 +240,12 @@ export function DashboardPage() {
   const [selectedTaskIds, setSelectedTaskIds] = React.useState<Set<string>>(new Set());
   const [evidenceTaskId, setEvidenceTaskId] = React.useState<string | null>(null);
   const [showFilters, setShowFilters] = React.useState(false);
+  const [filterDraft, setFilterDraft] = React.useState<DashboardFilterDraft>(() => ({
+    calendarMonthId: null,
+    exceptionFocus: null,
+    filters: { ...emptyFilters },
+    selectedDate: null,
+  }));
   const [selectedDate, setSelectedDate] = React.useState<string | null>(null);
   const [exceptionFocus, setExceptionFocus] = React.useState<DashboardExceptionFocus | null>(null);
   const [calendarMonthId, setCalendarMonthId] = React.useState<string | null>(null);
@@ -287,27 +299,50 @@ export function DashboardPage() {
     });
   }, [activeSection]);
 
-  function updateFilter<K extends keyof DashboardSummaryInput>(
+  function openFilters() {
+    setFilterDraft({
+      calendarMonthId,
+      exceptionFocus,
+      filters: { ...filters },
+      selectedDate,
+    });
+    setShowFilters(true);
+  }
+
+  function updateFilterDraft<K extends keyof DashboardSummaryInput>(
     key: K,
     value: DashboardSummaryInput[K] | "",
   ) {
-    setFilters((current) => {
-      const next = { ...current, [key]: value || undefined };
+    setFilterDraft((current) => {
+      const next = { ...current.filters, [key]: value || undefined };
       if (!next.horizon) next.horizon = "all";
       if (!next.sort) next.sort = "smart_priority";
       next.page = 1;
       next.pageSize = dashboardPageSize;
-      return next;
+
+      return {
+        ...current,
+        filters: next,
+      };
     });
-    setSectionPages(createInitialSectionPages);
   }
 
-  function resetFilters() {
-    setFilters({ ...emptyFilters });
+  function resetFilterDraft() {
+    setFilterDraft({
+      calendarMonthId: null,
+      exceptionFocus: null,
+      filters: { ...emptyFilters },
+      selectedDate: null,
+    });
+  }
+
+  function applyFilterDraft() {
+    setFilters(filterDraft.filters);
+    setSelectedDate(filterDraft.selectedDate);
+    setExceptionFocus(filterDraft.exceptionFocus);
+    setCalendarMonthId(filterDraft.calendarMonthId);
     setSectionPages(createInitialSectionPages);
-    setSelectedDate(null);
-    setExceptionFocus(null);
-    setCalendarMonthId(null);
+    setShowFilters(false);
   }
 
   function selectHorizon(horizon: DashboardTaskHorizon) {
@@ -426,8 +461,11 @@ export function DashboardPage() {
                 Deadline dashboard
               </h1>
             </div>
-            <div className="grid gap-1 text-xs text-muted-foreground lg:text-right">
+            <div className="inline-flex items-center gap-1.5 whitespace-nowrap text-xs text-muted-foreground lg:justify-end">
               <span>Today {formatDate(data.today)}</span>
+              <span aria-hidden="true" className="text-muted-foreground/60">
+                &bull;
+              </span>
               <span>Generated {formatDateTime(data.generatedAt)}</span>
             </div>
           </div>
@@ -492,7 +530,13 @@ export function DashboardPage() {
                       ? "rounded-lg border-primary/30 bg-ddhq-accent-soft/70 text-foreground shadow-none"
                       : "rounded-lg"
                   }
-                  onClick={() => setShowFilters((current) => !current)}
+                  onClick={() => {
+                    if (showFilters) {
+                      setShowFilters(false);
+                    } else {
+                      openFilters();
+                    }
+                  }}
                 >
                   <Filter
                     className={showFilters ? "size-3.5 text-primary" : "size-3.5"}
@@ -502,10 +546,11 @@ export function DashboardPage() {
                 {showFilters ? (
                   <FilterPanel
                     data={data}
-                    filters={filters}
+                    filters={filterDraft.filters}
+                    onApply={applyFilterDraft}
                     onClose={() => setShowFilters(false)}
-                    onReset={resetFilters}
-                    onUpdateFilter={updateFilter}
+                    onReset={resetFilterDraft}
+                    onUpdateFilter={updateFilterDraft}
                   />
                 ) : null}
               </div>
@@ -514,17 +559,6 @@ export function DashboardPage() {
                   ? `${activeFilterCount + activeFocusCount} active`
                   : "Default filters"}
               </span>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="h-8 rounded-lg px-2 text-muted-foreground hover:text-foreground disabled:text-muted-foreground/45"
-                disabled={!hasNonDefaultFilters}
-                onClick={resetFilters}
-              >
-                <RotateCcw className="size-3.5" />
-                Reset filters
-              </Button>
               {focusSummary ? (
                 <span className="inline-flex items-center gap-1 rounded-lg border border-border/80 bg-card px-2 py-1 text-xs font-medium text-muted-foreground">
                   {focusSummary}
@@ -1325,12 +1359,14 @@ function ExceptionSummary({
 function FilterPanel({
   data,
   filters,
+  onApply,
   onClose,
   onReset,
   onUpdateFilter,
 }: {
   data: DashboardSummaryResponse;
   filters: DashboardSummaryInput;
+  onApply: () => void;
   onClose: () => void;
   onReset: () => void;
   onUpdateFilter: <K extends keyof DashboardSummaryInput>(
@@ -1339,7 +1375,7 @@ function FilterPanel({
   ) => void;
 }) {
   return (
-    <div className="absolute left-0 top-10 z-50 w-[min(900px,calc(100vw-2.5rem))] rounded-xl border border-border/80 bg-popover p-3 text-popover-foreground shadow-xl max-md:fixed max-md:inset-x-3 max-md:bottom-3 max-md:top-auto max-md:w-auto max-md:max-h-[82vh] max-md:overflow-auto">
+    <div className="absolute left-0 top-10 z-[80] w-[min(900px,calc(100vw-2.5rem))] rounded-xl border border-border/80 bg-popover p-3 text-popover-foreground shadow-xl max-md:fixed max-md:inset-x-3 max-md:bottom-3 max-md:top-auto max-md:w-auto max-md:max-h-[82vh] max-md:overflow-auto">
       <div className="mb-3 flex items-center justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold">Filters</h2>
@@ -1455,7 +1491,7 @@ function FilterPanel({
           <RotateCcw className="size-3.5" />
           Reset filters
         </Button>
-        <Button type="button" variant="outline" size="sm" onClick={onClose}>
+        <Button type="button" variant="outline" size="sm" onClick={onApply}>
           Done
         </Button>
       </div>
@@ -1721,17 +1757,17 @@ function FilterSelect({
   value: string;
 }) {
   return (
-    <label className="grid gap-1 text-xs font-medium text-muted-foreground">
+    <label className="grid min-w-0 gap-1 text-xs font-medium text-muted-foreground">
       {label}
       <Select value={value} onValueChange={(val) => onChange(val ?? "")}>
         <SelectTrigger
           className={
             isActive
-              ? "h-8 w-full rounded-lg *:data-[slot=select-value]:font-semibold *:data-[slot=select-value]:text-primary"
-              : "h-8 w-full rounded-lg"
+              ? "h-8 w-full min-w-0 overflow-hidden rounded-lg *:data-[slot=select-value]:min-w-0 *:data-[slot=select-value]:overflow-hidden *:data-[slot=select-value]:truncate *:data-[slot=select-value]:font-semibold *:data-[slot=select-value]:text-primary"
+              : "h-8 w-full min-w-0 overflow-hidden rounded-lg *:data-[slot=select-value]:min-w-0 *:data-[slot=select-value]:overflow-hidden *:data-[slot=select-value]:truncate"
           }
         >
-          <SelectValue placeholder={placeholder} />
+          <SelectValue className="truncate" placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent className="z-[100] rounded-lg" positionerClassName="z-[100]">
           {placeholder ? <SelectItem value="">{placeholder}</SelectItem> : null}
