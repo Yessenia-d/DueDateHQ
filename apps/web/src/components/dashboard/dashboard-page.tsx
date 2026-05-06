@@ -43,7 +43,7 @@ type DashboardExceptionFocus =
   | "needs_review"
   | "entered_deadline"
   | "waiting_on_client";
-type WorkloadTone = "empty" | "low" | "medium" | "high" | "risk";
+type WorkloadTone = "empty" | "low" | "medium" | "high" | "risk" | "overdue";
 
 const horizonLabels: Record<DashboardHorizon, string> = {
   all: "All horizons",
@@ -314,7 +314,7 @@ export function DashboardPage() {
   }
 
   const data = dashboard.data;
-  const calendarDays = createWorkloadCalendarDays(
+  const calendarMonths = createWorkloadCalendarMonths(
     activeHorizonTasks,
     data.today,
     activeHorizon,
@@ -367,7 +367,7 @@ export function DashboardPage() {
         <section className="grid shrink-0 grid-cols-1 gap-2 xl:grid-cols-[minmax(0,1fr)_320px]">
           <WorkloadCalendar
             activeHorizon={activeHorizon}
-            days={calendarDays}
+            months={calendarMonths}
             selectedDate={selectedDate}
             taskCount={activeHorizonTasks.length}
             today={data.today}
@@ -713,52 +713,71 @@ function filterFocusedTasks(
   });
 }
 
-function createWorkloadCalendarDays(
+function createWorkloadCalendarMonths(
   tasks: DashboardTaskRow[],
   today: string,
   horizon: DashboardTaskHorizon,
   selectedDate: string | null,
-): WorkloadCalendarDay[] {
-  const anchorDate = selectedDate ?? getCalendarAnchorDate(tasks, today, horizon);
-  const anchor = new Date(`${anchorDate}T00:00:00.000Z`);
-  const monthStart = new Date(Date.UTC(anchor.getUTCFullYear(), anchor.getUTCMonth(), 1));
-  const gridStart = addUtcDays(monthStart, -monthStart.getUTCDay());
-  const currentMonth = monthStart.getUTCMonth();
+): WorkloadCalendarMonth[] {
+  const monthKeys = getCalendarMonthKeys(tasks, today, horizon, selectedDate);
   const tasksByDate = groupTasksByDueDate(tasks);
 
-  return Array.from({ length: 42 }, (_, index) => {
-    const date = addUtcDays(gridStart, index);
-    const dateKey = toDateKey(date);
-    const dateTasks = tasksByDate.get(dateKey) ?? [];
+  return monthKeys.map((monthKey) => {
+    const monthStart = new Date(`${monthKey}-01T00:00:00.000Z`);
+    const gridStart = addUtcDays(monthStart, -monthStart.getUTCDay());
+    const currentMonth = monthStart.getUTCMonth();
 
     return {
-      count: dateTasks.length,
-      date: dateKey,
-      dayOfMonth: date.getUTCDate(),
-      isCurrentMonth: date.getUTCMonth() === currentMonth,
-      isSelected: selectedDate === dateKey,
-      isToday: today === dateKey,
-      tone: getDayWorkloadTone(dateTasks),
+      id: monthKey,
+      label: monthKey,
+      days: Array.from({ length: 42 }, (_, index) => {
+        const date = addUtcDays(gridStart, index);
+        const dateKey = toDateKey(date);
+        const dateTasks = tasksByDate.get(dateKey) ?? [];
+
+        return {
+          count: dateTasks.length,
+          date: dateKey,
+          dayOfMonth: date.getUTCDate(),
+          isCurrentMonth: date.getUTCMonth() === currentMonth,
+          isSelected: selectedDate === dateKey,
+          isToday: today === dateKey,
+          tone: getDayWorkloadTone(dateTasks),
+        };
+      }),
     };
   });
 }
 
-function getCalendarAnchorDate(
+function getCalendarMonthKeys(
   tasks: DashboardTaskRow[],
   today: string,
   horizon: DashboardTaskHorizon,
-): string {
-  if (tasks.length === 0 || horizon === "due_this_week" || horizon === "this_month") {
-    return today;
+  selectedDate: string | null,
+): string[] {
+  const relevantDates = tasks.map((task) => task.currentDueDate);
+
+  if (selectedDate) {
+    relevantDates.push(selectedDate);
   }
 
-  const dates = tasks.map((task) => task.currentDueDate).sort();
-
-  if (horizon === "overdue") {
-    return dates.at(-1) ?? today;
+  if (relevantDates.length === 0 || horizon === "due_this_week" || horizon === "this_month") {
+    return [today.slice(0, 7)];
   }
 
-  return dates[0] ?? today;
+  const sortedDates = relevantDates.sort();
+  const startMonth = sortedDates[0]?.slice(0, 7) ?? today.slice(0, 7);
+  const endMonth = sortedDates.at(-1)?.slice(0, 7) ?? today.slice(0, 7);
+  const monthKeys: string[] = [];
+  let cursor = new Date(`${startMonth}-01T00:00:00.000Z`);
+  const end = new Date(`${endMonth}-01T00:00:00.000Z`);
+
+  while (cursor <= end) {
+    monthKeys.push(toMonthKey(cursor));
+    cursor = new Date(Date.UTC(cursor.getUTCFullYear(), cursor.getUTCMonth() + 1, 1));
+  }
+
+  return monthKeys;
 }
 
 function groupTasksByDueDate(tasks: DashboardTaskRow[]): Map<string, DashboardTaskRow[]> {
@@ -779,11 +798,14 @@ function groupTasksByDueDate(tasks: DashboardTaskRow[]): Map<string, DashboardTa
 function getDayWorkloadTone(tasks: DashboardTaskRow[]): WorkloadTone {
   if (tasks.length === 0) return "empty";
 
+  if (tasks.some((task) => task.status !== "done" && task.urgency === "overdue")) {
+    return "overdue";
+  }
+
   const hasRisk = tasks.some(
     (task) =>
       task.status !== "done" &&
-      (task.urgency === "overdue" ||
-        task.urgency === "due_today" ||
+      (task.urgency === "due_today" ||
         task.verificationStatus === "source_changed" ||
         task.verificationStatus === "needs_review" ||
         task.status === "waiting_on_client"),
@@ -854,6 +876,7 @@ function getCalendarDayClassName(day: WorkloadCalendarDay): string {
     medium: "bg-ddhq-review-soft/70 text-ddhq-review hover:bg-ddhq-review-soft",
     high: "bg-ddhq-review-soft/85 text-ddhq-review hover:bg-ddhq-review-soft",
     risk: "bg-ddhq-review-soft text-ddhq-review hover:bg-ddhq-review-soft/85",
+    overdue: "bg-ddhq-risk-soft text-ddhq-risk hover:bg-ddhq-risk-soft/85",
   } satisfies Record<WorkloadTone, string>;
   const currentMonthClass = day.isCurrentMonth ? "" : "opacity-45";
   const selectedClass = day.isSelected
@@ -880,6 +903,12 @@ type WorkloadCalendarDay = {
   tone: WorkloadTone;
 };
 
+type WorkloadCalendarMonth = {
+  days: WorkloadCalendarDay[];
+  id: string;
+  label: string;
+};
+
 type ExceptionItem = {
   count: number;
   description: string;
@@ -889,20 +918,24 @@ type ExceptionItem = {
 
 function WorkloadCalendar({
   activeHorizon,
-  days,
+  months,
   onSelectDate,
   selectedDate,
   taskCount,
   today,
 }: {
   activeHorizon: DashboardTaskHorizon;
-  days: WorkloadCalendarDay[];
+  months: WorkloadCalendarMonth[];
   onSelectDate: (date: string) => void;
   selectedDate: string | null;
   taskCount: number;
   today: string;
 }) {
-  const visibleMonth = days.find((day) => day.isCurrentMonth)?.date.slice(0, 7) ?? today.slice(0, 7);
+  const visibleRange =
+    months.length > 1 ? `${months[0]?.label} - ${months.at(-1)?.label}` : (months[0]?.label ?? today.slice(0, 7));
+  const hasOverdueDays = months.some((month) =>
+    month.days.some((day) => day.tone === "overdue"),
+  );
 
   return (
     <section className="rounded-lg border border-border/80 bg-card p-2.5">
@@ -913,7 +946,7 @@ function WorkloadCalendar({
             Workload calendar
           </div>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            {visibleMonth} density for {horizonLabels[activeHorizon].toLowerCase()} deadlines
+            {visibleRange} density for {horizonLabels[activeHorizon].toLowerCase()} deadlines
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
@@ -930,35 +963,53 @@ function WorkloadCalendar({
         </div>
       </div>
 
-      <div className="mt-2 grid grid-cols-7 gap-0.5 text-center text-[10px] font-semibold text-muted-foreground">
-        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-          <div key={day} className="h-4">
-            {day}
-          </div>
-        ))}
-      </div>
-      <div className="grid grid-cols-7 gap-0.5">
-        {days.map((day) => (
-          <button
-            key={day.date}
-            type="button"
-            className={getCalendarDayClassName(day)}
-            aria-pressed={day.isSelected}
-            aria-label={`${day.date}: ${day.count} deadline task${day.count === 1 ? "" : "s"}`}
-            onClick={() => onSelectDate(day.date)}
-          >
-            <span className="flex items-center justify-between gap-1">
-              <span className="font-mono tabular-nums">{day.dayOfMonth}</span>
-              {day.tone === "risk" ? <AlertTriangle className="size-3" /> : null}
-            </span>
-            <span className="block truncate text-[10px] font-semibold leading-4">
-              {day.count > 0 ? `${day.count} task${day.count === 1 ? "" : "s"}` : " "}
-            </span>
-          </button>
-        ))}
+      <div className="mt-2 max-h-56 overflow-y-auto pr-1">
+        <div className="grid gap-3">
+          {months.map((month) => (
+            <div key={month.id}>
+              {months.length > 1 ? (
+                <div className="mb-1 font-mono text-[11px] font-semibold text-muted-foreground">
+                  {month.label}
+                </div>
+              ) : null}
+              <div className="grid grid-cols-7 gap-0.5 text-center text-[10px] font-semibold text-muted-foreground">
+                {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+                  <div key={`${month.id}-${day}`} className="h-4">
+                    {day}
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-7 gap-0.5">
+                {month.days.map((day) => (
+                  <button
+                    key={day.date}
+                    type="button"
+                    className={getCalendarDayClassName(day)}
+                    aria-pressed={day.isSelected}
+                    aria-label={`${day.date}: ${day.count} deadline task${day.count === 1 ? "" : "s"}`}
+                    onClick={() => onSelectDate(day.date)}
+                  >
+                    <span className="flex items-center justify-between gap-1">
+                      <span className="font-mono tabular-nums">{day.dayOfMonth}</span>
+                      {day.tone === "risk" || day.tone === "overdue" ? (
+                        <AlertTriangle className="size-3" />
+                      ) : null}
+                    </span>
+                    <span className="block truncate text-[10px] font-semibold leading-4">
+                      {day.count > 0 ? `${day.count} task${day.count === 1 ? "" : "s"}` : " "}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
         <CalendarLegendSwatch className="bg-ddhq-review-soft" label="Workload" />
+        {hasOverdueDays ? (
+          <CalendarLegendSwatch className="bg-ddhq-risk-soft" label="Overdue" />
+        ) : null}
         <CalendarLegendSwatch className="border-ddhq-review/60 bg-ddhq-review-soft ring-2 ring-ddhq-review/35" label="Selected" />
       </div>
     </section>
@@ -1577,4 +1628,11 @@ function toDateKey(date: Date): string {
   const day = String(date.getUTCDate()).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
+}
+
+function toMonthKey(date: Date): string {
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+
+  return `${year}-${month}`;
 }
