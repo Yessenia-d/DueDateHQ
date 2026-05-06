@@ -221,6 +221,26 @@ test("demo datasets cover triage, coverage, and notice workflows", () => {
         proposal.officialNoticeId === "demo-notice-tx-sales-source-change",
     ),
   );
+  assert.ok(
+    triage.noticeImpactProposals.some(
+      (proposal) =>
+        proposal.id === "demo-triage-proposal-ca-100s-extension-task" &&
+        proposal.status === "pending" &&
+        proposal.proposalType === "task_update" &&
+        proposal.deadlineTaskId === "demo-triage-task-100s" &&
+        proposal.officialNoticeId === "demo-notice-ca-ftb-100s-extension" &&
+        proposal.beforeState.currentDueDate === "2026-05-20" &&
+        proposal.afterState.currentDueDate === "2026-06-16",
+    ),
+  );
+  assert.ok(
+    plan.officialNotices.some(
+      (notice) =>
+        notice.id === "demo-notice-ca-ftb-100s-extension" &&
+        notice.noticeSummary.includes("CPA should check") &&
+        notice.confidenceReasons.includes("Extension date text detected"),
+    ),
+  );
 
   assert.ok(
     coverage.filingProfiles.some((profile) => profile.coverageState === "coverage_gap"),

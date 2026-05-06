@@ -475,6 +475,41 @@ export function buildDemoSeedPlan({
         createdAt: now,
         updatedAt: now,
       },
+      {
+        id: "demo-notice-ca-ftb-100s-extension",
+        sourceId: "demo-source-ca-ftb-extension",
+        sourceSnapshotId: "demo-snapshot-ca-ftb-extension",
+        noticeUrl: "https://www.ftb.ca.gov/file/business/types/corporations/s-corporations.html",
+        noticeTitle: "California FTB extension notice may move Form 100S filing deadlines",
+        noticePublishedAt: new Date("2026-05-06T00:00:00.000Z"),
+        noticeSummary:
+          "Source monitor detected an extension date for California S corporation filings and matched it to an existing task. CPA should check whether to update the due date.",
+        jurisdiction: "CA",
+        deadlineRelevance: "high",
+        confidenceLabel: "high",
+        confidenceReasons: ["P0 FTB source", "Extension date text detected", "Existing CA Form 100S task match"],
+        impactConditions: [
+          {
+            jurisdiction: "CA",
+            taxCategories: ["Franchise tax"],
+            entityTypes: ["s_corp"],
+            deadlineKinds: ["filing"],
+            dateText: "June 16, 2026",
+            affectedLocation: "California",
+            summary:
+              "Potential official extension for California S corporation annual filing tasks.",
+          },
+        ],
+        workspaceMatchHints: {
+          jurisdictions: ["CA"],
+          entityTypes: ["s_corp"],
+          taxCategories: ["Franchise tax"],
+        },
+        alertVisibility: "workspace_alert",
+        detectedAt: new Date("2026-05-06T10:00:00.000Z"),
+        createdAt: now,
+        updatedAt: now,
+      },
     ] satisfies Array<typeof officialNotices.$inferInsert>,
     noticeImpactProposals: [
       {
@@ -494,6 +529,36 @@ export function buildDemoSeedPlan({
         },
         confidenceLabel: "medium",
         confidenceReasons: ["Known P0 source changed", "Barton TX sales tax profile match"],
+        status: "pending",
+        decidedBy: null,
+        decidedAt: null,
+        auditLogId: null,
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        id: "demo-triage-proposal-ca-100s-extension-task",
+        officialNoticeId: "demo-notice-ca-ftb-100s-extension",
+        firmId: identity(DEMO_ACCOUNTS[0]).firmId,
+        filingProfileId: "demo-triage-profile-hawthorne-1120s",
+        deadlineTaskId: "demo-triage-task-100s",
+        proposalType: "task_update",
+        beforeState: {
+          currentDueDate: "2026-05-20",
+          originalDueDate: "2026-03-16",
+          firmTargetDate: "2026-05-13",
+          status: "not_started",
+        },
+        afterState: {
+          currentDueDate: "2026-06-16",
+          originalDueDate: "2026-03-16",
+          firmTargetDate: "2026-06-09",
+          status: "not_started",
+          reason:
+            "Detected California FTB extension language and matched the notice to the existing CA Form 100S Filing task. CPA should confirm whether the task date should change.",
+        },
+        confidenceLabel: "high",
+        confidenceReasons: ["P0 FTB source", "Extension date detected", "Existing task matched"],
         status: "pending",
         decidedBy: null,
         decidedAt: null,
@@ -587,6 +652,23 @@ export function buildDemoSeedPlan({
         createdAt: now,
         updatedAt: now,
       },
+      {
+        id: "demo-source-ca-ftb-extension",
+        jurisdiction: "CA",
+        agencyName: "California Franchise Tax Board",
+        sourceType: "html",
+        sourceUrl: "https://www.ftb.ca.gov/file/business/types/corporations/s-corporations.html",
+        allowlistLevel: "p0",
+        deadlineScope: "California S corporation filing extension notices",
+        monitorFrequencyHours: 24,
+        active: true,
+        lastCheckedAt: new Date("2026-05-06T10:00:00.000Z"),
+        lastChangedAt: new Date("2026-05-06T10:00:00.000Z"),
+        lastStatus: "success",
+        lastErrorMessage: null,
+        createdAt: now,
+        updatedAt: now,
+      },
     ] satisfies Array<typeof officialSources.$inferInsert>,
     relationshipSuggestions: [
       {
@@ -625,6 +707,17 @@ export function buildDemoSeedPlan({
         changedDetected: true,
         errorMessage: null,
       },
+      {
+        id: "demo-source-run-ca-ftb-extension",
+        sourceId: "demo-source-ca-ftb-extension",
+        checkedAt: new Date("2026-05-06T10:00:00.000Z"),
+        status: "success",
+        httpStatus: 200,
+        contentHash: "demo-ca-ftb-extension-hash-20260506",
+        previousContentHash: "demo-ca-ftb-extension-hash-20260430",
+        changedDetected: true,
+        errorMessage: null,
+      },
     ] satisfies Array<typeof sourceCheckRuns.$inferInsert>,
     sourceSnapshots: [
       {
@@ -640,6 +733,13 @@ export function buildDemoSeedPlan({
         contentHash: "demo-tx-sales-hash-20260415",
         snapshotUrl: null,
         capturedAt: new Date("2026-04-15T12:00:00.000Z"),
+      },
+      {
+        id: "demo-snapshot-ca-ftb-extension",
+        sourceId: "demo-source-ca-ftb-extension",
+        contentHash: "demo-ca-ftb-extension-hash-20260506",
+        snapshotUrl: null,
+        capturedAt: new Date("2026-05-06T10:00:00.000Z"),
       },
     ] satisfies Array<typeof sourceSnapshots.$inferInsert>,
     taxObligations: getSeedObligations(),
@@ -761,7 +861,7 @@ export async function seedDemoData(dbBinding: D1DatabaseBinding) {
   );
 
   for (const firm of plan.firms) {
-    await resetFirmWorkspace(db, firm.id);
+    await resetFirmWorkspace(db, dbBinding, firm.id);
   }
 
   await upsertTaxSeed(db, plan);
@@ -1109,7 +1209,12 @@ function remapFirm(identities: IdentityOverride) {
   });
 }
 
-async function resetFirmWorkspace(db: ReturnType<typeof createDb>, firmId: string) {
+async function resetFirmWorkspace(
+  db: ReturnType<typeof createDb>,
+  dbBinding: D1DatabaseBinding,
+  firmId: string,
+) {
+  await dropLegacyImportTables(dbBinding);
   await ignoreMissingTable(
     db.delete(noticeProposalActions).where(eq(noticeProposalActions.firmId, firmId)),
   );
@@ -1135,6 +1240,17 @@ async function resetFirmWorkspace(db: ReturnType<typeof createDb>, firmId: strin
   await db.delete(filingProfiles).where(eq(filingProfiles.firmId, firmId));
   await db.delete(clientRelationships).where(eq(clientRelationships.firmId, firmId));
   await db.delete(auditLogs).where(eq(auditLogs.firmId, firmId));
+}
+
+async function dropLegacyImportTables(dbBinding: D1DatabaseBinding) {
+  for (const tableName of [
+    "__legacy_relationship_suggestions_0009",
+    "__legacy_duplicate_candidates_0009",
+    "__legacy_import_review_items_0009",
+    "__legacy_import_batches_0009",
+  ] as const) {
+    await ignoreMissingTable(dbBinding.prepare(`drop table if exists "${tableName}"`).run());
+  }
 }
 
 async function upsertTaxSeed(db: ReturnType<typeof createDb>, plan: DemoSeedPlan) {
