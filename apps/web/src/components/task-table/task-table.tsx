@@ -344,23 +344,6 @@ export function TaskTable({
               <TableHead className={cn(tableHeaderCellClass, "text-right")}>
                 <SortHeader
                   align="right"
-                  label="Firm target"
-                  sortKey="firmTargetDate"
-                  sortState={sortState}
-                  onSort={toggleSort}
-                />
-              </TableHead>
-              <TableHead className={tableHeaderCellClass}>
-                <SortHeader
-                  label="Trust"
-                  sortKey="trust"
-                  sortState={sortState}
-                  onSort={toggleSort}
-                />
-              </TableHead>
-              <TableHead className={cn(tableHeaderCellClass, "text-right")}>
-                <SortHeader
-                  align="right"
                   label="Countdown"
                   sortKey="countdown"
                   sortState={sortState}
@@ -377,8 +360,17 @@ export function TaskTable({
               </TableHead>
               <TableHead className={tableHeaderCellClass}>
                 <SortHeader
-                  label="EIN / SSN last 4"
-                  sortKey="identifier"
+                  label="Trust"
+                  sortKey="trust"
+                  sortState={sortState}
+                  onSort={toggleSort}
+                />
+              </TableHead>
+              <TableHead className={cn(tableHeaderCellClass, "text-right")}>
+                <SortHeader
+                  align="right"
+                  label="Firm target"
+                  sortKey="firmTargetDate"
                   sortState={sortState}
                   onSort={toggleSort}
                 />
@@ -387,6 +379,14 @@ export function TaskTable({
                 <SortHeader
                   label="Jurisdiction"
                   sortKey="jurisdiction"
+                  sortState={sortState}
+                  onSort={toggleSort}
+                />
+              </TableHead>
+              <TableHead className={tableHeaderCellClass}>
+                <SortHeader
+                  label="EIN / SSN last 4"
+                  sortKey="identifier"
                   sortState={sortState}
                   onSort={toggleSort}
                 />
@@ -453,12 +453,6 @@ export function TaskTable({
                       History
                     </div>
                   ) : null}
-                </TableCell>
-                <TableCell className="text-right text-xs text-muted-foreground">
-                  {task.firmTargetDate ? formatDate(task.firmTargetDate) : "None"}
-                </TableCell>
-                <TableCell>
-                  <VerificationBadge task={task} />
                 </TableCell>
                 <TableCell className="text-right">
                   <CountdownBadge task={task} />
@@ -538,6 +532,13 @@ export function TaskTable({
                     </div>
                   )}
                 </TableCell>
+                <TableCell>
+                  <VerificationBadge task={task} />
+                </TableCell>
+                <TableCell className="text-right text-xs text-muted-foreground">
+                  {task.firmTargetDate ? formatDate(task.firmTargetDate) : "None"}
+                </TableCell>
+                <TableCell className="text-xs font-medium">{task.jurisdiction}</TableCell>
                 <TableCell className="min-w-32">
                   <div className="font-mono text-xs font-medium">
                     {profileIdentifierValue(task.filingProfile)}
@@ -546,7 +547,6 @@ export function TaskTable({
                     {profileIdentifierLabel(task.filingProfile)}
                   </div>
                 </TableCell>
-                <TableCell className="text-xs font-medium">{task.jurisdiction}</TableCell>
                 <TableCell className="min-w-56 max-w-72">
                   <div className="flex items-start gap-1.5">
                     <div className="min-w-0 flex-1">
