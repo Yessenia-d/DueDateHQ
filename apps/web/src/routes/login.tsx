@@ -9,11 +9,15 @@ import * as React from "react";
 import { authClient } from "@/utils/auth-client";
 import { trpc } from "@/utils/trpc";
 
+type AuthMode = "login" | "register";
+type LoginSearch = { mode: AuthMode };
+
 export const Route = createFileRoute("/login")({
+  validateSearch: (search: Record<string, unknown>): LoginSearch => ({
+    mode: search.mode === "register" ? "register" : "login",
+  }),
   component: LoginComponent,
 });
-
-type AuthMode = "login" | "register";
 
 const defaultDemoCredentials = {
   email: "demo-triage@duedatehq.test",
@@ -21,8 +25,9 @@ const defaultDemoCredentials = {
 };
 
 function LoginComponent() {
+  const search = Route.useSearch();
   const session = useQuery(trpc.auth.session.queryOptions());
-  const [mode, setMode] = React.useState<AuthMode>("login");
+  const [mode, setMode] = React.useState<AuthMode>(search.mode);
   const [name, setName] = React.useState("");
   const [firmName, setFirmName] = React.useState("");
   const [email, setEmail] = React.useState(defaultDemoCredentials.email);
@@ -32,9 +37,13 @@ function LoginComponent() {
 
   React.useEffect(() => {
     if (session.data) {
-      window.location.assign("/");
+      window.location.assign("/dashboard");
     }
   }, [session.data]);
+
+  React.useEffect(() => {
+    handleModeChange(search.mode);
+  }, [search.mode]);
 
   function handleModeChange(nextMode: AuthMode) {
     setErrorMessage(null);
@@ -70,7 +79,7 @@ function LoginComponent() {
       return;
     }
 
-    window.location.assign("/");
+    window.location.assign("/dashboard");
   }
 
   return (

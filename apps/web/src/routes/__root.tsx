@@ -50,7 +50,12 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 
 function RootComponent() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const session = useQuery(trpc.auth.session.queryOptions());
+  const isMarketingRoute = pathname === "/";
+  const isPublicRoute = isMarketingRoute || pathname === "/login" || pathname === "/progress";
+  const session = useQuery({
+    ...trpc.auth.session.queryOptions(),
+    enabled: !isMarketingRoute && pathname !== "/progress",
+  });
   const [isMobileNavOpen, setIsMobileNavOpen] = React.useState(false);
   const logout = useMutation({
     mutationFn: async () => {
@@ -60,8 +65,6 @@ function RootComponent() {
       window.location.assign("/login");
     },
   });
-  const isPublicRoute = pathname === "/login" || pathname === "/progress";
-
   React.useEffect(() => {
     if (!isPublicRoute && !session.isPending && !session.data) {
       window.location.assign("/login");

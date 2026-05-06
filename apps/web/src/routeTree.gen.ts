@@ -14,6 +14,7 @@ import { Route as ProgressRouteImport } from './routes/progress'
 import { Route as NoticesRouteImport } from './routes/notices'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ImportRouteImport } from './routes/import'
+import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as CoverageRouteImport } from './routes/coverage'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ClientsIndexRouteImport } from './routes/clients/index'
@@ -47,6 +48,11 @@ const LoginRoute = LoginRouteImport.update({
 const ImportRoute = ImportRouteImport.update({
   id: '/import',
   path: '/import',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CoverageRoute = CoverageRouteImport.update({
@@ -99,6 +105,7 @@ const ClientsClientIdDeadlinesNewRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/coverage': typeof CoverageRoute
+  '/dashboard': typeof DashboardRoute
   '/import': typeof ImportRoute
   '/login': typeof LoginRoute
   '/notices': typeof NoticesRouteWithChildren
@@ -115,6 +122,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/coverage': typeof CoverageRoute
+  '/dashboard': typeof DashboardRoute
   '/import': typeof ImportRoute
   '/login': typeof LoginRoute
   '/notices': typeof NoticesRouteWithChildren
@@ -132,6 +140,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/coverage': typeof CoverageRoute
+  '/dashboard': typeof DashboardRoute
   '/import': typeof ImportRoute
   '/login': typeof LoginRoute
   '/notices': typeof NoticesRouteWithChildren
@@ -150,6 +159,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/coverage'
+    | '/dashboard'
     | '/import'
     | '/login'
     | '/notices'
@@ -166,6 +176,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/coverage'
+    | '/dashboard'
     | '/import'
     | '/login'
     | '/notices'
@@ -182,6 +193,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/coverage'
+    | '/dashboard'
     | '/import'
     | '/login'
     | '/notices'
@@ -199,6 +211,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CoverageRoute: typeof CoverageRoute
+  DashboardRoute: typeof DashboardRoute
   ImportRoute: typeof ImportRoute
   LoginRoute: typeof LoginRoute
   NoticesRoute: typeof NoticesRouteWithChildren
@@ -246,6 +259,13 @@ declare module '@tanstack/react-router' {
       path: '/import'
       fullPath: '/import'
       preLoaderRoute: typeof ImportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/coverage': {
@@ -340,6 +360,7 @@ const ClientsClientIdRouteWithChildren = ClientsClientIdRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CoverageRoute: CoverageRoute,
+  DashboardRoute: DashboardRoute,
   ImportRoute: ImportRoute,
   LoginRoute: LoginRoute,
   NoticesRoute: NoticesRouteWithChildren,

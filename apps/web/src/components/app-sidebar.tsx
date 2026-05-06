@@ -37,7 +37,7 @@ const sidebarSections = [
   {
     label: "Work",
     links: [
-      { to: "/", label: "Dashboard", icon: CalendarDays },
+      { to: "/dashboard", label: "Dashboard", icon: CalendarDays },
       { to: "/import", label: "Import", icon: FileUp },
       { to: "/tax-work", label: "Tax Work", icon: ClipboardList },
     ],
@@ -153,8 +153,8 @@ function SidebarNav({
           <div className="grid gap-1.5">
             {section.links.map((link) => {
               const isActive =
-                link.to === "/"
-                  ? pathname === "/"
+                link.to === "/dashboard"
+                  ? pathname === "/dashboard"
                   : pathname.startsWith(link.to);
               return (
                 <Link
