@@ -3,8 +3,11 @@ import test from "node:test";
 
 import {
   DEMO_ACCOUNTS,
+  DEMO_ACCOUNT_AVATAR_URL,
   DEMO_PASSWORD,
+  adaptDemoSeedPlanForDeadlineTaskStatusCompatibility,
   buildDemoSeedPlan,
+  needsReadyToWorkStatusCompatibilityPatch,
 } from "./demo-seed";
 
 test("demo seed exposes three stable CPA accounts with one documented password", () => {
@@ -29,6 +32,21 @@ test("demo seed plan is deterministic and firm-scoped for idempotent reseeds", (
   assert.equal(first.firms.length, 3);
   assert.equal(first.accounts.length, 3);
 
+  const triageUser = first.users.find((row) => row.email === "demo-triage@duedatehq.test");
+  const triageAccount = first.accounts.find((row) => row.userId === "demo-user-triage");
+  const triageFirm = first.firms.find((row) => row.id === "demo-firm-triage");
+  assert.equal(triageUser?.createdAt.toISOString(), "2026-02-03T12:00:00.000Z");
+  assert.equal(triageAccount?.createdAt.toISOString(), "2026-02-03T12:00:00.000Z");
+  assert.equal(triageFirm?.createdAt.toISOString(), "2026-02-03T12:00:00.000Z");
+
+  for (const demoUser of first.users) {
+    assert.equal(demoUser.image, DEMO_ACCOUNT_AVATAR_URL);
+  }
+
+  for (const firm of first.firms.filter((row) => row.id !== "demo-firm-triage")) {
+    assert.equal(firm.createdAt.toISOString(), "2026-05-05T12:00:00.000Z");
+  }
+
   for (const firm of first.firms) {
     const firmRows = first.clientRelationships.filter((client) => client.firmId === firm.id);
     const profileRows = first.filingProfiles.filter((profile) => profile.firmId === firm.id);
@@ -38,6 +56,42 @@ test("demo seed plan is deterministic and firm-scoped for idempotent reseeds", (
     assert.ok(profileRows.length >= 2, `${firm.id} should have multiple filing profiles`);
     assert.ok(taskRows.length >= 2, `${firm.id} should have multiple deadline tasks`);
   }
+});
+
+test("demo seed detects stale local D1 deadline task status constraints", () => {
+  assert.equal(
+    needsReadyToWorkStatusCompatibilityPatch(
+      `CREATE TABLE "deadline_tasks" (
+        CONSTRAINT "deadline_tasks_status_check" CHECK("status" in ('not_started', 'in_progress', 'waiting_on_client', 'done'))
+      )`,
+    ),
+    true,
+  );
+
+  assert.equal(
+    needsReadyToWorkStatusCompatibilityPatch(
+      `CREATE TABLE "deadline_tasks" (
+        CONSTRAINT "deadline_tasks_status_check" CHECK("status" in ('not_started', 'waiting_on_client', 'ready_to_work', 'in_progress', 'done'))
+      )`,
+    ),
+    false,
+  );
+});
+
+test("demo seed adapts ready_to_work tasks for legacy local D1 schemas", () => {
+  const plan = buildDemoSeedPlan({ passwordHash: "hash-one" });
+  const adapted = adaptDemoSeedPlanForDeadlineTaskStatusCompatibility(plan, {
+    readyToWorkSupported: false,
+  });
+
+  assert.ok(plan.deadlineTasks.some((task) => task.status === "ready_to_work"));
+  assert.equal(adapted.deadlineTasks.some((task) => task.status === "ready_to_work"), false);
+  assert.ok(adapted.deadlineTasks.some((task) => task.status === "in_progress"));
+  assert.equal(plan.deadlineTasks.some((task) => task.status === "ready_to_work"), true);
+  assert.equal(
+    adapted.deadlineTaskUpdateRecords.some((record) => record.newValue === "ready_to_work"),
+    false,
+  );
 });
 
 test("demo datasets cover triage, coverage, and notice workflows", () => {
@@ -52,6 +106,48 @@ test("demo datasets cover triage, coverage, and notice workflows", () => {
   assert.ok(triage.clientRelationships.length >= 7);
   assert.ok(triage.filingProfiles.length >= 8);
   assert.ok(triage.deadlineTasks.length >= 18);
+  const triageCompletedTasks = triage.deadlineTasks.filter((task) => task.status === "done");
+  const triageProfilesById = new Map(
+    triage.filingProfiles.map((profile) => [profile.id, profile]),
+  );
+  const completedJurisdictions = new Set(
+    triageCompletedTasks.map((task) =>
+      task.jurisdiction.toLowerCase() === "federal" ? "Federal" : task.jurisdiction,
+    ),
+  );
+  const completedTaxCategories = new Set(
+    triageCompletedTasks.map((task) => task.taxCategory),
+  );
+  const completedEntityTypes = new Set(
+    triageCompletedTasks.map((task) => triageProfilesById.get(task.filingProfileId)?.entityType),
+  );
+
+  assert.ok(triageCompletedTasks.length >= 9);
+  for (const jurisdiction of ["Federal", "CA", "NY", "TX", "FL"]) {
+    assert.ok(
+      completedJurisdictions.has(jurisdiction),
+      `completed triage tasks should include ${jurisdiction}`,
+    );
+  }
+  for (const taxCategory of ["Income tax", "Estimated tax", "Franchise tax", "Sales tax"]) {
+    assert.ok(
+      completedTaxCategories.has(taxCategory),
+      `completed triage tasks should include ${taxCategory}`,
+    );
+  }
+  for (const entityType of [
+    "individual",
+    "s_corp",
+    "c_corp",
+    "partnership",
+    "llc",
+    "trust_estate",
+  ] as const) {
+    assert.ok(
+      completedEntityTypes.has(entityType),
+      `completed triage tasks should include ${entityType}`,
+    );
+  }
   assert.equal(triage.deadlineTasks.filter(isDueThisWeek).length, 200);
   assert.ok(triage.deadlineTasks.some((task) => task.currentDueDate < "2026-05-05"));
   assert.ok(
@@ -62,6 +158,9 @@ test("demo datasets cover triage, coverage, and notice workflows", () => {
   assert.ok(triage.deadlineTasks.some((task) => task.currentDueDate > "2026-05-11"));
   assert.ok(
     new Set(triage.deadlineTasks.map((task) => task.status)).has("waiting_on_client"),
+  );
+  assert.ok(
+    new Set(triage.deadlineTasks.map((task) => task.status)).has("ready_to_work"),
   );
   assert.ok(triage.deadlineTasks.some((task) => task.sourceType === "entered_deadline"));
   assert.ok(triage.deadlineTasks.some((task) => task.taxRuleId === "rule-tx-sales-quarterly"));

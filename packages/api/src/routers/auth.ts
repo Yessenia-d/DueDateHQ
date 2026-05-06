@@ -6,6 +6,7 @@ function serializeFirmSession(session: ReturnType<typeof requireFirmSession>) {
     user: {
       id: session.user.id,
       email: session.user.email,
+      image: session.user.image ?? null,
       name: session.user.name,
       createdAt: session.user.createdAt.toISOString(),
       updatedAt: session.user.updatedAt.toISOString(),

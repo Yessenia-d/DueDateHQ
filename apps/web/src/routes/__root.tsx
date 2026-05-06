@@ -50,6 +50,7 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 function RootComponent() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const session = useQuery(trpc.auth.session.queryOptions());
+  const [isMobileNavOpen, setIsMobileNavOpen] = React.useState(false);
   const logout = useMutation({
     mutationFn: async () => {
       await authClient.signOut();
@@ -67,6 +68,9 @@ function RootComponent() {
   }, [isPublicRoute, session.data, session.isPending]);
 
   const handleLogout = React.useCallback(() => logout.mutate(), [logout]);
+  const handleMobileNavigate = React.useCallback(() => {
+    setIsMobileNavOpen(false);
+  }, []);
 
   return (
     <>
@@ -86,6 +90,7 @@ function RootComponent() {
               <AppSidebar
                 firmName={session.data?.firm.name}
                 userEmail={session.data?.user.email}
+                userImage={session.data?.user.image}
                 userName={session.data?.user.name}
                 isLoggingOut={logout.isPending}
                 onLogout={handleLogout}
@@ -94,7 +99,7 @@ function RootComponent() {
 
             {/* Mobile top bar + sheet sidebar */}
             <div className="flex items-center gap-2 border-b border-border px-3 py-2 lg:hidden">
-              <Sheet>
+              <Sheet open={isMobileNavOpen} onOpenChange={setIsMobileNavOpen}>
                 <SheetTrigger
                   render={
                     <Button variant="ghost" size="icon-sm" aria-label="Open navigation" />
@@ -107,8 +112,10 @@ function RootComponent() {
                   <AppSidebarContent
                     firmName={session.data?.firm.name}
                     userEmail={session.data?.user.email}
+                    userImage={session.data?.user.image}
                     userName={session.data?.user.name}
                     isLoggingOut={logout.isPending}
+                    onNavigate={handleMobileNavigate}
                     onLogout={handleLogout}
                   />
                 </SheetContent>

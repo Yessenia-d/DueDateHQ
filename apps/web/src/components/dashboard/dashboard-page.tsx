@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import * as React from "react";
+import { Cell, Pie, PieChart, Tooltip, type TooltipContentProps } from "recharts";
 import { toast } from "sonner";
 
 import { EvidenceDrawer } from "@/components/evidence/evidence-drawer";
@@ -783,10 +784,9 @@ function TaxCategoryDonut({
   label: string;
   total: number;
 }) {
-  if (total === 0) return null;
+  const [activeIndex, setActiveIndex] = React.useState<number | null>(null);
 
-  const radius = 42;
-  const donutBackground = createDonutGradient(items, total);
+  if (total === 0) return null;
 
   return (
     <aside className="rounded-xl border border-border/80 bg-card p-4">
@@ -794,17 +794,51 @@ function TaxCategoryDonut({
       <p className="mt-1 text-xs text-muted-foreground">{label} workload only</p>
       <div className="mt-4 grid gap-4 sm:grid-cols-[136px_minmax(0,1fr)] xl:grid-cols-1 2xl:grid-cols-[136px_minmax(0,1fr)]">
         <div
-          aria-hidden="true"
-          className="relative size-32 rounded-full"
-          style={{ background: donutBackground }}
+          role="img"
+          aria-label={`Tax category overview: ${items.map((item) => `${item.label} ${item.count}`).join(", ")}`}
+          className="relative size-32 overflow-visible"
+          onMouseLeave={() => setActiveIndex(null)}
         >
-          <div
-            className="absolute rounded-full bg-card"
-            style={{
-              inset: `${60 - radius + 8}px`,
-            }}
-          />
-          <div className="absolute inset-0 grid place-items-center text-center">
+          <PieChart width={128} height={128}>
+            <Tooltip
+              allowEscapeViewBox={{ x: true, y: true }}
+              content={TaxCategoryTooltip}
+              cursor={false}
+              isAnimationActive={false}
+              wrapperStyle={{ outline: "none", zIndex: 20 }}
+            />
+            <Pie
+              data={items}
+              dataKey="count"
+              nameKey="label"
+              cx={64}
+              cy={64}
+              innerRadius={40}
+              outerRadius={58}
+              startAngle={90}
+              endAngle={-270}
+              isAnimationActive={false}
+              onMouseEnter={(_data, index) => setActiveIndex(index)}
+              onMouseLeave={() => setActiveIndex(null)}
+              stroke="var(--ddhq-surface)"
+              strokeWidth={2}
+            >
+              {items.map((item, index) => {
+                const isActive = activeIndex === index;
+
+                return (
+                  <Cell
+                    key={item.label}
+                    fill={item.chartColor}
+                    opacity={activeIndex === null || isActive ? 1 : 0.48}
+                    stroke={isActive ? "var(--ddhq-ink)" : "var(--ddhq-surface)"}
+                    strokeWidth={isActive ? 3 : 2}
+                  />
+                );
+              })}
+            </Pie>
+          </PieChart>
+          <div className="pointer-events-none absolute inset-0 grid place-items-center text-center">
             <div>
               <div className="font-mono text-xl font-semibold tabular-nums">{total}</div>
               <div className="text-xs text-muted-foreground">tasks</div>
@@ -829,17 +863,24 @@ function TaxCategoryDonut({
   );
 }
 
-function createDonutGradient(items: TaxCategoryItem[], total: number): string {
-  let start = 0;
-  const segments = items.map((item, index) => {
-    const end = index === items.length - 1 ? 360 : start + (item.count / total) * 360;
-    const segment = `${item.chartColor} ${start}deg ${end}deg`;
-    start = end;
+function TaxCategoryTooltip({
+  active,
+  payload,
+}: TooltipContentProps) {
+  const item = payload[0]?.payload as TaxCategoryItem | undefined;
 
-    return segment;
-  });
+  if (!active || !item) {
+    return null;
+  }
 
-  return `conic-gradient(from -90deg, ${segments.join(", ")})`;
+  return (
+    <div className="rounded-md border border-border bg-card px-3 py-2 text-xs shadow-sm">
+      <div className="font-medium text-foreground">{item.label}</div>
+      <div className="mt-1 font-mono text-muted-foreground tabular-nums">
+        {item.count} ({item.percent}%)
+      </div>
+    </div>
+  );
 }
 
 function filterFocusedTasks(

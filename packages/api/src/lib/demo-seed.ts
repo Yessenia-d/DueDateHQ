@@ -36,6 +36,7 @@ import {
 import { getSeedObligations, getSeedRules } from "./seed-tax-data";
 
 export const DEMO_PASSWORD = "DueDateHQ-demo-2026!";
+export const DEMO_ACCOUNT_AVATAR_URL = "/avatars/cpa-avatar.jpg";
 
 export const DEMO_ACCOUNTS = [
   {
@@ -71,6 +72,7 @@ export const DEMO_ACCOUNTS = [
 ] as const;
 
 const DEMO_SEEDED_AT = new Date("2026-05-05T12:00:00.000Z");
+const DEMO_TRIAGE_STARTED_AT = new Date("2026-02-03T12:00:00.000Z");
 const DEMO_TRIAGE_DUE_THIS_WEEK_TARGET = 200;
 const DEMO_TRIAGE_BASE_DUE_THIS_WEEK_TASK_COUNT = 8;
 
@@ -79,6 +81,46 @@ type DemoSlug = DemoAccount["slug"];
 type IdentityOverride = Partial<Record<DemoSlug, { userId: string; firmId: string }>>;
 
 export type DemoSeedPlan = ReturnType<typeof buildDemoSeedPlan>;
+
+const DEADLINE_TASKS_INDEX_COMPATIBILITY_STATEMENTS = [
+  "CREATE INDEX IF NOT EXISTS deadline_tasks_firm_due_date_idx ON deadline_tasks(firm_id, current_due_date)",
+  "CREATE INDEX IF NOT EXISTS deadline_tasks_firm_status_idx ON deadline_tasks(firm_id, status)",
+  "CREATE INDEX IF NOT EXISTS deadline_tasks_firm_priority_idx ON deadline_tasks(firm_id, priority)",
+  "CREATE INDEX IF NOT EXISTS deadline_tasks_client_relationship_idx ON deadline_tasks(client_relationship_id)",
+  "CREATE INDEX IF NOT EXISTS deadline_tasks_filing_profile_idx ON deadline_tasks(filing_profile_id)",
+  "CREATE INDEX IF NOT EXISTS deadline_tasks_tax_rule_idx ON deadline_tasks(tax_rule_id)",
+  "CREATE UNIQUE INDEX IF NOT EXISTS deadline_tasks_firm_id_id_unique ON deadline_tasks(firm_id, id)",
+] as const;
+
+export function needsReadyToWorkStatusCompatibilityPatch(createTableSql: string | null | undefined) {
+  return Boolean(
+    createTableSql?.includes("deadline_tasks_status_check") &&
+      !createTableSql.includes("ready_to_work"),
+  );
+}
+
+export function adaptDemoSeedPlanForDeadlineTaskStatusCompatibility(
+  plan: DemoSeedPlan,
+  options: { readyToWorkSupported: boolean },
+) {
+  if (options.readyToWorkSupported) {
+    return plan;
+  }
+
+  return {
+    ...plan,
+    deadlineTaskUpdateRecords: plan.deadlineTaskUpdateRecords.map((record) =>
+      record.newValue === "ready_to_work" ? { ...record, newValue: "in_progress" } : record,
+    ),
+    deadlineTasks: plan.deadlineTasks.map((taskRow) =>
+      taskRow.status === "ready_to_work" ? { ...taskRow, status: "in_progress" } : taskRow,
+    ),
+  } satisfies DemoSeedPlan;
+}
+
+function demoAccountCreatedAt(account: DemoAccount, fallback: Date) {
+  return account.slug === "triage" ? DEMO_TRIAGE_STARTED_AT : fallback;
+}
 
 export function buildDemoSeedPlan({
   identities = {},
@@ -98,9 +140,9 @@ export function buildDemoSeedPlan({
     name: account.name,
     email: account.email,
     emailVerified: true,
-    image: null,
+    image: DEMO_ACCOUNT_AVATAR_URL,
     firmName: account.firmName,
-    createdAt: now,
+    createdAt: demoAccountCreatedAt(account, now),
     updatedAt: now,
   })) satisfies Array<typeof user.$inferInsert>;
   const accounts = DEMO_ACCOUNTS.map((account) => ({
@@ -115,14 +157,14 @@ export function buildDemoSeedPlan({
     refreshTokenExpiresAt: null,
     scope: null,
     password: passwordHash,
-    createdAt: now,
+    createdAt: demoAccountCreatedAt(account, now),
     updatedAt: now,
   })) satisfies Array<typeof account.$inferInsert>;
   const firmRows = DEMO_ACCOUNTS.map((account) => ({
     id: identity(account).firmId,
     name: account.firmName,
     ownerUserId: identity(account).userId,
-    createdAt: now,
+    createdAt: demoAccountCreatedAt(account, now),
     updatedAt: now,
   })) satisfies Array<typeof firms.$inferInsert>;
 
@@ -241,35 +283,40 @@ export function buildDemoSeedPlan({
         action: "deadline_task.update_status",
         deadlineTaskId: "demo-triage-task-barton-tx-sales",
         fieldName: "status",
-        previousValue: "in_progress",
-        newValue: "not_started",
+        previousValue: "waiting_on_client",
+        newValue: "ready_to_work",
         createdAt: new Date("2026-05-05T09:00:00.000Z"),
       }),
     ] satisfies Array<typeof deadlineTaskUpdateRecords.$inferInsert>,
     deadlineTasks: [
       task("demo-firm-triage", "demo-triage-task-1040", "demo-triage-client-rivera", "demo-triage-profile-rivera-1040", "rule-irs-1040-filing", "Form 1040 Filing", "federal", "Income tax", "2026-05-01", "2026-04-15", "2026-04-25", "waiting_on_client", "urgent"),
       task("demo-firm-triage", "demo-triage-task-540", "demo-triage-client-rivera", "demo-triage-profile-rivera-1040", "rule-ca-540-filing", "CA Form 540 Filing", "CA", "Income tax", "2026-05-05", "2026-04-15", "2026-05-01", "in_progress", "high"),
-      task("demo-firm-triage", "demo-triage-task-1120s", "demo-triage-client-hawthorne", "demo-triage-profile-hawthorne-1120s", "rule-irs-1120s-filing", "Form 1120-S Filing", "federal", "Income tax", "2026-09-15", "2026-03-16", "2026-09-01", "not_started", "normal"),
+      task("demo-firm-triage", "demo-triage-task-1120s", "demo-triage-client-hawthorne", "demo-triage-profile-hawthorne-1120s", "rule-irs-1120s-filing", "Form 1120-S Filing", "federal", "Income tax", "2026-09-15", "2026-03-16", "2026-09-01", "ready_to_work", "normal"),
       task("demo-firm-triage", "demo-triage-task-100s", "demo-triage-client-hawthorne", "demo-triage-profile-hawthorne-1120s", "rule-ca-100s-filing", "CA Form 100S Filing", "CA", "Franchise tax", "2026-05-20", "2026-03-16", "2026-05-13", "not_started", "normal"),
       task("demo-firm-triage", "demo-triage-task-1065", "demo-triage-client-summit", "demo-triage-profile-summit-1065", "rule-irs-1065-filing", "Form 1065 Filing", "federal", "Income tax", "2026-10-15", "2026-03-16", "2026-10-01", "done", "low"),
       task("demo-firm-triage", "demo-triage-task-summit-565", "demo-triage-client-summit", "demo-triage-profile-summit-1065", "rule-ca-565-filing", "CA Form 565 Filing", "CA", "Franchise tax", "2026-05-09", "2026-03-16", "2026-05-06", "in_progress", "high"),
-      task("demo-firm-triage", "demo-triage-task-rivera-1040es-q2", "demo-triage-client-rivera", "demo-triage-profile-rivera-1040", "rule-irs-1040es-quarterly", "Form 1040-ES Q2 Payment", "federal", "Estimated tax", "2026-06-15", "2026-06-15", "2026-06-08", "not_started", "normal"),
+      task("demo-firm-triage", "demo-triage-task-rivera-1040es-q2", "demo-triage-client-rivera", "demo-triage-profile-rivera-1040", "rule-irs-1040es-quarterly", "Form 1040-ES Q2 Payment", "federal", "Estimated tax", "2026-06-15", "2026-06-15", "2026-06-08", "ready_to_work", "normal"),
       task("demo-firm-triage", "demo-triage-task-rivera-540es-q2", "demo-triage-client-rivera", "demo-triage-profile-rivera-1040", "rule-ca-540es-quarterly", "CA Form 540-ES Q2 Payment", "CA", "Estimated tax", "2026-05-10", "2026-06-15", "2026-05-08", "waiting_on_client", "high"),
-      task("demo-firm-triage", "demo-triage-task-hawthorne-1120w-q2", "demo-triage-client-hawthorne", "demo-triage-profile-hawthorne-1120s", "rule-irs-1120w-quarterly", "Form 1120-W Q2 Payment", "federal", "Estimated tax", "2026-06-15", "2026-06-15", "2026-06-05", "not_started", "normal"),
+      task("demo-firm-triage", "demo-triage-task-hawthorne-1120w-q2", "demo-triage-client-hawthorne", "demo-triage-profile-hawthorne-1120s", "rule-irs-1120w-quarterly", "Form 1120-W Q2 Payment", "federal", "Estimated tax", "2026-06-15", "2026-06-15", "2026-06-05", "ready_to_work", "normal"),
       task("demo-firm-triage", "demo-triage-task-hawthorne-100es-q1", "demo-triage-client-hawthorne", "demo-triage-profile-hawthorne-1120s", "rule-ca-100es-quarterly", "CA Form 100-ES Q1 Payment", "CA", "Estimated tax", "2026-05-05", "2026-04-15", "2026-05-02", "in_progress", "urgent"),
       task("demo-firm-triage", "demo-triage-task-chen-ct3", "demo-triage-client-chen", "demo-triage-profile-chen-ct3", "rule-ny-ct3-filing", "NY CT-3 Filing", "NY", "Franchise tax", "2026-05-08", "2026-03-16", "2026-05-06", "not_started", "high"),
       task("demo-firm-triage", "demo-triage-task-chen-ct400-q2", "demo-triage-client-chen", "demo-triage-profile-chen-ct3", "rule-ny-ct400-quarterly", "NY CT-400 Q2 Payment", "NY", "Estimated tax", "2026-06-15", "2026-06-15", "2026-06-07", "not_started", "normal"),
       task("demo-firm-triage", "demo-triage-task-rivera-1040es-q1-done", "demo-triage-client-rivera", "demo-triage-profile-rivera-1040", "rule-irs-1040es-quarterly", "Form 1040-ES Q1 Payment", "federal", "Estimated tax", "2026-05-06", "2026-04-15", "2026-05-01", "done", "low"),
       task("demo-firm-triage", "demo-triage-task-summit-565-estimate-done", "demo-triage-client-summit", "demo-triage-profile-summit-1065", "rule-ca-565-filing", "CA Form 565 estimate review", "CA", "Franchise tax", "2026-05-06", "2026-05-06", "2026-05-04", "done", "low"),
-      task("demo-firm-triage", "demo-triage-task-barton-tx-sales", "demo-triage-client-barton", "demo-triage-profile-barton-sales", "rule-tx-sales-quarterly", "TX Sales and Use Tax Q2", "TX", "Sales tax", "2026-05-07", "2026-05-05", "2026-05-06", "not_started", "urgent"),
+      task("demo-firm-triage", "demo-triage-task-barton-tx-sales", "demo-triage-client-barton", "demo-triage-profile-barton-sales", "rule-tx-sales-quarterly", "TX Sales and Use Tax Q2", "TX", "Sales tax", "2026-05-07", "2026-05-05", "2026-05-06", "ready_to_work", "urgent"),
       task("demo-firm-triage", "demo-triage-task-barton-tx-franchise", "demo-triage-client-barton", "demo-triage-profile-barton-sales", "rule-tx-franchise-filing", "TX Franchise Tax Filing", "TX", "Franchise tax", "2026-05-15", "2026-05-15", "2026-05-10", "in_progress", "high"),
       task("demo-firm-triage", "demo-triage-task-barton-fl-sales", "demo-triage-client-barton", "demo-triage-profile-barton-fl-sales", "rule-fl-sales-quarterly", "FL Sales and Use Tax Q2", "FL", "Sales tax", "2026-05-11", "2026-07-20", "2026-05-08", "not_started", "normal"),
       enteredTask("demo-firm-triage", "demo-triage-task-alameda-entered-estimate", "demo-triage-client-alameda", "demo-triage-profile-alameda-1041", "Trust beneficiary estimate package", "CA", "Income tax", "2026-05-12", "2026-05-09", "Reference: trustee email and prior-year workpaper estimate cadence."),
       task("demo-firm-triage", "demo-triage-task-alameda-1041", "demo-triage-client-alameda", "demo-triage-profile-alameda-1041", "rule-irs-1041-filing", "Form 1041 Filing", "federal", "Income tax", "2026-09-30", "2026-04-15", "2026-09-15", "not_started", "normal"),
       task("demo-firm-triage", "demo-triage-task-oakpine-fl-1120", "demo-triage-client-oakpine", "demo-triage-profile-oakpine-1120", "rule-fl-f1120-filing", "FL F-1120 Filing", "FL", "Income tax", "2026-05-01", "2026-05-01", "2026-04-25", "done", "low"),
-      task("demo-firm-triage", "demo-triage-task-oakpine-1120w-q2", "demo-triage-client-oakpine", "demo-triage-profile-oakpine-1120", "rule-irs-1120w-quarterly", "Form 1120-W Q2 Payment", "federal", "Estimated tax", "2026-05-11", "2026-06-15", "2026-05-08", "not_started", "low"),
+      task("demo-firm-triage", "demo-triage-task-oakpine-1120w-q2", "demo-triage-client-oakpine", "demo-triage-profile-oakpine-1120", "rule-irs-1120w-quarterly", "Form 1120-W Q2 Payment", "federal", "Estimated tax", "2026-05-11", "2026-06-15", "2026-05-08", "ready_to_work", "low"),
+      task("demo-firm-triage", "demo-triage-task-hawthorne-100s-done", "demo-triage-client-hawthorne", "demo-triage-profile-hawthorne-1120s", "rule-ca-100s-filing", "CA Form 100S prior filing", "CA", "Franchise tax", "2026-04-30", "2026-03-16", "2026-04-22", "done", "low"),
+      task("demo-firm-triage", "demo-triage-task-chen-ct400-q1-done", "demo-triage-client-chen", "demo-triage-profile-chen-ct3", "rule-ny-ct400-quarterly", "NY CT-400 Q1 Payment", "NY", "Estimated tax", "2026-04-30", "2026-04-15", "2026-04-24", "done", "low"),
+      task("demo-firm-triage", "demo-triage-task-barton-tx-sales-q1-done", "demo-triage-client-barton", "demo-triage-profile-barton-sales", "rule-tx-sales-quarterly", "TX Sales and Use Tax Q1", "TX", "Sales tax", "2026-04-30", "2026-04-20", "2026-04-18", "done", "low"),
+      task("demo-firm-triage", "demo-triage-task-barton-fl-sales-q1-done", "demo-triage-client-barton", "demo-triage-profile-barton-fl-sales", "rule-fl-sales-quarterly", "FL Sales and Use Tax Q1", "FL", "Sales tax", "2026-04-30", "2026-04-20", "2026-04-18", "done", "low"),
+      task("demo-firm-triage", "demo-triage-task-alameda-1041-prior-done", "demo-triage-client-alameda", "demo-triage-profile-alameda-1041", "rule-irs-1041-filing", "Form 1041 prior filing", "federal", "Income tax", "2026-04-30", "2026-04-15", "2026-04-21", "done", "low"),
       ...triageDueThisWeekLoadTestTasks(),
-      task("demo-firm-coverage", "demo-coverage-task-tx-franchise", "demo-coverage-client-northstar", "demo-coverage-profile-northstar-tx", "rule-tx-franchise-filing", "TX Franchise Tax Filing", "TX", "Franchise tax", "2026-05-15", "2026-05-15", "2026-05-08", "not_started", "high"),
+      task("demo-firm-coverage", "demo-coverage-task-tx-franchise", "demo-coverage-client-northstar", "demo-coverage-profile-northstar-tx", "rule-tx-franchise-filing", "TX Franchise Tax Filing", "TX", "Franchise tax", "2026-05-15", "2026-05-15", "2026-05-08", "ready_to_work", "high"),
       enteredTask("demo-firm-coverage", "demo-coverage-task-orchid-entered", "demo-coverage-client-orchid", "demo-coverage-profile-orchid-trust", "Trust state estimate payment", "OR", "Income tax", "2026-06-17", "2026-06-10", "Reference: prior-year workpaper and CPA judgment for trust estimate cadence."),
       enteredTask("demo-firm-coverage", "demo-coverage-task-lakeview-local", "demo-coverage-client-lakeview", "demo-coverage-profile-lakeview-llc", "City gross receipts filing", "Denver", "Local compliance", "2026-07-31", null, "Reference: client city notice uploaded to the firm workpaper system."),
       task("demo-firm-notices", "demo-notices-task-tx-sales", "demo-notices-client-lonestar", "demo-notices-profile-lonestar-sales", "rule-tx-sales-quarterly", "TX Sales and Use Tax Q2", "TX", "Sales tax", "2026-07-20", "2026-07-20", "2026-07-10", "not_started", "high"),
@@ -628,11 +675,14 @@ export function buildDemoSeedPlan({
 }
 
 export async function seedDemoData(dbBinding: D1DatabaseBinding) {
+  const schemaCompatibility = await ensureDemoSeedSchemaCompatibility(dbBinding);
+
   const db = createDb(dbBinding);
   const now = new Date();
   const identities: IdentityOverride = {};
 
   for (const demoAccount of DEMO_ACCOUNTS) {
+    const accountCreatedAt = demoAccountCreatedAt(demoAccount, now);
     const [existingUser] = await db
       .select({ id: user.id })
       .from(user)
@@ -651,7 +701,9 @@ export async function seedDemoData(dbBinding: D1DatabaseBinding) {
         .set({
           name: demoAccount.name,
           emailVerified: true,
+          image: DEMO_ACCOUNT_AVATAR_URL,
           firmName: demoAccount.firmName,
+          ...(demoAccount.slug === "triage" ? { createdAt: accountCreatedAt } : {}),
           updatedAt: now,
         })
         .where(eq(user.id, userId));
@@ -661,9 +713,9 @@ export async function seedDemoData(dbBinding: D1DatabaseBinding) {
         name: demoAccount.name,
         email: demoAccount.email,
         emailVerified: true,
-        image: null,
+        image: DEMO_ACCOUNT_AVATAR_URL,
         firmName: demoAccount.firmName,
-        createdAt: now,
+        createdAt: accountCreatedAt,
         updatedAt: now,
       });
     }
@@ -681,14 +733,18 @@ export async function seedDemoData(dbBinding: D1DatabaseBinding) {
       };
       await db
         .update(firms)
-        .set({ name: demoAccount.firmName, updatedAt: now })
+        .set({
+          name: demoAccount.firmName,
+          ...(demoAccount.slug === "triage" ? { createdAt: accountCreatedAt } : {}),
+          updatedAt: now,
+        })
         .where(eq(firms.id, existingFirm.id));
     } else {
       await db.insert(firms).values({
         id: demoAccount.firmId,
         name: demoAccount.firmName,
         ownerUserId: userId,
-        createdAt: now,
+        createdAt: accountCreatedAt,
         updatedAt: now,
       });
     }
@@ -699,7 +755,10 @@ export async function seedDemoData(dbBinding: D1DatabaseBinding) {
   }
 
   const passwordHash = await hashPassword(DEMO_PASSWORD);
-  const plan = buildDemoSeedPlan({ identities, now, passwordHash });
+  const plan = adaptDemoSeedPlanForDeadlineTaskStatusCompatibility(
+    buildDemoSeedPlan({ identities, now, passwordHash }),
+    { readyToWorkSupported: schemaCompatibility.readyToWorkSupported },
+  );
 
   for (const firm of plan.firms) {
     await resetFirmWorkspace(db, firm.id);
@@ -729,6 +788,22 @@ export async function seedDemoData(dbBinding: D1DatabaseBinding) {
       intent: demoAccount.intent,
     })),
     password: DEMO_PASSWORD,
+  };
+}
+
+async function ensureDemoSeedSchemaCompatibility(dbBinding: D1DatabaseBinding) {
+  const deadlineTasksTable = await dbBinding
+    .prepare("select sql from sqlite_master where type = 'table' and name = 'deadline_tasks'")
+    .first<{ sql: string | null }>();
+
+  if (deadlineTasksTable?.sql) {
+    for (const statement of DEADLINE_TASKS_INDEX_COMPATIBILITY_STATEMENTS) {
+      await dbBinding.prepare(statement).run();
+    }
+  }
+
+  return {
+    readyToWorkSupported: !needsReadyToWorkStatusCompatibilityPatch(deadlineTasksTable?.sql),
   };
 }
 
@@ -895,7 +970,7 @@ function triageDueThisWeekLoadTestTasks() {
       title: "CA Form 565 review",
     },
   ] as const;
-  const statuses = ["not_started", "in_progress", "waiting_on_client"] as const;
+  const statuses = ["not_started", "waiting_on_client", "ready_to_work", "in_progress"] as const;
   const priorities = ["normal", "high", "urgent", "low"] as const;
   const dates = [
     "2026-05-05",

@@ -21,13 +21,16 @@ import {
   TrendingUp,
   Users,
 } from "lucide-react";
+import * as React from "react";
 
 interface AppSidebarProps {
   firmName?: string;
   userEmail?: string;
+  userImage?: string | null;
   userName?: string | null;
   isLoggingOut?: boolean;
   onLogout: () => void;
+  onNavigate?: () => void;
 }
 
 const sidebarSections = [
@@ -58,14 +61,16 @@ const accountMenuLinks = [
 export function AppSidebar({
   firmName,
   isLoggingOut,
+  onNavigate,
   onLogout,
   userEmail,
+  userImage,
   userName,
 }: AppSidebarProps) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
 
   return (
-    <aside className="sticky top-0 flex h-svh w-[236px] flex-col border-r border-border bg-card/90 backdrop-blur-sm">
+    <aside className="sticky top-0 flex h-svh w-[236px] flex-col border-r border-border bg-card">
       <div className="flex items-center gap-2.5 px-4 pt-5 pb-4">
         <div className="grid size-[30px] place-items-center rounded-lg border border-ddhq-border-strong bg-card text-sm font-bold text-primary">
           D
@@ -76,14 +81,16 @@ export function AppSidebar({
         </div>
       </div>
 
-      <SidebarNav pathname={pathname} />
+      <SidebarNav onNavigate={onNavigate} pathname={pathname} />
 
       <SidebarAccountMenu
         firmName={firmName}
         isLoggingOut={isLoggingOut}
+        onNavigate={onNavigate}
         onLogout={onLogout}
         pathname={pathname}
         userEmail={userEmail}
+        userImage={userImage}
         userName={userName}
       />
     </aside>
@@ -93,8 +100,10 @@ export function AppSidebar({
 export function AppSidebarContent({
   firmName,
   isLoggingOut,
+  onNavigate,
   onLogout,
   userEmail,
+  userImage,
   userName,
 }: AppSidebarProps) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
@@ -111,21 +120,29 @@ export function AppSidebarContent({
         </div>
       </div>
 
-      <SidebarNav pathname={pathname} />
+      <SidebarNav onNavigate={onNavigate} pathname={pathname} />
 
       <SidebarAccountMenu
         firmName={firmName}
         isLoggingOut={isLoggingOut}
+        onNavigate={onNavigate}
         onLogout={onLogout}
         pathname={pathname}
         userEmail={userEmail}
+        userImage={userImage}
         userName={userName}
       />
     </div>
   );
 }
 
-function SidebarNav({ pathname }: { pathname: string }) {
+function SidebarNav({
+  onNavigate,
+  pathname,
+}: {
+  onNavigate?: () => void;
+  pathname: string;
+}) {
   return (
     <nav className="flex-1 overflow-y-auto px-3">
       {sidebarSections.map((section, sectionIndex) => (
@@ -143,6 +160,7 @@ function SidebarNav({ pathname }: { pathname: string }) {
                 <Link
                   key={link.to}
                   to={link.to}
+                  onClick={onNavigate}
                   className={`flex min-h-[34px] w-full items-center gap-2 rounded-lg border px-2 text-sm transition-colors ${
                     isActive
                       ? "border-border bg-card text-foreground shadow-[0_1px_1px_rgb(38_31_20/0.03)]"
@@ -164,9 +182,11 @@ function SidebarNav({ pathname }: { pathname: string }) {
 function SidebarAccountMenu({
   firmName,
   isLoggingOut,
+  onNavigate,
   onLogout,
   pathname,
   userEmail,
+  userImage,
   userName,
 }: AppSidebarProps & { pathname: string }) {
   const navigate = useNavigate();
@@ -191,9 +211,7 @@ function SidebarAccountMenu({
           }
         >
           <span className="flex min-w-0 items-center gap-2">
-            <span className="grid size-8 shrink-0 place-items-center rounded-lg border border-border bg-background text-xs font-semibold text-primary">
-              {primaryLabel.slice(0, 1).toUpperCase()}
-            </span>
+            <AccountAvatar image={userImage} label={primaryLabel} />
             <span className="min-w-0 text-xs">
               <span className="block truncate font-medium text-foreground">
                 {primaryLabel}
@@ -235,7 +253,10 @@ function SidebarAccountMenu({
                   "rounded-md text-sm",
                   isActive && "bg-ddhq-accent-soft text-foreground",
                 )}
-                onClick={() => void navigate({ to: link.to })}
+                onClick={() => {
+                  void navigate({ to: link.to });
+                  onNavigate?.();
+                }}
               >
                 <link.icon className="size-4" />
                 {link.label}
@@ -255,5 +276,31 @@ function SidebarAccountMenu({
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
+  );
+}
+
+function AccountAvatar({ image, label }: { image?: string | null; label: string }) {
+  const [hasImageError, setHasImageError] = React.useState(false);
+  const initial = label.slice(0, 1).toUpperCase();
+
+  React.useEffect(() => {
+    setHasImageError(false);
+  }, [image]);
+
+  if (image && !hasImageError) {
+    return (
+      <img
+        alt=""
+        className="size-8 shrink-0 rounded-lg border border-border bg-background object-cover"
+        src={image}
+        onError={() => setHasImageError(true)}
+      />
+    );
+  }
+
+  return (
+    <span className="grid size-8 shrink-0 place-items-center rounded-lg border border-border bg-background text-xs font-semibold text-primary">
+      {initial}
+    </span>
   );
 }
