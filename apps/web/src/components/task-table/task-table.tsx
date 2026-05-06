@@ -147,13 +147,13 @@ const stickyActionsCellClass =
 const countdownUrgencyStyles = {
   overdue: {
     badgeClass: "border-ddhq-risk/45 bg-ddhq-risk-soft text-ddhq-risk",
-    rowClass: "bg-ddhq-risk-soft/20 hover:bg-ddhq-risk-soft/30",
-    stickyCellClass: "bg-[oklch(0.945_0.045_28)] group-hover:bg-[oklch(0.938_0.052_28)]",
+    rowClass: "",
+    stickyCellClass: "",
   },
   dueToday: {
     badgeClass: "border-ddhq-review/35 bg-ddhq-review-soft/70 text-ddhq-review",
-    rowClass: "bg-[oklch(0.982_0.02_78)] hover:bg-[oklch(0.974_0.028_78)]",
-    stickyCellClass: "bg-[oklch(0.965_0.034_78)] group-hover:bg-[oklch(0.958_0.04_78)]",
+    rowClass: "",
+    stickyCellClass: "",
   },
   oneOrTwoDays: {
     badgeClass: "border-primary/25 bg-ddhq-accent-soft/65 text-primary",
@@ -998,5 +998,12 @@ function VerificationBadge({ task }: { task: DashboardTaskRow }) {
     );
   }
 
-  return <StatusBadge status="needs_review">{task.verificationLabel}</StatusBadge>;
+  return (
+    <StatusBadge
+      status="gap"
+      className="border-ddhq-gap/25 bg-ddhq-gap-soft text-ddhq-gap"
+    >
+      {task.verificationLabel}
+    </StatusBadge>
+  );
 }

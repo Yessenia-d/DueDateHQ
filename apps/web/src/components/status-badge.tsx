@@ -24,7 +24,8 @@ const statusStyles: Record<string, string> = {
   done: "bg-ddhq-verified-soft text-ddhq-verified",
   needs_review: "bg-ddhq-review-soft text-ddhq-review",
   waiting_on_client: "bg-ddhq-review-soft text-ddhq-review",
-  source_changed: "bg-ddhq-review-soft text-ddhq-review border-ddhq-review/30",
+  source_changed:
+    "bg-[oklch(0.94_0.035_285)] text-[oklch(0.45_0.12_285)]",
   review: "bg-ddhq-review-soft text-ddhq-review",
   overdue: "bg-ddhq-risk-soft text-ddhq-risk",
   risk: "bg-ddhq-risk-soft text-ddhq-risk",

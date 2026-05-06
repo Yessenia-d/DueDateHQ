@@ -95,7 +95,8 @@ const statusHeaderKeys = [
 const statusHeaderIconStyles: Record<VerificationStatusKey, string> = {
   verified: "bg-ddhq-verified-soft text-ddhq-verified",
   needs_review: "bg-ddhq-review-soft text-ddhq-review",
-  source_changed: "border-ddhq-review/30 bg-ddhq-review-soft text-ddhq-review",
+  source_changed:
+    "bg-[oklch(0.94_0.035_285)] text-[oklch(0.45_0.12_285)]",
   unsupported: "bg-ddhq-gap-soft text-ddhq-gap",
   no_rule: "bg-ddhq-gap-soft text-ddhq-gap",
 };

@@ -5,8 +5,16 @@ import type {
   DashboardTaskRow,
   DashboardVerificationStatus,
 } from "@due-date-hq/api/routers/dashboard";
-import type { CalendarDeadlineItem } from "@due-date-hq/api/routers/clients";
+import type {
+  CalendarDeadlineItem,
+  ClientListItemResponse,
+} from "@due-date-hq/api/routers/clients";
 import { Button } from "@due-date-hq/ui/components/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@due-date-hq/ui/components/dropdown-menu";
 import { Input } from "@due-date-hq/ui/components/input";
 import {
   Select,
@@ -144,7 +152,7 @@ function TaxWorkComponent() {
     React.useState<DashboardSection["id"]>("due_this_week");
   const [clientSearchQuery, setClientSearchQuery] = React.useState("");
   const [workFilters, setWorkFilters] = React.useState<TaxWorkFilters>(emptyTaxWorkFilters);
-  const [showWorkFilters, setShowWorkFilters] = React.useState(true);
+  const [showWorkFilters, setShowWorkFilters] = React.useState(false);
   const [selectedTaskIds, setSelectedTaskIds] = React.useState<Set<string>>(new Set());
   const [evidenceTaskId, setEvidenceTaskId] = React.useState<string | null>(null);
 
@@ -165,16 +173,6 @@ function TaxWorkComponent() {
     () => clients.data?.clients.find((client) => client.id === selectedClientId) ?? null,
     [clients.data, selectedClientId],
   );
-  const visibleClients = React.useMemo(() => {
-    const allClients = clients.data?.clients ?? [];
-    const query = clientSearchQuery.trim().toLocaleLowerCase();
-
-    if (!query) return allClients;
-
-    return allClients.filter((client) =>
-      client.displayName.toLocaleLowerCase().includes(query),
-    );
-  }, [clients.data, clientSearchQuery]);
   const selectedClientTasks = React.useMemo(() => {
     if (!dashboard.data || !selectedClientId) return [];
     return dashboard.data.allTasks.filter(
@@ -205,7 +203,10 @@ function TaxWorkComponent() {
     () => summarizeClientQueue(selectedClientTasks),
     [selectedClientTasks],
   );
-  const scopedQueueSummary = React.useMemo(() => summarizeClientQueue(filteredTasks), [filteredTasks]);
+  const scopedQueueSummary = React.useMemo(
+    () => summarizeClientQueue(filteredTasks),
+    [filteredTasks],
+  );
   const profileSummaries = React.useMemo(
     () => summarizeProfiles(selectedClientTasks),
     [selectedClientTasks],
@@ -318,110 +319,73 @@ function TaxWorkComponent() {
             No clients yet. Add clients before importing tax information.
           </section>
         ) : (
-          <section className="grid min-h-0 flex-1 gap-4 overflow-hidden lg:grid-cols-[300px_minmax(0,1fr)]">
-            <aside className="flex min-h-0 flex-col overflow-hidden rounded-lg border border-border/80 bg-card">
-              <div className="px-3 py-3">
-                <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
-                  <Users className="size-3.5" />
-                  Relationship list
-                </div>
-                <div className="mt-1 text-sm font-semibold text-foreground">
-                  {clients.data.clients.length} relationships
-                </div>
-                <div className="relative mt-3">
-                  <Search
-                    className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground"
-                    aria-hidden="true"
-                  />
-                  <Input
-                    type="search"
-                    value={clientSearchQuery}
-                    aria-label="Search clients"
-                    placeholder="Search clients"
-                    className="h-8 pl-8 text-xs"
-                    onChange={(event) => setClientSearchQuery(event.target.value)}
-                  />
-                </div>
-              </div>
-              <div className="min-h-0 flex-1 overflow-auto p-2">
-                {visibleClients.length === 0 ? (
-                  <div className="rounded-md border border-dashed border-border bg-muted/20 px-3 py-3 text-xs leading-5 text-muted-foreground">
-                    No clients match this search.
-                  </div>
-                ) : null}
-                {visibleClients.map((client) => {
-                  const isSelected = client.id === selectedClientId;
-
-                  return (
-                    <button
-                      key={client.id}
-                      type="button"
-                      aria-pressed={isSelected}
-                      className={`w-full rounded-md border px-2.5 py-2.5 text-left transition-colors ${
-                        isSelected
-                          ? "border-primary/35 bg-ddhq-accent-soft/65 text-foreground"
-                          : "border-transparent text-foreground hover:border-border hover:bg-muted/40"
-                      }`}
-                      onClick={() => setSelectedClientId(client.id)}
-                    >
-                      <div className="truncate text-sm font-semibold">{client.displayName}</div>
-                      <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-                        <span>{client.filingProfileCount} profiles</span>
-                        <span aria-hidden="true">/</span>
-                        <span>{client.deadlineTaskCount} tasks</span>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </aside>
-
-            <section className="min-h-0 min-w-0">
+          <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+            <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
               {!selectedClientId || !selectedClient ? (
                 <div className="rounded-xl border border-border bg-muted/20 p-6 text-sm text-muted-foreground">
                   Select a client to review tax work.
                 </div>
               ) : (
                 <div className="flex h-full min-h-0 min-w-0 flex-col gap-4">
-                  <section className="min-w-0 shrink-0 overflow-hidden rounded-lg border border-border/80 bg-card">
-                    <div className="min-w-0 px-4 py-3">
-                      <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] xl:items-start">
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
-                            <Building2 className="size-3.5" />
-                            Client relationship
+                  <section className="grid min-w-0 shrink-0 gap-4 xl:grid-cols-2 xl:items-stretch">
+                    <section className="grid min-w-0 gap-3 xl:grid-rows-[auto_minmax(0,1fr)]">
+                      <section className="min-w-0 rounded-lg border border-border/80 bg-card px-3 py-2.5">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+                              <Users className="size-3.5" />
+                              Client
+                            </div>
+                            <div className="mt-0.5 text-xs text-muted-foreground">
+                              Pick one relationship for this workbench.
+                            </div>
                           </div>
-                          <div className="mt-1 flex flex-wrap items-center gap-2">
-                            <h2 className="text-lg font-semibold leading-tight">
-                              {selectedClient.displayName}
-                            </h2>
-                            <StatusBadge status="neutral">
-                              {selectedClient.filingProfileCount} profiles
-                            </StatusBadge>
-                            <StatusBadge status="neutral">
-                              {clientQueueSummary.total} tasks
-                            </StatusBadge>
-                          </div>
-                          <div className="mt-2 flex flex-wrap gap-1.5">
-                            <TrustBadge status="verified" value={clientQueueSummary.verified} />
-                            <TrustBadge status="review" value={clientQueueSummary.needsReview} />
-                            <TrustBadge
-                              status="entered_deadline"
-                              value={clientQueueSummary.enteredDeadline}
-                            />
-                            <StatusBadge status="neutral">
-                              {clientQueueSummary.open} open
-                            </StatusBadge>
-                            {clientQueueSummary.overdue > 0 ? (
-                              <StatusBadge status="overdue">
-                                {clientQueueSummary.overdue} overdue
-                              </StatusBadge>
-                            ) : null}
-                          </div>
+                          <ClientFilterDropdown
+                            clients={clients.data.clients}
+                            query={clientSearchQuery}
+                            onQueryChange={setClientSearchQuery}
+                            onSelectClient={setSelectedClientId}
+                            selectedClientId={selectedClientId}
+                          />
                         </div>
-                        <AnnualDeadlineCalendarCard clientId={selectedClient.id} />
-                      </div>
-                    </div>
+                      </section>
+
+                      <section className="min-w-0 rounded-lg border border-border/80 bg-card p-4 xl:min-h-0">
+                        <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+                          <Building2 className="size-3.5" />
+                          Client summary
+                        </div>
+                        <div className="mt-1 flex flex-wrap items-center gap-2">
+                          <h2 className="text-lg font-semibold leading-tight">
+                            {selectedClient.displayName}
+                          </h2>
+                          <StatusBadge status="neutral">
+                            {selectedClient.filingProfileCount} profiles
+                          </StatusBadge>
+                          <StatusBadge status="neutral">
+                            {clientQueueSummary.total} tasks
+                          </StatusBadge>
+                        </div>
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          <TrustBadge status="verified" value={clientQueueSummary.verified} />
+                          <TrustBadge status="review" value={clientQueueSummary.needsReview} />
+                          <TrustBadge
+                            status="entered_deadline"
+                            value={clientQueueSummary.enteredDeadline}
+                          />
+                          <StatusBadge status="neutral">
+                            {clientQueueSummary.open} open
+                          </StatusBadge>
+                          {clientQueueSummary.overdue > 0 ? (
+                            <StatusBadge status="overdue">
+                              {clientQueueSummary.overdue} overdue
+                            </StatusBadge>
+                          ) : null}
+                        </div>
+                      </section>
+                    </section>
+
+                    <AnnualDeadlineCalendarCard clientId={selectedClient.id} />
                   </section>
 
                   <section className="min-w-0 shrink-0 rounded-lg border border-border/80 bg-card p-3">
@@ -729,6 +693,123 @@ function TrustBadge({
   );
 }
 
+function ClientFilterDropdown({
+  clients,
+  onQueryChange,
+  onSelectClient,
+  query,
+  selectedClientId,
+}: {
+  clients: ClientListItemResponse[];
+  onQueryChange: (query: string) => void;
+  onSelectClient: (clientId: string) => void;
+  query: string;
+  selectedClientId: string;
+}) {
+  const visibleClients = React.useMemo(() => {
+    const normalizedQuery = query.trim().toLocaleLowerCase();
+    if (!normalizedQuery) return clients;
+
+    return clients.filter((client) =>
+      client.displayName.toLocaleLowerCase().includes(normalizedQuery),
+    );
+  }, [clients, query]);
+  const selectedClient =
+    clients.find((client) => client.id === selectedClientId) ?? clients[0];
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-8 min-w-[220px] justify-between rounded-lg bg-background"
+          />
+        }
+      >
+        <span className="inline-flex min-w-0 items-center gap-1.5">
+          <Users className="size-3.5 shrink-0 text-muted-foreground" />
+          <span className="truncate">{selectedClient?.displayName ?? "Select client"}</span>
+        </span>
+        <ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="end"
+        className="w-[360px] rounded-lg p-2"
+        sideOffset={6}
+      >
+        <div className="px-1 pb-2">
+          <div className="flex items-center justify-between gap-2">
+            <div className="text-xs font-semibold text-foreground">Client</div>
+            <div className="font-mono text-[11px] text-muted-foreground tabular-nums">
+              {clients.length} relationships
+            </div>
+          </div>
+          <div className="relative mt-2">
+            <Search
+              className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground"
+              aria-hidden="true"
+            />
+            <Input
+              type="search"
+              value={query}
+              aria-label="Search clients"
+              placeholder="Search clients"
+              className="h-8 pl-8 text-xs"
+              onKeyDown={(event) => event.stopPropagation()}
+              onChange={(event) => onQueryChange(event.target.value)}
+            />
+          </div>
+        </div>
+
+        <div className="max-h-[320px] overflow-auto rounded-md border border-border/80 bg-background p-1">
+          {visibleClients.length === 0 ? (
+            <div className="px-2 py-3 text-xs leading-5 text-muted-foreground">
+              No clients match this search.
+            </div>
+          ) : null}
+          {visibleClients.map((client) => {
+            const isSelected = client.id === selectedClientId;
+
+            return (
+              <button
+                key={client.id}
+                type="button"
+                aria-pressed={isSelected}
+                className={`flex w-full items-start gap-2 rounded-md px-2 py-2 text-left transition-colors ${
+                  isSelected
+                    ? "bg-ddhq-accent-soft/65 text-foreground"
+                    : "text-foreground hover:bg-muted/40"
+                }`}
+                onClick={() => onSelectClient(client.id)}
+              >
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-semibold">
+                    {client.displayName}
+                  </span>
+                  <span className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <span>{client.filingProfileCount} profiles</span>
+                    <span aria-hidden="true">/</span>
+                    <span>{client.deadlineTaskCount} tasks</span>
+                  </span>
+                </span>
+                <span
+                  className={`mt-1 size-2 rounded-full ${
+                    isSelected ? "bg-primary" : "bg-transparent"
+                  }`}
+                  aria-hidden="true"
+                />
+              </button>
+            );
+          })}
+        </div>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 function AnnualDeadlineCalendarCard({ clientId }: { clientId: string }) {
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth() + 1;
@@ -745,19 +826,19 @@ function AnnualDeadlineCalendarCard({ clientId }: { clientId: string }) {
 
   if (calendar.isPending) {
     return (
-      <div className="min-w-0 border-t border-border pt-3 xl:border-l xl:border-t-0 xl:pl-4 xl:pt-0">
-        <div className="h-36 animate-pulse rounded-lg bg-muted/40" />
-      </div>
+      <section className="min-w-0 rounded-lg border border-border/80 bg-card p-3">
+        <div className="h-28 animate-pulse rounded-lg bg-muted/40" />
+      </section>
     );
   }
 
   if (calendar.isError) {
     return (
-      <div className="min-w-0 border-t border-border pt-3 xl:border-l xl:border-t-0 xl:pl-4 xl:pt-0">
+      <section className="min-w-0 rounded-lg border border-border/80 bg-card p-3">
         <div className="rounded-md border border-ddhq-risk/30 bg-ddhq-risk-soft px-3 py-2 text-xs text-ddhq-risk">
           Annual deadline calendar could not be loaded.
         </div>
-      </div>
+      </section>
     );
   }
 
@@ -767,7 +848,7 @@ function AnnualDeadlineCalendarCard({ clientId }: { clientId: string }) {
   const selectedMonthDeadlines = selectedMonthBucket?.deadlines ?? [];
 
   return (
-    <div className="min-w-0 border-t border-border pt-3 xl:border-l xl:border-t-0 xl:pl-4 xl:pt-0">
+    <section className="min-w-0 rounded-lg border border-border/80 bg-card p-3">
       <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
@@ -795,14 +876,14 @@ function AnnualDeadlineCalendarCard({ clientId }: { clientId: string }) {
         </Select>
       </div>
 
-      <div className="mt-3 grid gap-3 lg:grid-cols-[minmax(168px,228px)_minmax(0,1fr)] lg:items-stretch">
-        <div className="grid h-[246px] grid-cols-3 grid-rows-4 gap-1.5">
+      <div className="mt-3 grid gap-3 lg:grid-cols-[minmax(152px,180px)_minmax(0,1fr)] lg:items-start">
+        <div className="grid grid-cols-6 gap-1.5 lg:grid-cols-3">
           {data.months.map((month) => (
             <button
               key={month.month}
               type="button"
               aria-pressed={selectedMonth === month.month}
-              className={`rounded-[6px] border px-2 py-1.5 text-center ${
+              className={`h-10 rounded-[6px] border px-2 py-1 text-center ${
                 selectedMonth === month.month
                   ? "border-primary/40 bg-ddhq-accent-soft text-primary ring-1 ring-primary/20"
                   : month.count > 0
@@ -821,7 +902,7 @@ function AnnualDeadlineCalendarCard({ clientId }: { clientId: string }) {
           ))}
         </div>
 
-        <div className="flex h-[246px] min-w-0 flex-col rounded-md border border-border/80 bg-background/70 p-2.5">
+        <div className="flex min-h-[116px] min-w-0 flex-col rounded-md border border-border/80 bg-background/70 p-2.5">
           <div className="mb-1.5 flex items-center justify-between gap-2">
             <div className="text-[11px] font-semibold text-muted-foreground">
               {selectedMonthBucket?.label ?? "Month"} tax list
@@ -835,7 +916,7 @@ function AnnualDeadlineCalendarCard({ clientId }: { clientId: string }) {
               No deadlines for this month.
             </div>
           ) : (
-            <div className="min-h-0 flex-1 overflow-auto pr-1">
+            <div className="min-h-0 max-h-[156px] flex-1 overflow-auto pr-1">
               <div className="grid gap-1.5">
                 {selectedMonthDeadlines.map((deadline) => (
                   <AnnualCalendarDeadline key={deadline.id} deadline={deadline} />
@@ -845,7 +926,7 @@ function AnnualDeadlineCalendarCard({ clientId }: { clientId: string }) {
           )}
         </div>
       </div>
-    </div>
+    </section>
   );
 }
 

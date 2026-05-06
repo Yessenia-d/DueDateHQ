@@ -15,8 +15,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@due-date-hq/ui/components/select";
-import { keepPreviousData, useMutation, useQuery } from "@tanstack/react-query";
-import { CalendarDays, Check, Download, Filter, RotateCcw } from "lucide-react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { AlertTriangle, CalendarDays, Check, Download, Filter, RotateCcw, X } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
 
@@ -38,6 +38,12 @@ import type {
 } from "@due-date-hq/api/routers/dashboard";
 
 type DeadlineTaskStatus = DashboardTaskRow["status"];
+type DashboardExceptionFocus =
+  | "source_changed"
+  | "needs_review"
+  | "entered_deadline"
+  | "waiting_on_client";
+type WorkloadTone = "empty" | "low" | "medium" | "high" | "risk";
 
 const horizonLabels: Record<DashboardHorizon, string> = {
   all: "All horizons",
@@ -145,6 +151,8 @@ export function DashboardPage() {
   const [selectedTaskIds, setSelectedTaskIds] = React.useState<Set<string>>(new Set());
   const [evidenceTaskId, setEvidenceTaskId] = React.useState<string | null>(null);
   const [showFilters, setShowFilters] = React.useState(false);
+  const [selectedDate, setSelectedDate] = React.useState<string | null>(null);
+  const [exceptionFocus, setExceptionFocus] = React.useState<DashboardExceptionFocus | null>(null);
   const activePage = sectionPages[activeHorizon] ?? 1;
   const dashboardInput = React.useMemo(
     () => ({
@@ -159,44 +167,33 @@ export function DashboardPage() {
     ...trpc.dashboard.summary.queryOptions(dashboardInput),
     placeholderData: keepPreviousData,
   });
-  const exportCurrentView = useMutation(
-    trpc.dashboard.export.mutationOptions({
-      onSuccess: (result) => {
-        const blob = new Blob([result.csv], { type: result.contentType });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = result.filename;
-        link.click();
-        URL.revokeObjectURL(url);
-        toast.success(`Exported ${result.rowCount} dashboard rows.`);
-      },
-      onError: (error) => toast.error(error.message),
-    }),
+  const activeHorizonTasks = React.useMemo(
+    () => dashboard.data?.allTasks.filter((task) => task.horizon === activeHorizon) ?? [],
+    [activeHorizon, dashboard.data],
   );
-  const selectedCount = selectedTaskIds.size;
+  const focusedTasks = React.useMemo(
+    () => filterFocusedTasks(activeHorizonTasks, { exceptionFocus, selectedDate }),
+    [activeHorizonTasks, exceptionFocus, selectedDate],
+  );
   const activeSection = React.useMemo<DashboardSection>(() => {
-    const section = dashboard.data?.sections.find((item) => item.id === activeHorizon);
-
-    if (!section) {
-      return {
-        id: activeHorizon,
-        label: horizonLabels[activeHorizon],
-        count: 0,
-        pagination: {
-          page: activePage,
-          pageSize: dashboardPageSize,
-          totalPages: 1,
-        },
-        tasks: [],
-      };
-    }
+    const count = focusedTasks.length;
+    const totalPages = Math.max(1, Math.ceil(count / dashboardPageSize));
+    const page = Math.min(activePage, totalPages);
+    const start = (page - 1) * dashboardPageSize;
 
     return {
-      ...section,
-      label: horizonLabels[section.id],
+      id: activeHorizon,
+      label: horizonLabels[activeHorizon],
+      count,
+      pagination: {
+        page,
+        pageSize: dashboardPageSize,
+        totalPages,
+      },
+      tasks: focusedTasks.slice(start, start + dashboardPageSize),
     };
-  }, [activeHorizon, activePage, dashboard.data]);
+  }, [activeHorizon, activePage, focusedTasks]);
+  const selectedCount = selectedTaskIds.size;
 
   React.useEffect(() => {
     const visibleIds = new Set(activeSection.tasks.map((task) => task.id));
@@ -224,6 +221,14 @@ export function DashboardPage() {
   function resetFilters() {
     setFilters({ ...emptyFilters });
     setSectionPages(createInitialSectionPages);
+    setSelectedDate(null);
+    setExceptionFocus(null);
+  }
+
+  function selectHorizon(horizon: DashboardTaskHorizon) {
+    setActiveHorizon(horizon);
+    setSelectedDate(null);
+    setExceptionFocus(null);
   }
 
   function setActiveSectionPage(page: number) {
@@ -259,7 +264,16 @@ export function DashboardPage() {
     });
   }
 
-  const isBusy = exportCurrentView.isPending;
+  function downloadCurrentCsv() {
+    const csv = createDashboardCsv(focusedTasks);
+    downloadCsv({
+      csv,
+      filename: `due-date-hq-${activeHorizon}-dashboard-${dashboard.data?.today ?? "view"}.csv`,
+    });
+    toast.success(`Downloaded ${focusedTasks.length} dashboard rows.`);
+  }
+
+  const isBusy = false;
   const activeFilterCount = [
     filters.clientRelationshipId,
     filters.filingProfileId,
@@ -269,8 +283,11 @@ export function DashboardPage() {
     filters.taskStatus,
     filters.verificationStatus,
   ].filter(Boolean).length;
+  const activeFocusCount = [selectedDate, exceptionFocus].filter(Boolean).length;
   const hasNonDefaultFilters =
-    activeFilterCount > 0 || (filters.sort ?? "smart_priority") !== "smart_priority";
+    activeFilterCount > 0 ||
+    activeFocusCount > 0 ||
+    (filters.sort ?? "smart_priority") !== "smart_priority";
 
   if (dashboard.isPending) {
     return (
@@ -297,14 +314,18 @@ export function DashboardPage() {
   }
 
   const data = dashboard.data;
-  const activeHorizonTasks = data.allTasks.filter((task) => task.horizon === activeHorizon);
-  const timelineItems = createDeadlineTimelineItems(activeHorizonTasks, data.today);
-  const categoryItems = createTaxCategoryItems(activeHorizonTasks);
-  const showDashboardVisuals = false;
+  const calendarDays = createWorkloadCalendarDays(
+    activeHorizonTasks,
+    data.today,
+    activeHorizon,
+    selectedDate,
+  );
+  const exceptionItems = createExceptionItems(activeHorizonTasks);
+  const focusSummary = createFocusSummary({ exceptionFocus, selectedDate });
 
   return (
     <main className="h-full min-h-0 overflow-hidden bg-background text-foreground">
-      <div className="mx-auto flex h-full min-h-0 w-full max-w-[1440px] flex-col gap-4 px-5 py-5">
+      <div className="mx-auto flex h-full min-h-0 w-full max-w-[1440px] flex-col gap-3 px-5 py-5">
         {/* Page header */}
         <section className="pb-1">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -336,47 +357,71 @@ export function DashboardPage() {
                 count={count}
                 horizon={horizon}
                 isSelected={activeHorizon === horizon}
-                onSelect={() => setActiveHorizon(horizon)}
+                onSelect={() => selectHorizon(horizon)}
                 summary={getHorizonSummary(horizon, data)}
               />
             );
           })}
         </section>
 
-        {/* Timeline and donut chart entries are temporarily hidden; keep implementations for later restore. */}
-        {showDashboardVisuals ? (
-          <section className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
-            <DeadlineTimeline items={timelineItems} label={horizonLabels[activeHorizon]} />
-            <TaxCategoryDonut
-              items={categoryItems}
-              label={horizonLabels[activeHorizon]}
-              total={activeHorizonTasks.length}
-            />
-          </section>
-        ) : null}
+        <section className="grid shrink-0 grid-cols-1 gap-2 xl:grid-cols-[minmax(0,1fr)_320px]">
+          <WorkloadCalendar
+            activeHorizon={activeHorizon}
+            days={calendarDays}
+            selectedDate={selectedDate}
+            taskCount={activeHorizonTasks.length}
+            today={data.today}
+            onSelectDate={(date) => {
+              setSelectedDate((current) => (current === date ? null : date));
+              setSectionPages(createInitialSectionPages);
+            }}
+          />
+          <ExceptionSummary
+            activeFocus={exceptionFocus}
+            items={exceptionItems}
+            onSelect={(focus) => {
+              setExceptionFocus((current) => (current === focus ? null : focus));
+              setSectionPages(createInitialSectionPages);
+            }}
+          />
+        </section>
 
         {/* Controls */}
         <section className="flex flex-col gap-2">
           <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex min-h-8 flex-wrap items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className={
-                  showFilters
-                    ? "rounded-lg border-primary/30 bg-ddhq-accent-soft/70 text-foreground shadow-none"
-                    : "rounded-lg"
-                }
-                onClick={() => setShowFilters((current) => !current)}
-              >
-                <Filter
-                  className={showFilters ? "size-3.5 text-primary" : "size-3.5"}
-                />
-                Filters
-              </Button>
+              <div className="relative">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  aria-expanded={showFilters}
+                  className={
+                    showFilters
+                      ? "rounded-lg border-primary/30 bg-ddhq-accent-soft/70 text-foreground shadow-none"
+                      : "rounded-lg"
+                  }
+                  onClick={() => setShowFilters((current) => !current)}
+                >
+                  <Filter
+                    className={showFilters ? "size-3.5 text-primary" : "size-3.5"}
+                  />
+                  Filters
+                </Button>
+                {showFilters ? (
+                  <FilterPanel
+                    data={data}
+                    filters={filters}
+                    onClose={() => setShowFilters(false)}
+                    onReset={resetFilters}
+                    onUpdateFilter={updateFilter}
+                  />
+                ) : null}
+              </div>
               <span className="text-xs font-medium text-muted-foreground">
-                {activeFilterCount > 0 ? `${activeFilterCount} active` : "Default filters"}
+                {activeFilterCount > 0 || activeFocusCount > 0
+                  ? `${activeFilterCount + activeFocusCount} active`
+                  : "Default filters"}
               </span>
               <Button
                 type="button"
@@ -389,6 +434,22 @@ export function DashboardPage() {
                 <RotateCcw className="size-3.5" />
                 Reset filters
               </Button>
+              {focusSummary ? (
+                <span className="inline-flex items-center gap-1 rounded-lg border border-border/80 bg-card px-2 py-1 text-xs font-medium text-muted-foreground">
+                  {focusSummary}
+                  <button
+                    type="button"
+                    className="rounded-sm p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                    aria-label="Clear dashboard focus"
+                    onClick={() => {
+                      setSelectedDate(null);
+                      setExceptionFocus(null);
+                    }}
+                  >
+                    <X className="size-3" />
+                  </button>
+                </span>
+              ) : null}
               {selectedCount > 0 ? (
                 <span className="ml-2 text-sm font-semibold">
                   {selectedCount} selected
@@ -409,114 +470,21 @@ export function DashboardPage() {
                 type="button"
                 variant="outline"
                 size="sm"
-                className="h-8 w-32 rounded-lg"
-                disabled={isBusy}
-                onClick={() => exportCurrentView.mutate({ ...filters, horizon: activeHorizon })}
+                className="h-8 w-36 rounded-lg"
+                disabled={isBusy || focusedTasks.length === 0}
+                title="Download a CSV for the current horizon, filters, and date or exception focus."
+                aria-label="Download CSV for current dashboard view"
+                onClick={downloadCurrentCsv}
               >
                 <Download className="size-3.5" />
-                Export view
+                Download CSV
               </Button>
             </div>
           </div>
-
-          {showFilters ? (
-            <div className="grid gap-2 rounded-xl border border-border/80 bg-card p-3 md:grid-cols-3 xl:grid-cols-5">
-              <FilterSelect
-                isActive={Boolean(filters.clientRelationshipId)}
-                label="Client"
-                value={filters.clientRelationshipId ?? ""}
-                onChange={(value) => updateFilter("clientRelationshipId", value)}
-                options={data.filterOptions.clientRelationships.map((option) => ({
-                  value: option.id,
-                  label: option.label,
-                }))}
-                placeholder="All clients"
-              />
-              <FilterSelect
-                isActive={Boolean(filters.filingProfileId)}
-                label="Filing profile"
-                value={filters.filingProfileId ?? ""}
-                onChange={(value) => updateFilter("filingProfileId", value)}
-                options={data.filterOptions.filingProfiles.map((option) => ({
-                  value: option.id,
-                  label: option.label,
-                }))}
-                placeholder="All profiles"
-              />
-              <FilterSelect
-                isActive={Boolean(filters.jurisdiction)}
-                label="Jurisdiction"
-                value={filters.jurisdiction ?? ""}
-                onChange={(value) => updateFilter("jurisdiction", value)}
-                options={data.filterOptions.jurisdictions.map((value) => ({
-                  value,
-                  label: value,
-                }))}
-                placeholder="All jurisdictions"
-              />
-              <FilterSelect
-                isActive={Boolean(filters.entityType)}
-                label="Entity type"
-                value={filters.entityType ?? ""}
-                onChange={(value) =>
-                  updateFilter("entityType", value as DashboardSummaryInput["entityType"] | "")
-                }
-                options={data.filterOptions.entityTypes.map((value) => ({ value, label: value }))}
-                placeholder="All entities"
-              />
-              <FilterSelect
-                isActive={Boolean(filters.taxCategory)}
-                label="Tax type"
-                value={filters.taxCategory ?? ""}
-                onChange={(value) => updateFilter("taxCategory", value)}
-                options={data.filterOptions.taxCategories.map((value) => ({
-                  value,
-                  label: value,
-                }))}
-                placeholder="All tax types"
-              />
-              <FilterSelect
-                isActive={Boolean(filters.taskStatus)}
-                label="Status"
-                value={filters.taskStatus ?? ""}
-                onChange={(value) =>
-                  updateFilter("taskStatus", value as DashboardSummaryInput["taskStatus"] | "")
-                }
-                options={data.filterOptions.taskStatuses.map((value) => ({
-                  value,
-                  label: statusLabels[value],
-                }))}
-                placeholder="All statuses"
-              />
-              <FilterSelect
-                isActive={Boolean(filters.verificationStatus)}
-                label="Verification"
-                value={filters.verificationStatus ?? ""}
-                onChange={(value) =>
-                  updateFilter(
-                    "verificationStatus",
-                    value as DashboardSummaryInput["verificationStatus"] | "",
-                  )
-                }
-                options={data.filterOptions.verificationStatuses.map((value) => ({
-                  value,
-                  label: verificationLabels[value],
-                }))}
-                placeholder="All verification"
-              />
-              <FilterSelect
-                isActive={(filters.sort ?? "smart_priority") !== "smart_priority"}
-                label="Sort"
-                value={filters.sort ?? "smart_priority"}
-                onChange={(value) => updateFilter("sort", value as DashboardSort)}
-                options={Object.entries(sortLabels).map(([value, label]) => ({ value, label }))}
-              />
-            </div>
-          ) : null}
         </section>
 
         {/* Task sections */}
-        <section className="flex min-h-0 flex-1 flex-col gap-1">
+        <section className="flex min-h-0 flex-1 basis-1/2 flex-col gap-1">
           <TaskTable
             section={activeSection}
             selectedTaskIds={selectedTaskIds}
@@ -716,6 +684,524 @@ function createDonutGradient(items: TaxCategoryItem[], total: number): string {
   });
 
   return `conic-gradient(from -90deg, ${segments.join(", ")})`;
+}
+
+function filterFocusedTasks(
+  tasks: DashboardTaskRow[],
+  {
+    exceptionFocus,
+    selectedDate,
+  }: {
+    exceptionFocus: DashboardExceptionFocus | null;
+    selectedDate: string | null;
+  },
+): DashboardTaskRow[] {
+  return tasks.filter((task) => {
+    if (selectedDate && task.currentDueDate !== selectedDate) return false;
+    if (!exceptionFocus) return true;
+
+    switch (exceptionFocus) {
+      case "source_changed":
+        return task.verificationStatus === "source_changed";
+      case "needs_review":
+        return task.verificationStatus === "needs_review";
+      case "entered_deadline":
+        return task.verificationStatus === "entered_deadline";
+      case "waiting_on_client":
+        return task.status === "waiting_on_client";
+    }
+  });
+}
+
+function createWorkloadCalendarDays(
+  tasks: DashboardTaskRow[],
+  today: string,
+  horizon: DashboardTaskHorizon,
+  selectedDate: string | null,
+): WorkloadCalendarDay[] {
+  const anchorDate = selectedDate ?? getCalendarAnchorDate(tasks, today, horizon);
+  const anchor = new Date(`${anchorDate}T00:00:00.000Z`);
+  const monthStart = new Date(Date.UTC(anchor.getUTCFullYear(), anchor.getUTCMonth(), 1));
+  const gridStart = addUtcDays(monthStart, -monthStart.getUTCDay());
+  const currentMonth = monthStart.getUTCMonth();
+  const tasksByDate = groupTasksByDueDate(tasks);
+
+  return Array.from({ length: 42 }, (_, index) => {
+    const date = addUtcDays(gridStart, index);
+    const dateKey = toDateKey(date);
+    const dateTasks = tasksByDate.get(dateKey) ?? [];
+
+    return {
+      count: dateTasks.length,
+      date: dateKey,
+      dayOfMonth: date.getUTCDate(),
+      isCurrentMonth: date.getUTCMonth() === currentMonth,
+      isSelected: selectedDate === dateKey,
+      isToday: today === dateKey,
+      tone: getDayWorkloadTone(dateTasks),
+    };
+  });
+}
+
+function getCalendarAnchorDate(
+  tasks: DashboardTaskRow[],
+  today: string,
+  horizon: DashboardTaskHorizon,
+): string {
+  if (tasks.length === 0 || horizon === "due_this_week" || horizon === "this_month") {
+    return today;
+  }
+
+  const dates = tasks.map((task) => task.currentDueDate).sort();
+
+  if (horizon === "overdue") {
+    return dates.at(-1) ?? today;
+  }
+
+  return dates[0] ?? today;
+}
+
+function groupTasksByDueDate(tasks: DashboardTaskRow[]): Map<string, DashboardTaskRow[]> {
+  const map = new Map<string, DashboardTaskRow[]>();
+
+  for (const task of tasks) {
+    const group = map.get(task.currentDueDate);
+    if (group) {
+      group.push(task);
+    } else {
+      map.set(task.currentDueDate, [task]);
+    }
+  }
+
+  return map;
+}
+
+function getDayWorkloadTone(tasks: DashboardTaskRow[]): WorkloadTone {
+  if (tasks.length === 0) return "empty";
+
+  const hasRisk = tasks.some(
+    (task) =>
+      task.status !== "done" &&
+      (task.urgency === "overdue" ||
+        task.urgency === "due_today" ||
+        task.verificationStatus === "source_changed" ||
+        task.verificationStatus === "needs_review" ||
+        task.status === "waiting_on_client"),
+  );
+
+  if (hasRisk) return "risk";
+  if (tasks.length <= 2) return "low";
+  if (tasks.length <= 5) return "medium";
+
+  return "high";
+}
+
+function createExceptionItems(tasks: DashboardTaskRow[]): ExceptionItem[] {
+  return [
+    {
+      count: tasks.filter((task) => task.verificationStatus === "source_changed").length,
+      description: "Official source changed; evidence should be reviewed.",
+      id: "source_changed",
+      label: "Source changed",
+    },
+    {
+      count: tasks.filter((task) => task.verificationStatus === "needs_review").length,
+      description: "Deadline trust is not ready for automatic reliance.",
+      id: "needs_review",
+      label: "Needs review",
+    },
+    {
+      count: tasks.filter((task) => task.verificationStatus === "entered_deadline").length,
+      description: "Manually entered dates need source context.",
+      id: "entered_deadline",
+      label: "Entered deadline",
+    },
+    {
+      count: tasks.filter((task) => task.status === "waiting_on_client").length,
+      description: "Client-side bottlenecks blocking completion.",
+      id: "waiting_on_client",
+      label: "Waiting on client",
+    },
+  ];
+}
+
+const exceptionFocusLabels = {
+  source_changed: "Source changed",
+  needs_review: "Needs review",
+  entered_deadline: "Entered deadline",
+  waiting_on_client: "Waiting on client",
+} satisfies Record<DashboardExceptionFocus, string>;
+
+function createFocusSummary({
+  exceptionFocus,
+  selectedDate,
+}: {
+  exceptionFocus: DashboardExceptionFocus | null;
+  selectedDate: string | null;
+}): string | null {
+  const parts = [
+    selectedDate ? `Date ${selectedDate}` : null,
+    exceptionFocus ? exceptionFocusLabels[exceptionFocus] : null,
+  ].filter(Boolean);
+
+  return parts.length > 0 ? `Focused: ${parts.join(" + ")}` : null;
+}
+
+function getCalendarDayClassName(day: WorkloadCalendarDay): string {
+  const toneClass = {
+    empty: "bg-background text-muted-foreground/50 hover:bg-muted",
+    low: "bg-ddhq-review-soft/55 text-ddhq-review hover:bg-ddhq-review-soft",
+    medium: "bg-ddhq-review-soft/70 text-ddhq-review hover:bg-ddhq-review-soft",
+    high: "bg-ddhq-review-soft/85 text-ddhq-review hover:bg-ddhq-review-soft",
+    risk: "bg-ddhq-review-soft text-ddhq-review hover:bg-ddhq-review-soft/85",
+  } satisfies Record<WorkloadTone, string>;
+  const currentMonthClass = day.isCurrentMonth ? "" : "opacity-45";
+  const selectedClass = day.isSelected
+    ? "ring-2 ring-ddhq-review/35"
+    : "";
+  const borderClass = day.isSelected || day.isToday ? "border-ddhq-review/60" : "border-border/70";
+
+  return [
+    "min-h-9 rounded-[6px] border p-1 text-left text-[11px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ddhq-review/35",
+    toneClass[day.tone],
+    currentMonthClass,
+    selectedClass,
+    borderClass,
+  ].join(" ");
+}
+
+type WorkloadCalendarDay = {
+  count: number;
+  date: string;
+  dayOfMonth: number;
+  isCurrentMonth: boolean;
+  isSelected: boolean;
+  isToday: boolean;
+  tone: WorkloadTone;
+};
+
+type ExceptionItem = {
+  count: number;
+  description: string;
+  id: DashboardExceptionFocus;
+  label: string;
+};
+
+function WorkloadCalendar({
+  activeHorizon,
+  days,
+  onSelectDate,
+  selectedDate,
+  taskCount,
+  today,
+}: {
+  activeHorizon: DashboardTaskHorizon;
+  days: WorkloadCalendarDay[];
+  onSelectDate: (date: string) => void;
+  selectedDate: string | null;
+  taskCount: number;
+  today: string;
+}) {
+  const visibleMonth = days.find((day) => day.isCurrentMonth)?.date.slice(0, 7) ?? today.slice(0, 7);
+
+  return (
+    <section className="rounded-lg border border-border/80 bg-card p-2.5">
+      <div className="flex flex-col gap-1.5 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <div className="flex items-center gap-2 text-sm font-semibold">
+            <CalendarDays className="size-4 text-ddhq-review" />
+            Workload calendar
+          </div>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {visibleMonth} density for {horizonLabels[activeHorizon].toLowerCase()} deadlines
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+          <span className="font-mono tabular-nums">{taskCount} tasks</span>
+          {selectedDate ? (
+            <button
+              type="button"
+              className="rounded-md border border-border bg-background px-2 py-1 font-medium text-foreground hover:bg-muted"
+              onClick={() => onSelectDate(selectedDate)}
+            >
+              Clear date focus
+            </button>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="mt-2 grid grid-cols-7 gap-0.5 text-center text-[10px] font-semibold text-muted-foreground">
+        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+          <div key={day} className="h-4">
+            {day}
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-7 gap-0.5">
+        {days.map((day) => (
+          <button
+            key={day.date}
+            type="button"
+            className={getCalendarDayClassName(day)}
+            aria-pressed={day.isSelected}
+            aria-label={`${day.date}: ${day.count} deadline task${day.count === 1 ? "" : "s"}`}
+            onClick={() => onSelectDate(day.date)}
+          >
+            <span className="flex items-center justify-between gap-1">
+              <span className="font-mono tabular-nums">{day.dayOfMonth}</span>
+              {day.tone === "risk" ? <AlertTriangle className="size-3" /> : null}
+            </span>
+            <span className="block truncate text-[10px] font-semibold leading-4">
+              {day.count > 0 ? `${day.count} task${day.count === 1 ? "" : "s"}` : " "}
+            </span>
+          </button>
+        ))}
+      </div>
+      <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+        <CalendarLegendSwatch className="bg-ddhq-review-soft" label="Workload" />
+        <CalendarLegendSwatch className="border-ddhq-review/60 bg-ddhq-review-soft ring-2 ring-ddhq-review/35" label="Selected" />
+      </div>
+    </section>
+  );
+}
+
+function CalendarLegendSwatch({ className, label }: { className: string; label: string }) {
+  return (
+    <span className="inline-flex items-center gap-1">
+      <span className={`size-2 rounded-sm border border-border/60 ${className}`} />
+      {label}
+    </span>
+  );
+}
+
+const exceptionToneStyles = {
+  source_changed: {
+    activeCard: "border-[oklch(0.7_0.075_285)] bg-[oklch(0.94_0.035_285)]",
+    badge:
+      "border-transparent bg-[oklch(0.94_0.035_285)] text-[oklch(0.45_0.12_285)]",
+    idleHover: "hover:bg-[oklch(0.94_0.035_285)]",
+  },
+  needs_review: {
+    activeCard: "border-ddhq-gap/30 bg-ddhq-gap-soft/70",
+    badge: "border-ddhq-gap/25 bg-ddhq-gap-soft text-ddhq-gap",
+    idleHover: "hover:bg-ddhq-gap-soft/35",
+  },
+  entered_deadline: {
+    activeCard: "border-border bg-muted/70",
+    badge: "border-border bg-muted text-muted-foreground",
+    idleHover: "hover:bg-muted",
+  },
+  waiting_on_client: {
+    activeCard: "border-ddhq-review/35 bg-ddhq-review-soft/60",
+    badge: "border-ddhq-review/35 bg-ddhq-review-soft text-ddhq-review",
+    idleHover: "hover:bg-ddhq-review-soft/30",
+  },
+} satisfies Record<
+  DashboardExceptionFocus,
+  { activeCard: string; badge: string; idleHover: string }
+>;
+
+function ExceptionBadge({ item }: { item: ExceptionItem }) {
+  return (
+    <span
+      className={`inline-flex items-center rounded-[6px] border px-1.5 py-0.5 text-[11px] font-semibold leading-[1.1] whitespace-nowrap ${exceptionToneStyles[item.id].badge}`}
+    >
+      {item.label}
+    </span>
+  );
+}
+
+function ExceptionSummary({
+  activeFocus,
+  items,
+  onSelect,
+}: {
+  activeFocus: DashboardExceptionFocus | null;
+  items: ExceptionItem[];
+  onSelect: (focus: DashboardExceptionFocus) => void;
+}) {
+  return (
+    <aside className="rounded-lg border border-border/80 bg-card p-2.5">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-semibold">Exception summary</h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Current horizon risks that need human attention
+          </p>
+        </div>
+      </div>
+      <div className="mt-2 grid gap-1.5">
+        {items.map((item) => {
+          const isActive = activeFocus === item.id;
+          const tone = exceptionToneStyles[item.id];
+
+          return (
+            <button
+              key={item.id}
+              type="button"
+              aria-pressed={isActive}
+              disabled={item.count === 0}
+              className={
+                isActive
+                  ? `rounded-lg border p-2 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] ${tone.activeCard}`
+                  : `rounded-lg border border-border/70 bg-background p-2 text-left transition-colors ${tone.idleHover} disabled:cursor-not-allowed disabled:opacity-55`
+              }
+              onClick={() => onSelect(item.id)}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <ExceptionBadge item={item} />
+                <span className="font-mono text-sm font-semibold tabular-nums">{item.count}</span>
+              </div>
+              <div className="mt-1 text-xs leading-4 text-muted-foreground">
+                {item.description}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </aside>
+  );
+}
+
+function FilterPanel({
+  data,
+  filters,
+  onClose,
+  onReset,
+  onUpdateFilter,
+}: {
+  data: DashboardSummaryResponse;
+  filters: DashboardSummaryInput;
+  onClose: () => void;
+  onReset: () => void;
+  onUpdateFilter: <K extends keyof DashboardSummaryInput>(
+    key: K,
+    value: DashboardSummaryInput[K] | "",
+  ) => void;
+}) {
+  return (
+    <div className="absolute left-0 top-10 z-50 w-[min(900px,calc(100vw-2.5rem))] rounded-xl border border-border/80 bg-popover p-3 text-popover-foreground shadow-xl max-md:fixed max-md:inset-x-3 max-md:bottom-3 max-md:top-auto max-md:w-auto max-md:max-h-[82vh] max-md:overflow-auto">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-semibold">Filters</h2>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Refine the dashboard without changing the page layout.
+          </p>
+        </div>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-xs"
+          className="size-7"
+          aria-label="Close filters"
+          onClick={onClose}
+        >
+          <X className="size-3.5" />
+        </Button>
+      </div>
+      <div className="grid gap-2 md:grid-cols-3 xl:grid-cols-4">
+        <FilterSelect
+          isActive={Boolean(filters.clientRelationshipId)}
+          label="Client"
+          value={filters.clientRelationshipId ?? ""}
+          onChange={(value) => onUpdateFilter("clientRelationshipId", value)}
+          options={data.filterOptions.clientRelationships.map((option) => ({
+            value: option.id,
+            label: option.label,
+          }))}
+          placeholder="All clients"
+        />
+        <FilterSelect
+          isActive={Boolean(filters.filingProfileId)}
+          label="Filing profile"
+          value={filters.filingProfileId ?? ""}
+          onChange={(value) => onUpdateFilter("filingProfileId", value)}
+          options={data.filterOptions.filingProfiles.map((option) => ({
+            value: option.id,
+            label: option.label,
+          }))}
+          placeholder="All profiles"
+        />
+        <FilterSelect
+          isActive={Boolean(filters.jurisdiction)}
+          label="Jurisdiction"
+          value={filters.jurisdiction ?? ""}
+          onChange={(value) => onUpdateFilter("jurisdiction", value)}
+          options={data.filterOptions.jurisdictions.map((value) => ({
+            value,
+            label: value,
+          }))}
+          placeholder="All jurisdictions"
+        />
+        <FilterSelect
+          isActive={Boolean(filters.entityType)}
+          label="Entity type"
+          value={filters.entityType ?? ""}
+          onChange={(value) =>
+            onUpdateFilter("entityType", value as DashboardSummaryInput["entityType"] | "")
+          }
+          options={data.filterOptions.entityTypes.map((value) => ({ value, label: value }))}
+          placeholder="All entities"
+        />
+        <FilterSelect
+          isActive={Boolean(filters.taxCategory)}
+          label="Tax type"
+          value={filters.taxCategory ?? ""}
+          onChange={(value) => onUpdateFilter("taxCategory", value)}
+          options={data.filterOptions.taxCategories.map((value) => ({
+            value,
+            label: value,
+          }))}
+          placeholder="All tax types"
+        />
+        <FilterSelect
+          isActive={Boolean(filters.taskStatus)}
+          label="Status"
+          value={filters.taskStatus ?? ""}
+          onChange={(value) =>
+            onUpdateFilter("taskStatus", value as DashboardSummaryInput["taskStatus"] | "")
+          }
+          options={data.filterOptions.taskStatuses.map((value) => ({
+            value,
+            label: statusLabels[value],
+          }))}
+          placeholder="All statuses"
+        />
+        <FilterSelect
+          isActive={Boolean(filters.verificationStatus)}
+          label="Verification"
+          value={filters.verificationStatus ?? ""}
+          onChange={(value) =>
+            onUpdateFilter(
+              "verificationStatus",
+              value as DashboardSummaryInput["verificationStatus"] | "",
+            )
+          }
+          options={data.filterOptions.verificationStatuses.map((value) => ({
+            value,
+            label: verificationLabels[value],
+          }))}
+          placeholder="All verification"
+        />
+        <FilterSelect
+          isActive={(filters.sort ?? "smart_priority") !== "smart_priority"}
+          label="Sort"
+          value={filters.sort ?? "smart_priority"}
+          onChange={(value) => onUpdateFilter("sort", value as DashboardSort)}
+          options={Object.entries(sortLabels).map(([value, label]) => ({ value, label }))}
+        />
+      </div>
+      <div className="mt-3 flex justify-end gap-2 border-t border-border/80 pt-3">
+        <Button type="button" variant="ghost" size="sm" onClick={onReset}>
+          <RotateCcw className="size-3.5" />
+          Reset filters
+        </Button>
+        <Button type="button" variant="outline" size="sm" onClick={onClose}>
+          Done
+        </Button>
+      </div>
+    </div>
+  );
 }
 
 function DashboardPagination({
@@ -998,9 +1484,97 @@ function FilterSelect({
   );
 }
 
+function createDashboardCsv(rows: DashboardTaskRow[]): string {
+  const headers = [
+    "Client relationship",
+    "Filing/tax profile",
+    "Obligation",
+    "Jurisdiction",
+    "Tax category",
+    "Current official due date",
+    "Original due date",
+    "Firm target date",
+    "Status",
+    "Verification status",
+    "Source type",
+    "Source name",
+    "Source URL",
+    "Last verified at",
+    "Source last changed at",
+    "Priority",
+    "Extension status",
+    "Notes",
+  ];
+  const lines = [
+    headers.map(csvCell).join(","),
+    ...rows.map((row) =>
+      [
+        row.clientRelationship.displayName,
+        row.filingProfile.displayName,
+        row.title,
+        row.jurisdiction,
+        row.taxCategory,
+        row.currentDueDate,
+        row.originalDueDate,
+        row.firmTargetDate,
+        row.status,
+        row.verificationLabel,
+        row.sourceType === "entered_deadline" ? "Entered deadline" : row.sourceType,
+        row.sourceName,
+        row.sourceUrl,
+        row.lastVerifiedAt,
+        row.sourceLastChangedAt,
+        row.priority,
+        row.isExtended ? "Extended" : "",
+        row.verificationStatus === "entered_deadline"
+          ? [
+              row.clientRelationship.notes,
+              row.verificationLabel,
+              row.enteredDeadlineReferenceNote,
+            ].filter(Boolean).join(" - ")
+          : (row.clientRelationship.notes ?? ""),
+      ].map(csvCell).join(","),
+    ),
+  ];
+
+  return `${lines.join("\n")}\n`;
+}
+
+function csvCell(value: string | number | null): string {
+  const text = value === null ? "" : String(value);
+
+  if (/[",\n]/.test(text)) {
+    return `"${text.replaceAll('"', '""')}"`;
+  }
+
+  return text;
+}
+
+function downloadCsv({ csv, filename }: { csv: string; filename: string }) {
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 function getDayDifference(date: string, today: string): number {
   const current = new Date(`${date}T00:00:00.000Z`).getTime();
   const base = new Date(`${today}T00:00:00.000Z`).getTime();
 
   return Math.round((current - base) / (24 * 60 * 60 * 1000));
+}
+
+function addUtcDays(date: Date, days: number): Date {
+  return new Date(date.getTime() + days * 24 * 60 * 60 * 1000);
+}
+
+function toDateKey(date: Date): string {
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(date.getUTCDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
 }
